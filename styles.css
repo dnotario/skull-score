@@ -590,3 +590,64 @@ input[type="text"]:focus {
         font-size: 16px; /* Prevents zoom on iOS */
     }
 }
+
+/* SEO Content Styling */
+.feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0;
+}
+
+.feature-list li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    color: #654321;
+    line-height: 1.4;
+}
+
+.feature-list li:last-child {
+    border-bottom: none;
+}
+
+.feature-list strong {
+    color: #8B4513;
+}
+
+.seo-content {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #d4af37;
+}
+
+.seo-content h4 {
+    color: #654321;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.seo-content p {
+    color: #666;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+/* Mobile adjustments for SEO content */
+@media (max-width: 600px) {
+    .feature-list li {
+        padding: 0.5rem 0;
+        font-size: 0.9rem;
+    }
+    
+    .seo-content {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+    }
+    
+    .seo-content h4 {
+        font-size: 1rem;
+    }
+    
+    .seo-content p {
+        font-size: 0.85rem;
+    }
+}
