@@ -223,6 +223,23 @@ input[type="text"]:focus {
     font-size: 0.85rem;
 }
 
+.btn-remove {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.btn-remove:hover {
+    color: #a02833;
+    transform: scale(1.1);
+}
+
 /* Score Display */
 .score-grid {
     display: grid;
@@ -470,7 +487,7 @@ input[type="text"]:focus {
     
     .player-name-input {
         flex-wrap: nowrap;
-        gap: 0.5rem;
+        gap: 0.25rem;
     }
     
     .player-name-input input {
@@ -478,9 +495,9 @@ input[type="text"]:focus {
         margin-bottom: 0;
     }
     
-    .player-name-input .btn-small {
-        width: auto;
-        flex-shrink: 0;
+    .btn-remove {
+        font-size: 1.25rem;
+        padding: 0.25rem;
     }
     
     .modal-content {

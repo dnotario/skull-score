@@ -115,7 +115,7 @@ class SkullKingGame {
         container.innerHTML = this.tempPlayers.map((name, index) => `
             <div class="player-name-input">
                 <input type="text" id="player-${index}" placeholder="Enter pirate name..." value="${name}" onchange="game.updateTempPlayer(${index}, this.value)">
-                <button class="btn btn-danger btn-small" onclick="game.removePlayer(${index})">Remove</button>
+                <button class="btn-remove" onclick="game.removePlayer(${index})" title="Remove player">✕</button>
             </div>
         `).join('');
     }
