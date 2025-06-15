@@ -323,7 +323,7 @@ class SkullKingGame {
         }
         
         if (errors.length > 0) {
-            alert(errors.join('\n'));
+            this.showValidationModal(errors);
             return;
         }
 
@@ -419,10 +419,19 @@ class SkullKingGame {
         const modal = document.getElementById('modal');
         const modalOptions = document.getElementById('modal-options');
         const modalButtons = document.getElementById('modal-buttons');
+        const confirmBtn = document.getElementById('modal-confirm');
+        const cancelBtn = document.getElementById('modal-cancel');
         
         modal?.classList.add('hidden');
         modalOptions?.classList.add('hidden');
         modalButtons?.classList.remove('hidden');
+        
+        // Restore button states
+        if (confirmBtn && cancelBtn) {
+            confirmBtn.classList.remove('hidden');
+            cancelBtn.textContent = 'Nay';
+        }
+        
         this.modalConfirmCallback = null;
     }
 
@@ -544,6 +553,34 @@ class SkullKingGame {
 
         // Speak!
         window.speechSynthesis.speak(utterance);
+    }
+
+    private showValidationModal(errors: string[]): void {
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalOptions = document.getElementById('modal-options');
+        const modalButtons = document.getElementById('modal-buttons');
+        const checkboxContainer = document.getElementById('modal-checkbox-container');
+
+        if (modal && modalTitle && modalMessage && modalOptions && modalButtons && checkboxContainer) {
+            modalTitle.textContent = '⚠️ Round Validation Failed';
+            modalMessage.textContent = errors.join('\n\n');
+            
+            checkboxContainer.classList.add('hidden');
+            modalOptions.classList.add('hidden');
+            modalButtons.classList.remove('hidden');
+            
+            // Hide the confirm button, only show cancel
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+            if (confirmBtn && cancelBtn) {
+                confirmBtn.classList.add('hidden');
+                cancelBtn.textContent = 'Fix Issues';
+            }
+            
+            modal.classList.remove('hidden');
+        }
     }
 }
 
