@@ -686,6 +686,16 @@ input[type="text"]:focus {
     color: #d4af37;
 }
 
+.feedback-link {
+    color: #d4af37;
+    text-decoration: underline;
+    transition: color 0.3s ease;
+}
+
+.feedback-link:hover {
+    color: #f4e871;
+}
+
 /* Mobile adjustments for footer */
 @media (max-width: 600px) {
     .disclaimer-footer {
