@@ -354,6 +354,7 @@ class SkullKingGame {
         this.state.rounds.push(roundData);
         this.state.currentRound++;
         this.saveState();
+        this.updateCommentary(roundData);
         this.updateUI();
     }
 
@@ -581,6 +582,120 @@ class SkullKingGame {
             
             modal.classList.remove('hidden');
         }
+    }
+
+    private updateCommentary(roundData: RoundData): void {
+        const commentary = this.generateCommentary(roundData);
+        const commentarySection = document.getElementById('pirate-commentary');
+        const commentaryText = document.getElementById('commentary-text');
+        
+        if (commentarySection && commentaryText && commentary) {
+            commentaryText.textContent = commentary;
+            commentarySection.classList.remove('hidden');
+        }
+    }
+
+    private generateCommentary(roundData: RoundData): string {
+        const playerData = roundData.playerData;
+        const roundNumber = roundData.roundNumber;
+        
+        // Analyze round performance
+        const perfectBids = playerData.filter(p => p.bid === p.actual).length;
+        const totalPlayers = playerData.length;
+        const badMisses = playerData.filter(p => Math.abs(p.bid - p.actual) >= 3).length;
+        const bigScorers = playerData.filter(p => p.roundScore >= 40).length;
+        const disasters = playerData.filter(p => p.roundScore <= -30).length;
+        const zeroBidders = playerData.filter(p => p.bid === 0).length;
+        const successfulZeros = playerData.filter(p => p.bid === 0 && p.actual === 0).length;
+        
+        // Current game state analysis
+        const currentScores = this.state.players.map(p => p.score).sort((a, b) => b - a);
+        const leader = this.state.players.find(p => p.score === currentScores[0]);
+        const lastPlace = this.state.players.find(p => p.score === currentScores[currentScores.length - 1]);
+        const spread = currentScores[0] - currentScores[currentScores.length - 1];
+        
+        // Generate commentary based on round events
+        const commentaries: string[] = [];
+        
+        // Perfect round commentary
+        if (perfectBids === totalPlayers) {
+            commentaries.push("Blimey! Every scallywag nailed their bid! The sea gods smile upon ye all!");
+        } else if (perfectBids >= totalPlayers * 0.75) {
+            commentaries.push("Arrr! Most of ye landlubbers actually know how to count tricks! Impressive sailing!");
+        } else if (perfectBids === 0) {
+            commentaries.push("Shiver me timbers! Not a single soul hit their mark! Ye all sail like drunken sailors!");
+        }
+        
+        // Disaster commentary
+        if (disasters >= 2) {
+            commentaries.push("Har har! Some scurvy dogs be walkin' the plank with those scores!");
+        } else if (disasters === 1) {
+            const disaster = playerData.find(p => p.roundScore <= -30);
+            commentaries.push(`Avast! ${disaster?.playerName} be sinkin' faster than a ship with no hull!`);
+        }
+        
+        // Big scorer commentary
+        if (bigScorers >= 2) {
+            commentaries.push("Pieces of eight! Multiple pirates be strikin' gold this round!");
+        } else if (bigScorers === 1) {
+            const bigScorer = playerData.find(p => p.roundScore >= 40);
+            commentaries.push(`${bigScorer?.playerName} be plunderin' like a true pirate king! Magnificent haul!`);
+        }
+        
+        // Zero bid commentary
+        if (zeroBidders > 0) {
+            if (successfulZeros === zeroBidders) {
+                commentaries.push(`${zeroBidders === 1 ? 'A crafty' : 'Some crafty'} pirate${zeroBidders > 1 ? 's' : ''} played it safe with zero bids and lived to tell the tale!`);
+            } else {
+                commentaries.push("Some cowardly sea dogs tried to avoid all tricks but failed! No treasure for the timid!");
+            }
+        }
+        
+        // Bad miss commentary
+        if (badMisses >= totalPlayers / 2) {
+            commentaries.push("Most of ye be as accurate as a blind man throwin' daggers! Learn to count, ye scurvy dogs!");
+        }
+        
+        // Game state commentary
+        if (roundNumber >= 5) {
+            if (spread > 100) {
+                commentaries.push(`${leader?.name} be dominatin' these waters while ${lastPlace?.name} be drownin' in their own wake!`);
+            } else if (spread < 20) {
+                commentaries.push("This be a tight race! Any one of ye bilge rats could claim the crown!");
+            }
+        }
+        
+        // Late game commentary
+        if (roundNumber >= 8) {
+            if (leader && leader.score > 200) {
+                commentaries.push(`${leader.name} be sailin' toward legend! Can anyone stop this pirate?`);
+            }
+            commentaries.push("The final rounds approach! Time to separate the captains from the cabin boys!");
+        }
+        
+        // Round-specific commentary
+        if (roundNumber === 1) {
+            commentaries.push("First blood has been drawn! Let the plunderin' begin!");
+        } else if (roundNumber === 10) {
+            commentaries.push("The final round! Time to see who truly deserves the title of Skull King!");
+        }
+        
+        // Random snarky commentary if nothing specific happened
+        const randomCommentary = [
+            "Another round of mediocre piracy! I've seen better sailing from landlubbers!",
+            "Ye call that bidding? My grandmother could predict tricks better with her eyes closed!",
+            "Some of ye be playin' like ye've never seen a deck of cards before!",
+            "The sea be full of surprises, unlike yer predictable play!",
+            "Keep this up and ye'll all be swabbin' the deck instead of scorin' points!",
+            "I've seen more excitement watchin' barnacles grow on ship hulls!",
+            "Yer treasure-huntin' skills need work, mateys!"
+        ];
+        
+        if (commentaries.length === 0) {
+            commentaries.push(randomCommentary[Math.floor(Math.random() * randomCommentary.length)]);
+        }
+        
+        return commentaries[Math.floor(Math.random() * commentaries.length)];
     }
 }
 
