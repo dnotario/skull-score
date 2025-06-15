@@ -13,5 +13,4 @@
 - You will have a button to allow deleting the last round. You will ask the user for confirmation
 - The web page should scale well for desktop but design it to be really usable on a mobile phone
 - Use an aesthetic of the republic of pirates, the PC game
-
-
+- Always ask me before committing or pushing

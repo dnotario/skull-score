@@ -414,7 +414,7 @@ class SkullKingGame {
         this.showLanding();
     }
     readScores() {
-        var _a;
+        var _a, _b;
         // Check if browser supports speech synthesis
         if (!('speechSynthesis' in window)) {
             alert('Arr! Yer browser doesn\'t support speech. Try a newer vessel!');
@@ -424,8 +424,16 @@ class SkullKingGame {
         window.speechSynthesis.cancel();
         // Sort players by score (highest first)
         const sortedPlayers = [...this.state.players].sort((a, b) => b.score - a.score);
-        // Build the announcement
-        let announcement = `Ahoy mateys! Here be the current standings after round ${this.state.currentRound - 1}. `;
+        // Build the announcement starting with previous round's commentary
+        let announcement = '';
+        // Add previous round commentary if available
+        if (this.state.rounds.length > 0) {
+            const commentaryText = (_a = document.getElementById('commentary-text')) === null || _a === void 0 ? void 0 : _a.textContent;
+            if (commentaryText) {
+                announcement += `${commentaryText} ... `;
+            }
+        }
+        announcement += `Ahoy mateys! Here be the current standings after round ${this.state.currentRound - 1}. `;
         sortedPlayers.forEach((player, index) => {
             if (index === 0) {
                 announcement += `Leading the crew be ${player.name} with ${player.score} pieces of eight! `;
@@ -444,7 +452,7 @@ class SkullKingGame {
         else if (sortedPlayers[0].score > sortedPlayers[sortedPlayers.length - 1].score + 50) {
             announcement += "Shiver me timbers! Someone be runnin' away with the treasure!";
         }
-        else if (sortedPlayers[0].score === ((_a = sortedPlayers[1]) === null || _a === void 0 ? void 0 : _a.score)) {
+        else if (sortedPlayers[0].score === ((_b = sortedPlayers[1]) === null || _b === void 0 ? void 0 : _b.score)) {
             announcement += "Blimey! We have a tie for the lead!";
         }
         // Create and configure the utterance

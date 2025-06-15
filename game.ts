@@ -517,8 +517,18 @@ class SkullKingGame {
         // Sort players by score (highest first)
         const sortedPlayers = [...this.state.players].sort((a, b) => b.score - a.score);
 
-        // Build the announcement
-        let announcement = `Ahoy mateys! Here be the current standings after round ${this.state.currentRound - 1}. `;
+        // Build the announcement starting with previous round's commentary
+        let announcement = '';
+        
+        // Add previous round commentary if available
+        if (this.state.rounds.length > 0) {
+            const commentaryText = document.getElementById('commentary-text')?.textContent;
+            if (commentaryText) {
+                announcement += `${commentaryText} ... `;
+            }
+        }
+        
+        announcement += `Ahoy mateys! Here be the current standings after round ${this.state.currentRound - 1}. `;
         
         sortedPlayers.forEach((player, index) => {
             if (index === 0) {
