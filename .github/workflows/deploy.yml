@@ -2,7 +2,7 @@ name: Deploy to Production and Staging
 
 on:
   push:
-    branches: [ main, staging ]
+    branches: [ deploy, staging ]
 
 jobs:
   test:
@@ -33,7 +33,7 @@ jobs:
     - name: Set deployment target
       id: target
       run: |
-        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+        if [ "${{ github.ref }}" = "refs/heads/deploy" ]; then
           echo "repo=skull-score-deploy" >> $GITHUB_OUTPUT
           echo "env=production" >> $GITHUB_OUTPUT
         else

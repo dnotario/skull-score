@@ -67,16 +67,17 @@ This project uses a professional deployment pipeline with separate staging and p
 - **`skull-score-staging`**: Staging deployment repository (clean files only)
 
 ### Branch Strategy
-- **`main`** → Production deployment → `www.skullkingscorekeeper.com`
+- **`main`** → Active development (no auto-deploy)
 - **`staging`** → Staging deployment → `dnotario.github.io/skull-score-staging`
+- **`deploy`** → Production deployment → `www.skullkingscorekeeper.com`
 
 ### Development Workflow
 
 #### 1. Feature Development
 ```bash
-# Create feature branch from staging
-git checkout staging
-git pull origin staging
+# Create feature branch from main
+git checkout main
+git pull origin main
 git checkout -b feature/your-feature-name
 
 # Develop your feature
@@ -90,23 +91,33 @@ git commit -m "Add your feature description"
 git push origin feature/your-feature-name
 ```
 
-#### 2. Deploy to Staging
+#### 2. Merge to Main
 ```bash
-# Merge feature to staging branch
-git checkout staging
+# Merge feature to main branch
+git checkout main
 git merge feature/your-feature-name
+git push origin main
+
+# No deployment happens - main is for development only
+```
+
+#### 3. Deploy to Staging
+```bash
+# Merge main to staging for testing
+git checkout staging
+git merge main
 git push origin staging
 
 # 🚀 This automatically triggers deployment to staging!
 # View at: https://dnotario.github.io/skull-score-staging/
 ```
 
-#### 3. Deploy to Production
+#### 4. Deploy to Production
 ```bash
-# After testing staging, merge to main
-git checkout main
+# After testing staging, merge to deploy branch
+git checkout deploy
 git merge staging
-git push origin main
+git push origin deploy
 
 # 🚀 This automatically triggers deployment to production!
 # View at: https://www.skullkingscorekeeper.com
@@ -118,6 +129,7 @@ git push origin main
 - **Clean Deployment**: Only `index.html`, `game.js`, `styles.css` are deployed
 - **No Dev Files**: Tests, configs, and source files stay in development repo
 - **Custom Domain**: Production automatically includes CNAME for custom domain
+- **Safe Development**: Changes to `main` don't trigger production deployments
 
 ### Monitoring Deployments
 
