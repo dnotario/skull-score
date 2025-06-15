@@ -13,9 +13,9 @@ A pirate-themed web application for tracking scores in the Skull King card game,
 
 ### Pirate Experience
 - **Authentic Theme**: Complete pirate aesthetic with parchment backgrounds and nautical styling
-- **Snarky Commentary**: Dynamic pirate commentary that reacts to gameplay with 100+ unique variants
-- **Text-to-Speech**: Optional score announcements in a pirate voice
-- **Animated Elements**: Bobbing parrot, glowing borders, and smooth transitions
+- **Intelligent Commentary System**: Dynamic pirate commentary with 100+ unique variants that analyzes gameplay
+- **Audio Score Readouts**: Built-in text-to-speech announces current scores with a "Read Scores" button
+- **Animated Elements**: Bobbing parrot icon, glowing golden borders, and smooth transitions
 
 ### Game Management
 - **Player Setup**: Add 2-8 players with custom names
@@ -68,14 +68,33 @@ Skull King is a trick-taking game where players bid on how many tricks they'll w
    - Zero bid: 10 × round number (if successful)
 4. **Bonus Points**: Earned for special cards and achievements
 
-## 🏴‍☠️ Commentary System
+## 🏴‍☠️ Commentary & Audio Features
 
-The game features an intelligent commentary system that provides contextual pirate banter:
+### Intelligent Commentary System
+The game features a sophisticated commentary system that provides contextual pirate banter:
 
-- **Performance-Based**: Reacts to perfect rounds, disasters, and big scores
-- **Game State Aware**: Comments on tight races, domination, and late-game drama
-- **Never Repetitive**: 5+ variants for each scenario, 100+ total comments
-- **Authentic Pirate Voice**: Written in authentic pirate vernacular
+- **Performance-Based Analysis**: Reacts to perfect rounds, disasters, and big scores
+  - *"Blimey! Every scallywag nailed their bid! The sea gods smile upon ye all!"* (perfect round)
+  - *"Avast! [Player] be sinkin' faster than a ship with no hull!"* (disaster)
+  - *"Pieces of eight! Multiple pirates be strikin' gold this round!"* (big scores)
+
+- **Game State Awareness**: Comments on game progression and player standings
+  - *"This be a tight race! Any one of ye bilge rats could claim the crown!"* (close game)
+  - *"[Player] be dominatin' these waters while [Player] be drownin' in their own wake!"* (runaway leader)
+  - *"The final rounds approach! Time to separate the captains from the cabin boys!"* (late game)
+
+- **Strategic Commentary**: Analyzes bidding patterns and zero-bid strategies
+  - *"A crafty pirate played it safe with zero bids and lived to tell the tale!"* (successful zero)
+  - *"Some cowardly sea dogs tried to avoid all tricks but failed!"* (failed zero attempt)
+
+- **Never Repetitive**: 5+ unique variants for each scenario type, totaling 100+ different comments
+- **Authentic Pirate Voice**: Written in proper pirate vernacular with nautical terms
+
+### Audio Score Readouts
+- **Text-to-Speech Integration**: Built-in browser TTS announces scores
+- **One-Click Accessibility**: "🔊 Read Scores" button for instant audio feedback
+- **Perfect for Groups**: Great for keeping all players informed without crowding around the screen
+- **Voice Selection**: Automatically selects English voice when available
 
 ## 🛠️ Technical Details
 
