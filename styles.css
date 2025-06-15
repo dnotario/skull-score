@@ -154,6 +154,9 @@ input[type="text"]:focus {
     cursor: pointer;
     transition: all 0.3s ease;
     margin: 0.5rem;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
 }
 
 .btn-primary {
