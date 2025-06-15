@@ -513,65 +513,177 @@ class SkullKingGame {
         const commentaries = [];
         // Perfect round commentary
         if (perfectBids === totalPlayers) {
-            commentaries.push("Blimey! Every scallywag nailed their bid! The sea gods smile upon ye all!");
+            const perfectRoundVariants = [
+                "Blimey! Every scallywag nailed their bid! The sea gods smile upon ye all!",
+                "Incredible! All hands hit their mark perfectly! Even Neptune himself applauds!",
+                "Shiver me timbers! Perfect accuracy from the whole crew! Ye be true sea dogs!",
+                "By Blackbeard's beard! Every pirate called it exactly right! Legendary sailing!",
+                "Astounding! Not a single miscalculation in sight! Ye all deserve treasure chests!"
+            ];
+            commentaries.push(perfectRoundVariants[Math.floor(Math.random() * perfectRoundVariants.length)]);
         }
         else if (perfectBids >= totalPlayers * 0.75) {
-            commentaries.push("Arrr! Most of ye landlubbers actually know how to count tricks! Impressive sailing!");
+            const mostPerfectVariants = [
+                "Arrr! Most of ye landlubbers actually know how to count tricks! Impressive sailing!",
+                "Well, well! The majority of ye scurvy dogs got it right! There's hope for ye yet!",
+                "Huzzah! Most pirates sailed true to their word! The few stragglers need more rum!",
+                "Impressive! The bulk of ye crew knows their business! A few still need navigatin' lessons!",
+                "Magnificent! Most of ye sea wolves predicted perfectly! The rest... well, practice makes perfect!"
+            ];
+            commentaries.push(mostPerfectVariants[Math.floor(Math.random() * mostPerfectVariants.length)]);
         }
         else if (perfectBids === 0) {
-            commentaries.push("Shiver me timbers! Not a single soul hit their mark! Ye all sail like drunken sailors!");
+            const noPerfectVariants = [
+                "Shiver me timbers! Not a single soul hit their mark! Ye all sail like drunken sailors!",
+                "Pathetic! Every last one of ye missed yer target! I've seen better aim from blind sea turtles!",
+                "Disgraceful! Not one pirate got it right! Ye couldn't hit water if ye fell out of a boat!",
+                "Embarrassing! Complete failure from bow to stern! Time to keelhaul the lot of ye!",
+                "Abysmal! Every prediction was wrong! Ye make landlubbers look like seasoned captains!"
+            ];
+            commentaries.push(noPerfectVariants[Math.floor(Math.random() * noPerfectVariants.length)]);
         }
         // Disaster commentary
         if (disasters >= 2) {
-            commentaries.push("Har har! Some scurvy dogs be walkin' the plank with those scores!");
+            const multiDisasterVariants = [
+                "Har har! Some scurvy dogs be walkin' the plank with those scores!",
+                "Catastrophe on the high seas! Multiple pirates be sinkin' to Davy Jones' locker!",
+                "What a shipwreck! Several sea dogs took a mighty tumble this round!",
+                "Disaster strikes! Multiple crew members be needin' rescue boats with those scores!",
+                "By the kraken's tentacles! Several pirates just hit the rocks and sank!"
+            ];
+            commentaries.push(multiDisasterVariants[Math.floor(Math.random() * multiDisasterVariants.length)]);
         }
         else if (disasters === 1) {
             const disaster = playerData.find(p => p.roundScore <= -30);
-            commentaries.push(`Avast! ${disaster === null || disaster === void 0 ? void 0 : disaster.playerName} be sinkin' faster than a ship with no hull!`);
+            const singleDisasterVariants = [
+                `Avast! ${disaster === null || disaster === void 0 ? void 0 : disaster.playerName} be sinkin' faster than a ship with no hull!`,
+                `Yikes! ${disaster === null || disaster === void 0 ? void 0 : disaster.playerName} just sailed straight into a whirlpool of failure!`,
+                `Mercy! ${disaster === null || disaster === void 0 ? void 0 : disaster.playerName} took a cannonball to the treasure chest this round!`,
+                `Blimey! ${disaster === null || disaster === void 0 ? void 0 : disaster.playerName} be drownin' in their own poor choices!`,
+                `Ouch! ${disaster === null || disaster === void 0 ? void 0 : disaster.playerName} just discovered what it feels like to hit an iceberg!`
+            ];
+            commentaries.push(singleDisasterVariants[Math.floor(Math.random() * singleDisasterVariants.length)]);
         }
         // Big scorer commentary
         if (bigScorers >= 2) {
-            commentaries.push("Pieces of eight! Multiple pirates be strikin' gold this round!");
+            const multiBigScorerVariants = [
+                "Pieces of eight! Multiple pirates be strikin' gold this round!",
+                "Treasure galore! Several sea dogs found the mother lode today!",
+                "Riches beyond measure! Multiple buccaneers struck it rich this round!",
+                "Golden doubloons for all! Several pirates be swimmin' in treasure!",
+                "What a haul! Multiple captains filled their coffers to the brim!"
+            ];
+            commentaries.push(multiBigScorerVariants[Math.floor(Math.random() * multiBigScorerVariants.length)]);
         }
         else if (bigScorers === 1) {
             const bigScorer = playerData.find(p => p.roundScore >= 40);
-            commentaries.push(`${bigScorer === null || bigScorer === void 0 ? void 0 : bigScorer.playerName} be plunderin' like a true pirate king! Magnificent haul!`);
+            const singleBigScorerVariants = [
+                `${bigScorer === null || bigScorer === void 0 ? void 0 : bigScorer.playerName} be plunderin' like a true pirate king! Magnificent haul!`,
+                `Huzzah! ${bigScorer === null || bigScorer === void 0 ? void 0 : bigScorer.playerName} just struck the richest vein of treasure on the seven seas!`,
+                `Incredible! ${bigScorer === null || bigScorer === void 0 ? void 0 : bigScorer.playerName} sailed away with enough gold to buy their own fleet!`,
+                `Outstanding! ${bigScorer === null || bigScorer === void 0 ? void 0 : bigScorer.playerName} just pulled off the heist of the century!`,
+                `Spectacular! ${bigScorer === null || bigScorer === void 0 ? void 0 : bigScorer.playerName} be rakin' in doubloons like a legendary buccaneer!`
+            ];
+            commentaries.push(singleBigScorerVariants[Math.floor(Math.random() * singleBigScorerVariants.length)]);
         }
         // Zero bid commentary
         if (zeroBidders > 0) {
             if (successfulZeros === zeroBidders) {
-                commentaries.push(`${zeroBidders === 1 ? 'A crafty' : 'Some crafty'} pirate${zeroBidders > 1 ? 's' : ''} played it safe with zero bids and lived to tell the tale!`);
+                const successfulZeroVariants = [
+                    `${zeroBidders === 1 ? 'A crafty' : 'Some crafty'} pirate${zeroBidders > 1 ? 's' : ''} played it safe with zero bids and lived to tell the tale!`,
+                    `${zeroBidders === 1 ? 'A clever' : 'Some clever'} sea dog${zeroBidders > 1 ? 's' : ''} avoided all tricks and kept their treasure safe!`,
+                    `${zeroBidders === 1 ? 'A wise' : 'Some wise'} sailor${zeroBidders > 1 ? 's' : ''} chose the path of caution and sailed home rich!`,
+                    `${zeroBidders === 1 ? 'A shrewd' : 'Some shrewd'} buccaneer${zeroBidders > 1 ? 's' : ''} stayed out of trouble and pocketed the gold!`,
+                    `${zeroBidders === 1 ? 'A cunning' : 'Some cunning'} pirate${zeroBidders > 1 ? 's' : ''} played it smart and avoided the storm entirely!`
+                ];
+                commentaries.push(successfulZeroVariants[Math.floor(Math.random() * successfulZeroVariants.length)]);
             }
             else {
-                commentaries.push("Some cowardly sea dogs tried to avoid all tricks but failed! No treasure for the timid!");
+                const failedZeroVariants = [
+                    "Some cowardly sea dogs tried to avoid all tricks but failed! No treasure for the timid!",
+                    "Ha! Some scallywags tried to hide from trouble but got caught anyway! Pathetic!",
+                    "Amusing! Some landlubbers thought they could avoid all action but failed miserably!",
+                    "Pitiful! Some yellow-bellied pirates tried to play it safe but couldn't even do that right!",
+                    "Laughable! Some spineless crew members attempted to dodge danger but got swept up anyway!"
+                ];
+                commentaries.push(failedZeroVariants[Math.floor(Math.random() * failedZeroVariants.length)]);
             }
         }
         // Bad miss commentary
         if (badMisses >= totalPlayers / 2) {
-            commentaries.push("Most of ye be as accurate as a blind man throwin' daggers! Learn to count, ye scurvy dogs!");
+            const badMissVariants = [
+                "Most of ye be as accurate as a blind man throwin' daggers! Learn to count, ye scurvy dogs!",
+                "Pathetic aim from the majority! Ye couldn't hit the broad side of a treasure galleon!",
+                "Terrible navigation from most of the crew! Did ye all forget how to count to ten?",
+                "Abysmal predictions! Most of ye missed by leagues! Time for some basic seamanship lessons!",
+                "Dreadful accuracy! The majority sailed way off course! Even a compass wouldn't help ye now!"
+            ];
+            commentaries.push(badMissVariants[Math.floor(Math.random() * badMissVariants.length)]);
         }
         // Game state commentary
         if (roundNumber >= 5) {
             if (spread > 100) {
-                commentaries.push(`${leader === null || leader === void 0 ? void 0 : leader.name} be dominatin' these waters while ${lastPlace === null || lastPlace === void 0 ? void 0 : lastPlace.name} be drownin' in their own wake!`);
+                const dominationVariants = [
+                    `${leader === null || leader === void 0 ? void 0 : leader.name} be dominatin' these waters while ${lastPlace === null || lastPlace === void 0 ? void 0 : lastPlace.name} be drownin' in their own wake!`,
+                    `${leader === null || leader === void 0 ? void 0 : leader.name} be runnin' away with the treasure while ${lastPlace === null || lastPlace === void 0 ? void 0 : lastPlace.name} be sinkin' like a stone!`,
+                    `${leader === null || leader === void 0 ? void 0 : leader.name} be sailin' circles around ${lastPlace === null || lastPlace === void 0 ? void 0 : lastPlace.name}! What a gap in skill!`,
+                    `${leader === null || leader === void 0 ? void 0 : leader.name} be crushin' the competition while ${lastPlace === null || lastPlace === void 0 ? void 0 : lastPlace.name} flounders like a fish!`,
+                    `${leader === null || leader === void 0 ? void 0 : leader.name} be the captain of captains while ${lastPlace === null || lastPlace === void 0 ? void 0 : lastPlace.name} needs a rescue boat!`
+                ];
+                commentaries.push(dominationVariants[Math.floor(Math.random() * dominationVariants.length)]);
             }
             else if (spread < 20) {
-                commentaries.push("This be a tight race! Any one of ye bilge rats could claim the crown!");
+                const tightRaceVariants = [
+                    "This be a tight race! Any one of ye bilge rats could claim the crown!",
+                    "Neck and neck like racing dolphins! Anyone could still seize the treasure!",
+                    "Close as thieves! The winner be anyone's guess at this point!",
+                    "Tighter than a ship's rigging! Every pirate still has a fighting chance!",
+                    "What a battle! The scores be closer than barnacles on a hull!"
+                ];
+                commentaries.push(tightRaceVariants[Math.floor(Math.random() * tightRaceVariants.length)]);
             }
         }
         // Late game commentary
         if (roundNumber >= 8) {
             if (leader && leader.score > 200) {
-                commentaries.push(`${leader.name} be sailin' toward legend! Can anyone stop this pirate?`);
+                const legendVariants = [
+                    `${leader.name} be sailin' toward legend! Can anyone stop this pirate?`,
+                    `${leader.name} be writin' their name in pirate history! What a commanding lead!`,
+                    `${leader.name} be on course to legendary status! The crown awaits!`,
+                    `${leader.name} be dominatin' like a true sea emperor! Unstoppable!`,
+                    `${leader.name} be carvin' out a legacy! The stuff of pirate legends!`
+                ];
+                commentaries.push(legendVariants[Math.floor(Math.random() * legendVariants.length)]);
             }
-            commentaries.push("The final rounds approach! Time to separate the captains from the cabin boys!");
+            const finalRoundsVariants = [
+                "The final rounds approach! Time to separate the captains from the cabin boys!",
+                "The endgame draws near! Only true pirates will survive these waters!",
+                "The climax approaches! Time to see who has real sea legs!",
+                "The final stretch! Now we'll discover the worthy from the worthless!",
+                "The home stretch beckons! Time to prove yer pirate mettle!"
+            ];
+            commentaries.push(finalRoundsVariants[Math.floor(Math.random() * finalRoundsVariants.length)]);
         }
         // Round-specific commentary
         if (roundNumber === 1) {
-            commentaries.push("First blood has been drawn! Let the plunderin' begin!");
+            const firstRoundVariants = [
+                "First blood has been drawn! Let the plunderin' begin!",
+                "The adventure begins! Time to see what ye landlubbers are made of!",
+                "First round in the books! The battle for pirate supremacy starts now!",
+                "The opening salvo! Let's see who's got the courage for this journey!",
+                "Round one complete! The quest for treasure has officially begun!"
+            ];
+            commentaries.push(firstRoundVariants[Math.floor(Math.random() * firstRoundVariants.length)]);
         }
         else if (roundNumber === 10) {
-            commentaries.push("The final round! Time to see who truly deserves the title of Skull King!");
+            const finalRoundVariants = [
+                "The final round! Time to see who truly deserves the title of Skull King!",
+                "The ultimate test! Only one can claim the crown of the seven seas!",
+                "The last stand! Time to discover the true Skull King among ye!",
+                "The final battle! The throne of piracy awaits its rightful ruler!",
+                "The concluding chapter! Who will emerge as the ultimate sea lord?"
+            ];
+            commentaries.push(finalRoundVariants[Math.floor(Math.random() * finalRoundVariants.length)]);
         }
         // Random snarky commentary if nothing specific happened
         const randomCommentary = [
@@ -581,7 +693,27 @@ class SkullKingGame {
             "The sea be full of surprises, unlike yer predictable play!",
             "Keep this up and ye'll all be swabbin' the deck instead of scorin' points!",
             "I've seen more excitement watchin' barnacles grow on ship hulls!",
-            "Yer treasure-huntin' skills need work, mateys!"
+            "Yer treasure-huntin' skills need work, mateys!",
+            "Ordinary round from ordinary pirates! Where be the spark of adventure?",
+            "Standard sailing from a standard crew! Nothing legendary about this voyage!",
+            "Routine plunderin' from routine buccaneers! Wake me when something interesting happens!",
+            "Average performance across the board! Ye be sailin' in circles like confused seagulls!",
+            "Typical tricks from typical pirates! Even the sea monsters be yawnin'!",
+            "Predictable as the tides! Spice up yer game, ye sleepy sea dogs!",
+            "Mundane as merchant sailing! Where be the daring pirate spirit?",
+            "Safe and boring! Ye play like ye're haulin' cargo instead of huntin' treasure!",
+            "Uninspiring round! Even the ship's cat could bid better than this!",
+            "Lackluster performance! Ye need more fire in yer pirate bellies!",
+            "Dull as dishwater! I've seen more excitement in a monastery!",
+            "Tepid sailing! The wind has more personality than this crew!",
+            "Forgettable round! This tale won't be sung in any tavern!",
+            "Bland as hardtack! Where be the swashbuckling adventure?",
+            "Colorless as fog! Ye need to paint this voyage with bolder strokes!",
+            "Flat as calm seas! Stir up some waves with yer next plays!",
+            "Tame as a parrot! Show some wild pirate cunning!",
+            "Mild as morning mist! Time to unleash the storm within ye!",
+            "Gentle as a summer breeze! Ye need hurricane-force gameplay!",
+            "Quiet as a graveyard! Make some noise with yer next bids!"
         ];
         if (commentaries.length === 0) {
             commentaries.push(randomCommentary[Math.floor(Math.random() * randomCommentary.length)]);
