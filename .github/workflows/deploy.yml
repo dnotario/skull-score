@@ -63,6 +63,11 @@ jobs:
         cp ../game.js .
         cp ../styles.css .
         
+        # Add CNAME file for custom domain (production only)
+        if [ "$ENVIRONMENT" = "production" ]; then
+          echo "www.skullkingscorekeeper.com" > CNAME
+        fi
+        
         # Create README if it doesn't exist
         if [ ! -f README.md ]; then
           echo "# Skull King Score Keeper - $ENVIRONMENT" > README.md
