@@ -3,134 +3,78 @@ name: Deploy to Production and Staging
 on:
   push:
     branches: [ main, staging ]
-  pull_request:
-    branches: [ main, staging ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout source
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Run tests
-      run: npm test
-      
-    - name: Build TypeScript
-      run: npm run build
+    - run: npm install
+    - run: npm test
+    - run: npm run build
 
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
-    
+    if: github.event_name == 'push'
     steps:
-    - name: Checkout source
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Build TypeScript
-      run: npm run build
-      
-    - name: Determine target repository
+    - run: npm install
+    - run: npm run build
+    
+    - name: Set deployment target
       id: target
       run: |
         if [ "${{ github.ref }}" = "refs/heads/main" ]; then
           echo "repo=skull-score-deploy" >> $GITHUB_OUTPUT
-          echo "environment=production" >> $GITHUB_OUTPUT
-          echo "domain=skull-score-deploy.github.io" >> $GITHUB_OUTPUT
+          echo "env=production" >> $GITHUB_OUTPUT
         else
           echo "repo=skull-score-staging" >> $GITHUB_OUTPUT
-          echo "environment=staging" >> $GITHUB_OUTPUT
-          echo "domain=skull-score-staging.github.io" >> $GITHUB_OUTPUT
+          echo "env=staging" >> $GITHUB_OUTPUT
         fi
-        
-    - name: Deploy to ${{ steps.target.outputs.environment }}
+    
+    - name: Deploy files
       env:
         DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
         TARGET_REPO: ${{ steps.target.outputs.repo }}
+        ENVIRONMENT: ${{ steps.target.outputs.env }}
       run: |
-        # Configure git
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
         
-        # Clone target repo
         git clone https://$DEPLOY_TOKEN@github.com/dnotario/$TARGET_REPO.git deploy-repo
-        
-        # Clear existing files (except .git and README)
         cd deploy-repo
-        find . -not -path './.git*' -not -name 'README.md' -type f -delete
         
-        # Copy only production files
+        # Clear old files
+        find . -maxdepth 1 -type f ! -name '.git*' ! -name 'README.md' -delete
+        
+        # Copy new files
         cp ../index.html .
         cp ../game.js .
         cp ../styles.css .
         
-        # Create a simple README for the deployment repo
+        # Create README if it doesn't exist
         if [ ! -f README.md ]; then
-          echo "# Skull King Score Keeper - ${{ steps.target.outputs.environment }}" > README.md
+          echo "# Skull King Score Keeper - $ENVIRONMENT" > README.md
           echo "" >> README.md
-          echo "This is the ${{ steps.target.outputs.environment }} deployment repository for the Skull King Score Keeper." >> README.md
-          echo "" >> README.md
-          echo "🎮 **Live Site**: https://${{ steps.target.outputs.domain }}" >> README.md
-          echo "" >> README.md
-          echo "📝 **Source Code**: https://github.com/dnotario/skull-score" >> README.md
-          echo "" >> README.md
-          echo "## About" >> README.md
-          echo "" >> README.md
-          echo "This repository contains only the compiled/built files needed to run the application." >> README.md
-          echo "All development happens in the main repository." >> README.md
-          echo "" >> README.md
-          echo "Last deployed: $(date)" >> README.md
-          echo "Source commit: ${{ github.sha }}" >> README.md
+          echo "Deployment repository for $ENVIRONMENT environment." >> README.md
+          echo "Source: https://github.com/dnotario/skull-score" >> README.md
         fi
         
-        # Check if there are any changes
+        # Commit and push if there are changes
         if [ -n "$(git status --porcelain)" ]; then
           git add .
-          git commit -m "Deploy from ${{ github.sha }}
-
-Deployed from: ${{ github.repository }}@${{ github.ref_name }}
-Commit: ${{ github.sha }}
-Date: $(date -u)
-Environment: ${{ steps.target.outputs.environment }}"
+          git commit -m "Deploy $ENVIRONMENT from ${{ github.sha }}"
           git push
-          echo "✅ Deployed to ${{ steps.target.outputs.environment }}"
+          echo "Deployed to $ENVIRONMENT successfully"
         else
-          echo "ℹ️ No changes to deploy"
+          echo "No changes to deploy"
         fi
-
-    - name: Create deployment status
-      if: always()
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const environment = '${{ steps.target.outputs.environment }}';
-          const domain = '${{ steps.target.outputs.domain }}';
-          
-          github.rest.repos.createDeploymentStatus({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            deployment_id: context.payload.deployment?.id || 0,
-            state: 'success',
-            environment_url: `https://${domain}`,
-            description: `Deployed to ${environment}`
-          });
