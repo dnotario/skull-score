@@ -57,6 +57,79 @@ python -m http.server 8000
 npx serve .
 ```
 
+## 🚀 Deployment Workflow
+
+This project uses a professional deployment pipeline with separate staging and production environments.
+
+### Repository Structure
+- **`skull-score`** (main): Development repository with source code, tests, and workflows
+- **`skull-score-deploy`**: Production deployment repository (clean files only)
+- **`skull-score-staging`**: Staging deployment repository (clean files only)
+
+### Branch Strategy
+- **`main`** → Production deployment → `www.skullkingscorekeeper.com`
+- **`staging`** → Staging deployment → `dnotario.github.io/skull-score-staging`
+
+### Development Workflow
+
+#### 1. Feature Development
+```bash
+# Create feature branch from staging
+git checkout staging
+git pull origin staging
+git checkout -b feature/your-feature-name
+
+# Develop your feature
+# ... make changes ...
+npm test  # Ensure tests pass
+npm run build  # Ensure build works
+
+# Commit changes
+git add .
+git commit -m "Add your feature description"
+git push origin feature/your-feature-name
+```
+
+#### 2. Deploy to Staging
+```bash
+# Merge feature to staging branch
+git checkout staging
+git merge feature/your-feature-name
+git push origin staging
+
+# 🚀 This automatically triggers deployment to staging!
+# View at: https://dnotario.github.io/skull-score-staging/
+```
+
+#### 3. Deploy to Production
+```bash
+# After testing staging, merge to main
+git checkout main
+git merge staging
+git push origin main
+
+# 🚀 This automatically triggers deployment to production!
+# View at: https://www.skullkingscorekeeper.com
+```
+
+### Automated Deployment
+
+- **Tests Required**: All tests must pass before deployment
+- **Clean Deployment**: Only `index.html`, `game.js`, `styles.css` are deployed
+- **No Dev Files**: Tests, configs, and source files stay in development repo
+- **Custom Domain**: Production automatically includes CNAME for custom domain
+
+### Monitoring Deployments
+
+```bash
+# Check deployment status
+gh run list --repo dnotario/skull-score
+
+# View deployment repositories
+gh repo view dnotario/skull-score-deploy
+gh repo view dnotario/skull-score-staging
+```
+
 ## 🎯 How to Play Skull King
 
 Skull King is a trick-taking game where players bid on how many tricks they'll win each round.
