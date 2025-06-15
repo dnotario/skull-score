@@ -307,9 +307,23 @@ class SkullKingGame {
             });
         }
 
-        // Validation - total wins must match round number
+        // Validation
+        const errors: string[] = [];
+        
+        // Check total wins
         if (totalWins !== this.state.currentRound) {
-            alert(`Total wins (${totalWins}) must equal the round number (${this.state.currentRound})!`);
+            errors.push(`Total wins (${totalWins}) must equal the round number (${this.state.currentRound})!`);
+        }
+        
+        // Check bonus only allowed if wins > 0
+        for (const data of tempPlayerData) {
+            if (data.actual === 0 && data.bonus > 0) {
+                errors.push(`${data.playerName} cannot have bonus points with 0 wins!`);
+            }
+        }
+        
+        if (errors.length > 0) {
+            alert(errors.join('\n'));
             return;
         }
 
