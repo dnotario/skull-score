@@ -277,6 +277,19 @@ input[type="text"]:focus {
 
 .round-input-row input {
     margin-bottom: 0;
+    text-align: center;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.input-label {
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+    text-align: center;
+    color: #8B4513;
 }
 
 /* Previous Rounds */
@@ -343,37 +356,138 @@ input[type="text"]:focus {
 /* Mobile Responsiveness */
 @media (max-width: 600px) {
     .pirate-header h1 {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
     }
     
     .tagline {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+    }
+    
+    .container {
+        margin: 1rem auto;
+        padding: 0 0.5rem;
     }
     
     .parchment {
-        padding: 1.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .parchment::before,
+    .parchment::after {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .parchment::before {
+        top: -15px;
+        left: -15px;
+    }
+    
+    .parchment::after {
+        bottom: -15px;
+        right: -15px;
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+    }
+    
+    h3 {
+        font-size: 1.2rem;
     }
     
     .round-input-row {
         grid-template-columns: 1fr;
     }
     
+    .round-input-row input {
+        margin-bottom: 0.5rem;
+    }
+    
+    .player-round-input {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
     .player-round-data {
         grid-template-columns: 1fr;
-        text-align: center;
+        text-align: left;
+        padding: 0.75rem;
     }
     
     .player-round-data > * {
+        display: block;
         margin: 0.25rem 0;
+    }
+    
+    .player-round-data strong {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
     }
     
     .btn {
         display: block;
         width: 100%;
         margin: 0.5rem 0;
+        padding: 0.75rem 1rem;
+    }
+    
+    .btn-small {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        width: auto;
+        margin: 0;
     }
     
     .score-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .player-score {
+        padding: 0.75rem;
+    }
+    
+    .player-score h4 {
+        font-size: 0.9rem;
+    }
+    
+    .score-value {
+        font-size: 1.5rem;
+    }
+    
+    .round-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .round-header .btn {
+        width: 100%;
+        margin: 0;
+    }
+    
+    .player-name-input {
+        flex-wrap: wrap;
+    }
+    
+    .player-name-input input {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .player-name-input .btn-small {
+        width: 100%;
+    }
+    
+    .modal-content {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+    
+    input[type="number"],
+    input[type="text"] {
+        font-size: 16px; /* Prevents zoom on iOS */
     }
 }

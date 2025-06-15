@@ -122,9 +122,18 @@ class SkullKingGame {
             <div class="player-round-input">
                 <h4>${player.name}</h4>
                 <div class="round-input-row">
-                    <input type="number" id="bid-${player.name}" placeholder="Bid" min="0" max="${this.state.currentRound}">
-                    <input type="number" id="actual-${player.name}" placeholder="Won" min="0" max="${this.state.currentRound}">
-                    <input type="number" id="bonus-${player.name}" placeholder="Bonus" min="0">
+                    <div class="input-group">
+                        <label for="bid-${player.name}" class="input-label">Bid</label>
+                        <input type="number" id="bid-${player.name}" placeholder="0" min="0" max="${this.state.currentRound}">
+                    </div>
+                    <div class="input-group">
+                        <label for="actual-${player.name}" class="input-label">Won</label>
+                        <input type="number" id="actual-${player.name}" placeholder="0" min="0" max="${this.state.currentRound}">
+                    </div>
+                    <div class="input-group">
+                        <label for="bonus-${player.name}" class="input-label">Bonus</label>
+                        <input type="number" id="bonus-${player.name}" placeholder="0" min="0">
+                    </div>
                 </div>
             </div>
         `).join('');
