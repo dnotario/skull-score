@@ -86,23 +86,21 @@ jobs:
         
         # Create a simple README for the deployment repo
         if [ ! -f README.md ]; then
-          cat > README.md << EOF
-# Skull King Score Keeper - ${{ steps.target.outputs.environment }}
-
-This is the ${{ steps.target.outputs.environment }} deployment repository for the Skull King Score Keeper.
-
-🎮 **Live Site**: https://${{ steps.target.outputs.domain }}
-
-📝 **Source Code**: https://github.com/dnotario/skull-score
-
-## About
-
-This repository contains only the compiled/built files needed to run the application. 
-All development happens in the main repository.
-
-Last deployed: $(date)
-Source commit: ${{ github.sha }}
-EOF
+          echo "# Skull King Score Keeper - ${{ steps.target.outputs.environment }}" > README.md
+          echo "" >> README.md
+          echo "This is the ${{ steps.target.outputs.environment }} deployment repository for the Skull King Score Keeper." >> README.md
+          echo "" >> README.md
+          echo "🎮 **Live Site**: https://${{ steps.target.outputs.domain }}" >> README.md
+          echo "" >> README.md
+          echo "📝 **Source Code**: https://github.com/dnotario/skull-score" >> README.md
+          echo "" >> README.md
+          echo "## About" >> README.md
+          echo "" >> README.md
+          echo "This repository contains only the compiled/built files needed to run the application." >> README.md
+          echo "All development happens in the main repository." >> README.md
+          echo "" >> README.md
+          echo "Last deployed: $(date)" >> README.md
+          echo "Source commit: ${{ github.sha }}" >> README.md
         fi
         
         # Check if there are any changes
