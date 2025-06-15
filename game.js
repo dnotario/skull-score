@@ -92,6 +92,14 @@ class SkullKingGame {
             this.tempPlayers.splice(index, 1);
             this.updatePlayerInputs();
         }
+        else {
+            // If only one player, just clear the name
+            this.tempPlayers[0] = '';
+            const input = document.getElementById(`player-0`);
+            if (input) {
+                input.value = '';
+            }
+        }
     }
     showGame() {
         var _a, _b, _c;
