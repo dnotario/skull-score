@@ -351,7 +351,13 @@ class SkullKingGame {
         const checkboxContainer = document.getElementById('modal-checkbox-container');
         if (modal && modalTitle && modalMessage && modalOptions && modalButtons && checkboxContainer) {
             modalTitle.textContent = 'Start New Game?';
-            modalMessage.textContent = 'Choose how to start your new game:';
+            // Add warning about losing progress if rounds have been played
+            let message = '';
+            if (this.state.rounds.length > 0) {
+                message = `⚠️ Warning: Starting a new game will erase ${this.state.rounds.length} rounds of progress!\n\n`;
+            }
+            message += 'Choose how to start your new game:';
+            modalMessage.textContent = message;
             checkboxContainer.classList.add('hidden');
             modalButtons.classList.add('hidden');
             modalOptions.classList.remove('hidden');

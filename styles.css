@@ -367,6 +367,10 @@ input[type="text"]:focus {
     padding: 2rem;
 }
 
+.modal-content p {
+    white-space: pre-line;
+}
+
 .modal-buttons {
     text-align: center;
     margin-top: 1.5rem;
