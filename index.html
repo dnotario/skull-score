@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skull King Score Keeper</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="pirate-header">
+        <div class="header-content">
+            <h1>⚓ Skull King Score Keeper ☠️</h1>
+            <p class="tagline">Track Yer Plunder, Ye Scurvy Dogs!</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Landing/Setup Section -->
+        <section id="landing-section" class="landing-section">
+            <div class="parchment">
+                <h2>Ahoy, Mateys!</h2>
+                <p>Ready to keep score of yer Skull King adventures?</p>
+                <div class="player-setup">
+                    <button id="new-game-btn" class="btn btn-primary">Start New Game</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Player Names Section -->
+        <section id="player-names-section" class="player-names-section hidden">
+            <div class="parchment">
+                <h2>Name Yer Crew</h2>
+                <div id="player-names-inputs"></div>
+                <button id="add-player-btn" class="btn btn-secondary">Add Pirate</button>
+                <button id="start-game-btn" class="btn btn-primary">Set Sail!</button>
+                <button id="cancel-setup-btn" class="btn btn-secondary">Back to Port</button>
+            </div>
+        </section>
+
+        <!-- Game Section -->
+        <section id="game-section" class="game-section hidden">
+            <!-- Current Scores -->
+            <div class="current-scores parchment">
+                <h2>Current Bounty</h2>
+                <div id="score-display" class="score-grid"></div>
+                <button id="new-game-ingame-btn" class="btn btn-secondary">New Game</button>
+            </div>
+
+            <!-- New Round Input -->
+            <div class="new-round parchment">
+                <h3>Round <span id="round-number">1</span></h3>
+                <div id="round-inputs" class="round-inputs"></div>
+                <button id="add-round-btn" class="btn btn-primary">Record Round</button>
+            </div>
+
+            <!-- Previous Rounds -->
+            <div id="previous-rounds" class="previous-rounds"></div>
+        </section>
+
+        <!-- Confirmation Modal -->
+        <div id="modal" class="modal hidden">
+            <div class="modal-content parchment">
+                <h3 id="modal-title">Confirm Action</h3>
+                <p id="modal-message"></p>
+                <div id="modal-checkbox-container" class="hidden">
+                    <label>
+                        <input type="checkbox" id="keep-names-checkbox" checked>
+                        Keep player names
+                    </label>
+                </div>
+                <div class="modal-buttons">
+                    <button id="modal-confirm" class="btn btn-primary">Aye</button>
+                    <button id="modal-cancel" class="btn btn-secondary">Nay</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="game.js"></script>
+</body>
+</html>
