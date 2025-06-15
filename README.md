@@ -27,7 +27,9 @@ A pirate-themed web application for tracking scores in the Skull King card game,
 ## 🚀 Getting Started
 
 ### Quick Start
-1. Visit the live site: [skull-score.netlify.app](https://skull-score.netlify.app) (or your deployed URL)
+1. Visit the live site: 
+   - **Production**: [skull-score-deploy.github.io](https://dnotario.github.io/skull-score-deploy)
+   - **Staging**: [skull-score-staging.github.io](https://dnotario.github.io/skull-score-staging)
 2. Click "Start New Game"
 3. Add player names (2-8 players)
 4. Begin entering round data!
