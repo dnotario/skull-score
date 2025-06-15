@@ -30,6 +30,8 @@ class SkullKingGame {
         newGameIngameBtn === null || newGameIngameBtn === void 0 ? void 0 : newGameIngameBtn.addEventListener('click', () => this.confirmNewGame());
         const addRoundBtn = document.getElementById('add-round-btn');
         addRoundBtn === null || addRoundBtn === void 0 ? void 0 : addRoundBtn.addEventListener('click', () => this.handleAddRound());
+        const readScoresBtn = document.getElementById('read-scores-btn');
+        readScoresBtn === null || readScoresBtn === void 0 ? void 0 : readScoresBtn.addEventListener('click', () => this.readScores());
         // Modal
         const modalConfirm = document.getElementById('modal-confirm');
         modalConfirm === null || modalConfirm === void 0 ? void 0 : modalConfirm.addEventListener('click', () => this.handleModalConfirm());
@@ -384,6 +386,54 @@ class SkullKingGame {
         this.saveState();
         this.hideModal();
         this.showLanding();
+    }
+    readScores() {
+        var _a;
+        // Check if browser supports speech synthesis
+        if (!('speechSynthesis' in window)) {
+            alert('Arr! Yer browser doesn\'t support speech. Try a newer vessel!');
+            return;
+        }
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+        // Sort players by score (highest first)
+        const sortedPlayers = [...this.state.players].sort((a, b) => b.score - a.score);
+        // Build the announcement
+        let announcement = `Ahoy mateys! Here be the current standings after round ${this.state.currentRound - 1}. `;
+        sortedPlayers.forEach((player, index) => {
+            if (index === 0) {
+                announcement += `Leading the crew be ${player.name} with ${player.score} pieces of eight! `;
+            }
+            else if (index === sortedPlayers.length - 1) {
+                announcement += `And ${player.name} be at ${player.score}. `;
+            }
+            else {
+                announcement += `${player.name} has ${player.score}. `;
+            }
+        });
+        // Add flavor based on game state
+        if (this.state.rounds.length === 0) {
+            announcement = "Ahoy! No rounds played yet. Time to start plunderin'!";
+        }
+        else if (sortedPlayers[0].score > sortedPlayers[sortedPlayers.length - 1].score + 50) {
+            announcement += "Shiver me timbers! Someone be runnin' away with the treasure!";
+        }
+        else if (sortedPlayers[0].score === ((_a = sortedPlayers[1]) === null || _a === void 0 ? void 0 : _a.score)) {
+            announcement += "Blimey! We have a tie for the lead!";
+        }
+        // Create and configure the utterance
+        const utterance = new SpeechSynthesisUtterance(announcement);
+        utterance.rate = 0.9; // Slightly slower for clarity
+        utterance.pitch = 0.9; // Slightly lower for pirate voice
+        utterance.volume = 1;
+        // Try to use an English voice
+        const voices = window.speechSynthesis.getVoices();
+        const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
+        if (englishVoice) {
+            utterance.voice = englishVoice;
+        }
+        // Speak!
+        window.speechSynthesis.speak(utterance);
     }
 }
 // Initialize game

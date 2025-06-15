@@ -248,6 +248,13 @@ input[type="text"]:focus {
     margin-bottom: 1rem;
 }
 
+.score-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
 .player-score {
     background: rgba(139, 69, 19, 0.1);
     border: 2px solid #8B4513;
