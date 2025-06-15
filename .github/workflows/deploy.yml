@@ -75,6 +75,9 @@ jobs:
         if [ -n "$(git status --porcelain)" ]; then
           git add .
           git commit -m "Deploy $ENVIRONMENT from ${{ github.sha }}"
+          
+          # Configure remote URL with token for pushing
+          git remote set-url origin https://$DEPLOY_TOKEN@github.com/dnotario/$TARGET_REPO.git
           git push
           echo "Deployed to $ENVIRONMENT successfully"
         else
