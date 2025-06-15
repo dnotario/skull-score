@@ -138,9 +138,10 @@ Skull King is a trick-taking game where players bid on how many tricks they'll w
 1. **Rounds**: 10 rounds, with tricks increasing from 1 to 10
 2. **Bidding**: Players predict how many tricks they'll win
 3. **Scoring**: 
-   - Correct bid: 20 + (10 × bid) points
-   - Incorrect bid: -10 × bid points
-   - Zero bid: 10 × round number (if successful)
+   - Exact bid (1+): 20 × tricks taken
+   - Failed bid: -10 × tricks you were off by
+   - Zero bid successful: 10 × round number points
+   - Zero bid failed: -10 × round number points
 4. **Bonus Points**: Earned for special cards and achievements
 
 ## 🏴‍☠️ Commentary & Audio Features

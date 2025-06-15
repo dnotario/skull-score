@@ -182,17 +182,34 @@ class SkullKingGame {
                 </div>
             `).join('');
     }
+    // Public method for testing the scoring logic
+    testCalculateRoundScore(bid, actual, bonus, roundNumber) {
+        const currentRound = this.state.currentRound;
+        this.state.currentRound = roundNumber; // Temporarily set round for testing
+        const score = this.calculateRoundScore(bid, actual, bonus);
+        this.state.currentRound = currentRound; // Restore original round
+        return score;
+    }
     calculateRoundScore(bid, actual, bonus) {
         if (bid === actual) {
             if (bid === 0) {
+                // Zero bid success: 10 points per card dealt (round number)
                 return 10 * this.state.currentRound + bonus;
             }
             else {
-                return 20 * bid + bonus;
+                // Exact bid: 20 points per trick taken
+                return 20 * actual + bonus;
             }
         }
         else {
-            return -10 * Math.abs(bid - actual);
+            if (bid === 0) {
+                // Failed zero bid: lose 10 points per card dealt (round number)
+                return -10 * this.state.currentRound;
+            }
+            else {
+                // Failed bid: lose 10 points per trick you were off by
+                return -10 * Math.abs(bid - actual);
+            }
         }
     }
     handleNewGame() {
@@ -731,3 +748,5 @@ class SkullKingGame {
 }
 // Initialize game
 const game = new SkullKingGame();
+// Expose class for testing
+window.SkullKingGame = SkullKingGame;

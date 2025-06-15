@@ -59,47 +59,109 @@ beforeEach(() => {
 // Import the class after DOM setup
 import '../game';
 
-describe('SkullKingGame Player Management', () => {
+// Declare the SkullKingGame class
+declare global {
+    interface Window {
+        SkullKingGame: any;
+    }
+}
+
+describe('SkullKingGame Scoring Logic', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        // Create a fresh game instance for each test
+        gameInstance = new window.SkullKingGame();
+    });
+    
     test('should calculate correct scores for exact bid', () => {
-        // Test scoring logic directly
         const bid = 3;
         const actual = 3;
         const bonus = 0;
+        const round = 5;
         
-        // Score = 20 + (10 * bid) when bid equals actual
-        const expectedScore = 20 + (10 * bid);
-        expect(expectedScore).toBe(50);
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+        const expectedScore = 20 * actual + bonus; // 20 * 3 = 60
+        
+        expect(actualScore).toBe(expectedScore);
     });
     
     test('should calculate correct scores for failed bid', () => {
         const bid = 3;
-        const actual = 2;
+        const actual = 1; // bid 3, got 1
         const bonus = 0;
+        const round = 5;
         
-        // Score = -10 * bid when bid doesn't equal actual
-        const expectedScore = -10 * bid;
-        expect(expectedScore).toBe(-30);
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+        const expectedScore = -10 * Math.abs(bid - actual); // -10 * 2 = -20
+        
+        expect(actualScore).toBe(expectedScore);
     });
     
     test('should calculate correct scores with bonus points', () => {
         const bid = 2;
         const actual = 2;
-        const bonus = 10;
+        const bonus = 15;
+        const round = 3;
         
-        // Score = 20 + (10 * bid) + bonus when bid equals actual
-        const expectedScore = 20 + (10 * bid) + bonus;
-        expect(expectedScore).toBe(50);
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+        const expectedScore = 20 * actual + bonus; // 20 * 2 + 15 = 55
+        
+        expect(actualScore).toBe(expectedScore);
     });
     
-    test('should handle zero bid correctly', () => {
+    test('should handle successful zero bid correctly', () => {
         const bid = 0;
         const actual = 0;
-        const bonus = 0;
+        const bonus = 5;
+        const round = 7;
         
-        // Zero bid success = 10 * round number (assuming round 1)
-        const round = 1;
-        const expectedScore = 10 * round;
-        expect(expectedScore).toBe(10);
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+        const expectedScore = 10 * round + bonus; // 10 * 7 + 5 = 75
+        
+        expect(actualScore).toBe(expectedScore);
+    });
+    
+    test('should handle failed zero bid correctly', () => {
+        const bid = 0;
+        const actual = 2; // took 2 tricks when bid 0
+        const round = 5;
+        
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, 0, round);
+        const expectedScore = -10 * round; // -10 * 5 = -50
+        
+        expect(actualScore).toBe(expectedScore);
+    });
+    
+    test('should handle failed zero bid in different rounds', () => {
+        // Test failed zero bid penalty scales with round number
+        const testCases = [
+            { round: 1, expectedPenalty: -10 },
+            { round: 3, expectedPenalty: -30 },
+            { round: 7, expectedPenalty: -70 },
+            { round: 10, expectedPenalty: -100 }
+        ];
+        
+        testCases.forEach(({ round, expectedPenalty }) => {
+            const bid = 0;
+            const actual = 1; // took at least 1 trick
+            
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, 0, round);
+            expect(actualScore).toBe(expectedPenalty);
+        });
+    });
+    
+    test('should handle zero bid with no bonus when failed', () => {
+        // Failed zero bid should ignore bonus points
+        const bid = 0;
+        const actual = 1;
+        const bonus = 20; // Should be ignored for failed zero bid
+        const round = 6;
+        
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+        const expectedScore = -10 * round; // -60, bonus ignored
+        
+        expect(actualScore).toBe(expectedScore);
     });
 });
 
