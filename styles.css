@@ -365,6 +365,18 @@ input[type="text"]:focus {
     margin-top: 1.5rem;
 }
 
+.modal-options {
+    margin-top: 1rem;
+}
+
+.modal-options button {
+    display: block;
+    width: 100%;
+    margin-bottom: 0.5rem;
+    text-align: left;
+    padding: 1rem;
+}
+
 /* Utility Classes */
 .hidden {
     display: none !important;

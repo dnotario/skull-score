@@ -334,30 +334,8 @@ class SkullKingGame {
     }
 
     private confirmNewGame(): void {
-        this.showModal(
-            'Start New Game?',
-            'This will end the current game. Are you sure?',
-            true,
-            () => {
-                const keepNames = (document.getElementById('keep-names-checkbox') as HTMLInputElement).checked;
-                
-                if (keepNames) {
-                    this.state.players.forEach(player => player.score = 0);
-                    this.state.rounds = [];
-                    this.state.currentRound = 1;
-                    this.saveState();
-                    this.showGame();
-                } else {
-                    this.state = {
-                        players: [],
-                        rounds: [],
-                        currentRound: 1
-                    };
-                    this.saveState();
-                    this.showLanding();
-                }
-            }
-        );
+        const playerNames = this.state.players.map(p => p.name).join(', ');
+        this.showNewGameModal(playerNames);
     }
 
     public confirmDeleteRound(): void {
@@ -413,9 +391,14 @@ class SkullKingGame {
         }
     }
 
-    private hideModal(): void {
+    public hideModal(): void {
         const modal = document.getElementById('modal');
+        const modalOptions = document.getElementById('modal-options');
+        const modalButtons = document.getElementById('modal-buttons');
+        
         modal?.classList.add('hidden');
+        modalOptions?.classList.add('hidden');
+        modalButtons?.classList.remove('hidden');
         this.modalConfirmCallback = null;
     }
 
@@ -426,6 +409,58 @@ class SkullKingGame {
             this.modalConfirmCallback();
         }
         this.hideModal();
+    }
+
+    private showNewGameModal(playerNames: string): void {
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalOptions = document.getElementById('modal-options');
+        const modalButtons = document.getElementById('modal-buttons');
+        const checkboxContainer = document.getElementById('modal-checkbox-container');
+
+        if (modal && modalTitle && modalMessage && modalOptions && modalButtons && checkboxContainer) {
+            modalTitle.textContent = 'Start New Game?';
+            modalMessage.textContent = 'Choose how to start your new game:';
+            
+            checkboxContainer.classList.add('hidden');
+            modalButtons.classList.add('hidden');
+            modalOptions.classList.remove('hidden');
+            
+            modalOptions.innerHTML = `
+                <button class="btn btn-primary" onclick="game.startNewGameSamePlayers()">
+                    Same players (${playerNames})
+                </button>
+                <button class="btn btn-secondary" onclick="game.startNewGameNewPlayers()">
+                    New set of players
+                </button>
+                <button class="btn btn-secondary" onclick="game.hideModal()">
+                    Cancel
+                </button>
+            `;
+            
+            modal.classList.remove('hidden');
+        }
+    }
+
+    public startNewGameSamePlayers(): void {
+        this.state.players.forEach(player => player.score = 0);
+        this.state.rounds = [];
+        this.state.currentRound = 1;
+        this.saveState();
+        this.hideModal();
+        this.showGame();
+    }
+
+    public startNewGameNewPlayers(): void {
+        this.state = {
+            players: [],
+            rounds: [],
+            currentRound: 1
+        };
+        this.saveState();
+        this.hideModal();
+        this.showLanding();
     }
 }
 
