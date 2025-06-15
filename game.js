@@ -33,6 +33,11 @@ class SkullKingGame {
         addRoundBtn === null || addRoundBtn === void 0 ? void 0 : addRoundBtn.addEventListener('click', () => this.handleAddRound());
         const readScoresBtn = document.getElementById('read-scores-btn');
         readScoresBtn === null || readScoresBtn === void 0 ? void 0 : readScoresBtn.addEventListener('click', () => this.readScores());
+        // Feedback buttons
+        const feedbackBtn = document.getElementById('feedback-btn');
+        feedbackBtn === null || feedbackBtn === void 0 ? void 0 : feedbackBtn.addEventListener('click', () => this.sendFeedback());
+        const feedbackBtnLanding = document.getElementById('feedback-btn-landing');
+        feedbackBtnLanding === null || feedbackBtnLanding === void 0 ? void 0 : feedbackBtnLanding.addEventListener('click', () => this.sendFeedback());
         // Modal
         const modalConfirm = document.getElementById('modal-confirm');
         modalConfirm === null || modalConfirm === void 0 ? void 0 : modalConfirm.addEventListener('click', () => this.handleModalConfirm());
@@ -744,6 +749,13 @@ class SkullKingGame {
             commentaries.push(randomCommentary[Math.floor(Math.random() * randomCommentary.length)]);
         }
         return commentaries[Math.floor(Math.random() * commentaries.length)];
+    }
+    sendFeedback() {
+        const subject = 'Skull King Score Keeper Feedback';
+        const body = 'Ahoy Captain!\n\nI have feedback about the Skull King Score Keeper:\n\n[Please describe your feedback, bug report, or suggestion here]\n\nThanks for the great tool!\n\n---\nSent from the Skull King Score Keeper';
+        const mailto = `mailto:captain@skullkingscorekeeper.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        // Open email client
+        window.location.href = mailto;
     }
 }
 // Initialize game

@@ -65,6 +65,13 @@ class SkullKingGame {
         const readScoresBtn = document.getElementById('read-scores-btn');
         readScoresBtn?.addEventListener('click', () => this.readScores());
 
+        // Feedback buttons
+        const feedbackBtn = document.getElementById('feedback-btn');
+        feedbackBtn?.addEventListener('click', () => this.sendFeedback());
+
+        const feedbackBtnLanding = document.getElementById('feedback-btn-landing');
+        feedbackBtnLanding?.addEventListener('click', () => this.sendFeedback());
+
         // Modal
         const modalConfirm = document.getElementById('modal-confirm');
         modalConfirm?.addEventListener('click', () => this.handleModalConfirm());
@@ -855,6 +862,15 @@ class SkullKingGame {
         }
         
         return commentaries[Math.floor(Math.random() * commentaries.length)];
+    }
+
+    private sendFeedback(): void {
+        const subject = 'Skull King Score Keeper Feedback';
+        const body = 'Ahoy Captain!\n\nI have feedback about the Skull King Score Keeper:\n\n[Please describe your feedback, bug report, or suggestion here]\n\nThanks for the great tool!\n\n---\nSent from the Skull King Score Keeper';
+        const mailto = `mailto:captain@skullkingscorekeeper.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        
+        // Open email client
+        window.location.href = mailto;
     }
 }
 
