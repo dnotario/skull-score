@@ -754,8 +754,21 @@ class SkullKingGame {
         const subject = 'Skull King Score Keeper Feedback';
         const body = 'Ahoy Captain!\n\nI have feedback about the Skull King Score Keeper:\n\n[Please describe your feedback, bug report, or suggestion here]\n\nThanks for the great tool!\n\n---\nSent from the Skull King Score Keeper';
         const mailto = `mailto:captain@skullkingscorekeeper.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        // Open email client
-        window.location.href = mailto;
+        try {
+            // Try to open email client
+            const link = document.createElement('a');
+            link.href = mailto;
+            link.target = '_blank';
+            link.click();
+        }
+        catch (error) {
+            // Fallback: copy email to clipboard and show alert
+            navigator.clipboard.writeText('captain@skullkingscorekeeper.com').then(() => {
+                alert('Email address copied to clipboard: captain@skullkingscorekeeper.com\n\nPlease send your feedback there!');
+            }).catch(() => {
+                alert('Please send feedback to: captain@skullkingscorekeeper.com');
+            });
+        }
     }
 }
 // Initialize game
