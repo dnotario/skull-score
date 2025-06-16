@@ -77,6 +77,15 @@
     </header>
 
     <main class="container">
+        <!-- New Game Button - Above all sections -->
+        <div id="new-game-section" class="new-game-section hidden">
+            <div class="parchment">
+                <div class="global-actions">
+                    <button id="new-game-ingame-btn" class="btn btn-secondary">🏴‍☠️ Start New Adventure</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Landing/Setup Section -->
         <section id="landing-section" class="landing-section">
             <div class="parchment">
@@ -118,7 +127,10 @@
         <section id="game-section" class="game-section hidden">
             <!-- Current Scores -->
             <div class="current-scores parchment">
-                <h2>Current Bounty</h2>
+                <div class="score-header">
+                    <h2>Current Bounty</h2>
+                    <button id="read-scores-btn" class="btn btn-primary">🔊 Read Scores</button>
+                </div>
                 <div id="score-display" class="score-grid"></div>
                 
                 <!-- Pirate Commentary -->
@@ -127,11 +139,6 @@
                         <span class="commentary-icon">🦜</span>
                         <span id="commentary-text" class="commentary-text"></span>
                     </div>
-                </div>
-                
-                <div class="score-actions">
-                    <button id="read-scores-btn" class="btn btn-primary">🔊 Read Scores</button>
-                    <button id="new-game-ingame-btn" class="btn btn-secondary">New Game</button>
                 </div>
             </div>
 

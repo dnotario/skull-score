@@ -613,18 +613,21 @@ class SkullKingGame {
         document.getElementById('landing-section')?.classList.remove('hidden');
         document.getElementById('player-names-section')?.classList.add('hidden');
         document.getElementById('game-section')?.classList.add('hidden');
+        document.getElementById('new-game-section')?.classList.add('hidden');
     }
 
     private showPlayerSetup(): void {
         document.getElementById('landing-section')?.classList.add('hidden');
         document.getElementById('player-names-section')?.classList.remove('hidden');
         document.getElementById('game-section')?.classList.add('hidden');
+        document.getElementById('new-game-section')?.classList.add('hidden');
     }
 
     private showGame(): void {
         document.getElementById('landing-section')?.classList.add('hidden');
         document.getElementById('player-names-section')?.classList.add('hidden');
         document.getElementById('game-section')?.classList.remove('hidden');
+        document.getElementById('new-game-section')?.classList.remove('hidden');
     }
 
     private updatePlayerInputs(): void {

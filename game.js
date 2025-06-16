@@ -470,22 +470,25 @@ class SkullKingGame {
         }
     }
     showLanding() {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         (_a = document.getElementById('landing-section')) === null || _a === void 0 ? void 0 : _a.classList.remove('hidden');
         (_b = document.getElementById('player-names-section')) === null || _b === void 0 ? void 0 : _b.classList.add('hidden');
         (_c = document.getElementById('game-section')) === null || _c === void 0 ? void 0 : _c.classList.add('hidden');
+        (_d = document.getElementById('new-game-section')) === null || _d === void 0 ? void 0 : _d.classList.add('hidden');
     }
     showPlayerSetup() {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         (_a = document.getElementById('landing-section')) === null || _a === void 0 ? void 0 : _a.classList.add('hidden');
         (_b = document.getElementById('player-names-section')) === null || _b === void 0 ? void 0 : _b.classList.remove('hidden');
         (_c = document.getElementById('game-section')) === null || _c === void 0 ? void 0 : _c.classList.add('hidden');
+        (_d = document.getElementById('new-game-section')) === null || _d === void 0 ? void 0 : _d.classList.add('hidden');
     }
     showGame() {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         (_a = document.getElementById('landing-section')) === null || _a === void 0 ? void 0 : _a.classList.add('hidden');
         (_b = document.getElementById('player-names-section')) === null || _b === void 0 ? void 0 : _b.classList.add('hidden');
         (_c = document.getElementById('game-section')) === null || _c === void 0 ? void 0 : _c.classList.remove('hidden');
+        (_d = document.getElementById('new-game-section')) === null || _d === void 0 ? void 0 : _d.classList.remove('hidden');
     }
     updatePlayerInputs() {
         const container = document.getElementById('player-names-inputs');
