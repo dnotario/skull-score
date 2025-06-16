@@ -34,7 +34,7 @@ jobs:
       id: target
       run: |
         if [ "${{ github.ref }}" = "refs/heads/prod" ]; then
-          echo "repo=skull-score-deploy" >> $GITHUB_OUTPUT
+          echo "repo=skull-score-prod" >> $GITHUB_OUTPUT
           echo "env=production" >> $GITHUB_OUTPUT
         else
           echo "repo=skull-score-staging" >> $GITHUB_OUTPUT
