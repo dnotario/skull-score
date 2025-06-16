@@ -38,6 +38,12 @@ interface GameStateData {
 // Google Analytics gtag function declaration
 declare function gtag(...args: any[]): void;
 
+// PWA Install Prompt Interface
+interface BeforeInstallPromptEvent extends Event {
+    prompt(): Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
 /**
  * GameState - Handles data persistence and storage
  * Pure data layer that only manages localStorage operations
@@ -561,6 +567,7 @@ class GameViewModel {
  */
 class SkullKingGame {
     private viewModel: GameViewModel;
+    private deferredPrompt: BeforeInstallPromptEvent | null = null;
 
     constructor() {
         this.viewModel = new GameViewModel();
@@ -569,6 +576,7 @@ class SkullKingGame {
 
     private init(): void {
         this.setupEventListeners();
+        this.initializePWA();
         this.updateUI();
     }
 
@@ -1106,6 +1114,130 @@ class SkullKingGame {
             if (actualInput) actualInput.value = data.actual.toString();
             if (bonusInput) bonusInput.value = data.bonus.toString();
         }
+    }
+
+    // PWA Install Functionality
+    private initializePWA(): void {
+        // Guard for test environment or browsers without PWA support
+        if (typeof window === 'undefined' || !window.addEventListener) {
+            return;
+        }
+
+        // Listen for the beforeinstallprompt event
+        window.addEventListener('beforeinstallprompt', (e: Event) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Store the event so it can be triggered later
+            this.deferredPrompt = e as BeforeInstallPromptEvent;
+            // Update UI to show install button
+            this.showInstallPrompt();
+        });
+
+        // Listen for the app installed event
+        window.addEventListener('appinstalled', () => {
+            // Hide the install promotion
+            this.hideInstallPrompt();
+            // Clear the deferredPrompt so it can be garbage collected
+            this.deferredPrompt = null;
+            console.log('PWA was installed');
+        });
+
+        // Check if already in standalone mode (installed) - guard for test environment
+        if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
+            this.hideInstallPrompt();
+        }
+
+        // For iOS Safari, show install instructions
+        this.showIOSInstallPrompt();
+    }
+
+    private showInstallPrompt(): void {
+        // Guard for test environment
+        if (typeof document === 'undefined') return;
+        
+        // Create or show install button for Android/desktop
+        let installBtn = document.getElementById('pwa-install-btn');
+        if (!installBtn) {
+            installBtn = document.createElement('button');
+            installBtn.id = 'pwa-install-btn';
+            installBtn.className = 'pwa-install-btn';
+            installBtn.innerHTML = '📱 Add to Home Screen';
+            installBtn.addEventListener('click', () => this.handleInstallClick());
+            
+            // Add to header or appropriate location
+            const header = document.querySelector('.header') || document.body;
+            header.appendChild(installBtn);
+        }
+        installBtn.style.display = 'block';
+    }
+
+    private hideInstallPrompt(): void {
+        // Guard for test environment
+        if (typeof document === 'undefined') return;
+        
+        const installBtn = document.getElementById('pwa-install-btn');
+        if (installBtn) {
+            installBtn.style.display = 'none';
+        }
+        const iosPrompt = document.getElementById('ios-install-prompt');
+        if (iosPrompt) {
+            iosPrompt.style.display = 'none';
+        }
+    }
+
+    private showIOSInstallPrompt(): void {
+        // Guard for test environment
+        if (typeof window === 'undefined' || typeof navigator === 'undefined' || typeof document === 'undefined') return;
+        
+        // Check if we're on iOS Safari (not in standalone mode)
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isInStandaloneMode = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (window.navigator as any).standalone;
+        const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+        
+        if (isIOS && !isInStandaloneMode && isSafari) {
+            let iosPrompt = document.getElementById('ios-install-prompt');
+            if (!iosPrompt) {
+                iosPrompt = document.createElement('div');
+                iosPrompt.id = 'ios-install-prompt';
+                iosPrompt.className = 'ios-install-prompt';
+                iosPrompt.innerHTML = `
+                    <div class="ios-install-content">
+                        <span class="ios-install-icon">📱</span>
+                        <p>Add to Home Screen: Tap <span class="share-icon">⎘</span> then "Add to Home Screen"</p>
+                        <button class="ios-install-close" onclick="this.parentElement.parentElement.style.display='none'">×</button>
+                    </div>
+                `;
+                document.body.appendChild(iosPrompt);
+            }
+            iosPrompt.style.display = 'block';
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                if (iosPrompt) iosPrompt.style.display = 'none';
+            }, 10000);
+        }
+    }
+
+    private async handleInstallClick(): Promise<void> {
+        if (!this.deferredPrompt) {
+            return;
+        }
+
+        // Show the install prompt
+        this.deferredPrompt.prompt();
+
+        // Wait for the user to respond to the prompt
+        const { outcome } = await this.deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+        } else {
+            console.log('User dismissed the install prompt');
+        }
+
+        // Clear the deferredPrompt
+        this.deferredPrompt = null;
+        this.hideInstallPrompt();
     }
 
     // Public method for testing the scoring logic
