@@ -511,6 +511,19 @@ class SkullKingGame {
     handleSamePlayersNewGame() {
         this.viewModel.startNewGame(true); // Keep names
         this.hideModal();
+        
+        // If we have valid players from keeping names, start the game immediately
+        const tempPlayers = this.viewModel.getTempPlayers();
+        const validNames = tempPlayers.filter(name => name.trim() !== '');
+        if (validNames.length >= 2) {
+            const error = this.viewModel.validateAndStartGame();
+            if (!error) {
+                this.updateUI();
+                return;
+            }
+        }
+        
+        // Otherwise, go to player setup
         this.startPlayerSetup();
     }
     handleNewPlayersNewGame() {
