@@ -1121,30 +1121,42 @@ class SkullKingGame {
         // Guard for test environment
         if (typeof document === 'undefined') return;
         
-        // Don't show if already in standalone mode (installed)
+        // Don't show install buttons if already in standalone mode (installed)
         if ((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || 
             (window.navigator as any).standalone) {
+            this.hideInstallButtons();
             return;
         }
         
-        // Show simple install button
-        this.showInstallButton();
+        // Add event listeners to existing install buttons
+        this.setupInstallButtons();
     }
 
-    private showInstallButton(): void {
-        let installBtn = document.getElementById('install-app-btn');
-        if (!installBtn) {
-            installBtn = document.createElement('button');
-            installBtn.id = 'install-app-btn';
-            installBtn.className = 'install-app-btn';
-            installBtn.innerHTML = '📱 Install App';
+    private setupInstallButtons(): void {
+        // Add event listeners to the mobile install buttons
+        const installBtn = document.getElementById('install-app-btn');
+        const installBtnLanding = document.getElementById('install-app-btn-landing');
+        
+        if (installBtn) {
             installBtn.addEventListener('click', () => this.showInstallInstructions());
-            
-            // Add to header
-            const header = document.querySelector('.header') || document.body;
-            header.appendChild(installBtn);
         }
-        installBtn.style.display = 'block';
+        
+        if (installBtnLanding) {
+            installBtnLanding.addEventListener('click', () => this.showInstallInstructions());
+        }
+    }
+
+    private hideInstallButtons(): void {
+        const installBtn = document.getElementById('install-app-btn');
+        const installBtnLanding = document.getElementById('install-app-btn-landing');
+        
+        if (installBtn) {
+            installBtn.style.display = 'none';
+        }
+        
+        if (installBtnLanding) {
+            installBtnLanding.style.display = 'none';
+        }
     }
 
     private showInstallInstructions(): void {

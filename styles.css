@@ -840,43 +840,16 @@ input[type="text"]:focus {
     }
 }
 
-/* Install App Button */
-.install-app-btn {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: linear-gradient(135deg, #d4af37 0%, #f4e4c1 100%);
-    color: #2c1810;
-    border: 2px solid #8B4513;
-    border-radius: 25px;
-    padding: 0.75rem 1rem;
-    font-size: 0.9rem;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
-    transition: all 0.3s ease;
-    z-index: 1000;
-    font-family: 'Georgia', serif;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+/* Install App Button - Mobile Only */
+.install-app-btn-mobile {
+    display: none; /* Hidden by default on desktop */
 }
 
-.install-app-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
-    background: linear-gradient(135deg, #f4e4c1 0%, #d4af37 100%);
-}
-
-.install-app-btn:active {
-    transform: scale(0.98);
-}
-
-/* Mobile responsive adjustments for install button */
-@media (max-width: 600px) {
-    .install-app-btn {
-        top: 10px;
-        right: 10px;
-        padding: 0.5rem 0.8rem;
-        font-size: 0.8rem;
+/* Show install button only on mobile */
+@media (max-width: 768px) {
+    .install-app-btn-mobile {
+        display: inline-block;
+        margin-top: 0.5rem;
     }
 }
 
