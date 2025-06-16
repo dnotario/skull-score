@@ -1149,6 +1149,9 @@ class SkullKingGame {
 
         // For iOS Safari, show install instructions
         this.showIOSInstallPrompt();
+        
+        // Always show manual install button for testing
+        this.showManualInstallButton();
     }
 
     private showInstallPrompt(): void {
@@ -1169,6 +1172,70 @@ class SkullKingGame {
             header.appendChild(installBtn);
         }
         installBtn.style.display = 'block';
+    }
+
+    private showManualInstallButton(): void {
+        // Always show a manual install button for testing and fallback
+        if (typeof document === 'undefined') return;
+        
+        // Don't show if already in standalone mode
+        if ((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || 
+            (window.navigator as any).standalone) {
+            return;
+        }
+        
+        let manualBtn = document.getElementById('manual-install-btn');
+        if (!manualBtn) {
+            manualBtn = document.createElement('button');
+            manualBtn.id = 'manual-install-btn';
+            manualBtn.className = 'pwa-install-btn manual-install';
+            manualBtn.innerHTML = '⚓ Install App';
+            manualBtn.style.top = '70px'; // Position below auto-install button
+            manualBtn.addEventListener('click', () => {
+                if (this.deferredPrompt) {
+                    this.handleInstallClick();
+                } else {
+                    // Show manual instructions
+                    this.showManualInstructions();
+                }
+            });
+            
+            const header = document.querySelector('.header') || document.body;
+            header.appendChild(manualBtn);
+        }
+        manualBtn.style.display = 'block';
+    }
+
+    private showManualInstructions(): void {
+        // Show instructions for manual installation
+        let modal = document.getElementById('install-instructions-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'install-instructions-modal';
+            modal.className = 'install-modal';
+            modal.innerHTML = `
+                <div class="install-modal-content">
+                    <h3>⚓ Add to Home Screen</h3>
+                    <div class="install-instructions">
+                        <p><strong>For Android Chrome:</strong></p>
+                        <ol>
+                            <li>Tap the menu (⋮) in browser</li>
+                            <li>Select "Add to Home screen"</li>
+                            <li>Tap "Add" to confirm</li>
+                        </ol>
+                        <p><strong>For iOS Safari:</strong></p>
+                        <ol>
+                            <li>Tap the share button (⎘)</li>
+                            <li>Scroll down and tap "Add to Home Screen"</li>
+                            <li>Tap "Add" to confirm</li>
+                        </ol>
+                    </div>
+                    <button class="install-modal-close" onclick="this.parentElement.parentElement.style.display='none'">✕ Close</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        modal.style.display = 'flex';
     }
 
     private hideInstallPrompt(): void {
