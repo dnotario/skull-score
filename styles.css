@@ -795,3 +795,47 @@ input[type="text"]:focus {
         margin-bottom: 0.75rem;
     }
 }
+
+/* Winner Announcement */
+.winner-announcement {
+    margin-bottom: 2rem;
+    text-align: center;
+    animation: celebration 2s ease-in-out infinite alternate;
+}
+
+.winner-header h2 {
+    color: #8B4513;
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.winner-text {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #654321;
+    line-height: 1.6;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f4e4c1 0%, #e6d7b8 100%);
+    border: 3px solid #d4af37;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+@keyframes celebration {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.02); }
+}
+
+/* Mobile adjustments for winner announcement */
+@media (max-width: 600px) {
+    .winner-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .winner-text {
+        font-size: 1rem;
+        padding: 0.75rem;
+    }
+}

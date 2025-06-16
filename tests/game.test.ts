@@ -252,7 +252,7 @@ describe('SkullKingGame Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toContain("Alice can't win more than 1 tricks in round 1. Actual: 2");
+            expect(result).toContain("Alice can't win more than 1 tricks in round 1 with 2 players. Actual: 2");
         });
 
         test('should accept valid bids and actuals within round limits', () => {
@@ -665,7 +665,7 @@ describe('SkullKingGame Modal Error Display', () => {
         gameInstance.showError(error);
         
         // Verify showErrorModal was called with the correct error message
-        expect(showErrorSpy).toHaveBeenCalledWith("Alice's bid (5) can't exceed 1 tricks in round 1.");
+        expect(showErrorSpy).toHaveBeenCalledWith("Alice's bid (5) can't exceed 1 tricks in round 1 with 2 players.");
         
         showErrorSpy.mockRestore();
     });

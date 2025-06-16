@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skull King Card Distribution Tests</title>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        .test-result { margin: 10px 0; }
+        .pass { color: green; }
+        .fail { color: red; }
+        .test-section { margin: 20px 0; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Skull King Card Distribution Tests</h1>
+    <div id="test-results"></div>
+
+    <script src="game.js"></script>
+    <script>
+        // Test harness
+        function runTests() {
+            const results = [];
+            const gameVM = new GameViewModel();
+            
+            // Test scenarios
+            const testCases = [
+                // Normal scenarios (enough cards)
+                { players: 2, round: 1, expected: 1, description: "2 players, round 1" },
+                { players: 3, round: 5, expected: 5, description: "3 players, round 5" },
+                { players: 4, round: 10, expected: 10, description: "4 players, round 10" },
+                { players: 5, round: 10, expected: 10, description: "5 players, round 10" },
+                { players: 6, round: 10, expected: 10, description: "6 players, round 10" },
+                { players: 7, round: 10, expected: 10, description: "7 players, round 10" },
+                
+                // Edge cases where cards run out
+                { players: 8, round: 9, expected: 8, description: "8 players, round 9 (72 cards needed, only 70 available)" },
+                { players: 8, round: 10, expected: 8, description: "8 players, round 10 (80 cards needed, only 70 available)" },
+                { players: 7, round: 11, expected: 10, description: "7 players, round 11 (77 cards needed, only 70 available)" },
+                
+                // Extreme cases
+                { players: 10, round: 8, expected: 7, description: "10 players, round 8 (80 cards needed, only 70 available)" },
+                { players: 6, round: 12, expected: 11, description: "6 players, round 12 (72 cards needed, only 70 available)" },
+                
+                // Minimum cases
+                { players: 1, round: 70, expected: 70, description: "1 player, round 70 (edge case)" },
+                { players: 70, round: 1, expected: 1, description: "70 players, round 1 (theoretical)" },
+                { players: 71, round: 1, expected: 0, description: "71 players, round 1 (impossible)" }
+            ];
+            
+            results.push('<div class="test-section"><h2>Card Distribution Tests</h2>');
+            
+            testCases.forEach(test => {
+                const actual = gameVM.getCardsPerRound(test.round, test.players);
+                const passed = actual === test.expected;
+                const className = passed ? 'pass' : 'fail';
+                const status = passed ? 'PASS' : 'FAIL';
+                
+                results.push(`<div class="test-result ${className}">
+                    ${status}: ${test.description}<br>
+                    &nbsp;&nbsp;Expected: ${test.expected}, Got: ${actual}
+                    ${!passed ? ` (${test.players} × ${test.round} = ${test.players * test.round} cards needed, 70 available)` : ''}
+                </div>`);
+            });
+            
+            results.push('</div>');
+            
+            // Test validation logic
+            results.push('<div class="test-section"><h2>Validation Tests</h2>');
+            
+            const validationTests = [
+                { players: ['Alice', 'Bob'], round: 1, playerData: { Alice: { bid: 1, actual: 1, bonus: 0 }, Bob: { bid: 0, actual: 0, bonus: 0 } }, shouldPass: true, description: "Normal round 1 with 2 players" },
+                { players: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], round: 9, playerData: { A: { bid: 8, actual: 8, bonus: 0 } }, shouldPass: true, description: "8 players round 9, bid 8 (max allowed)" },
+                { players: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], round: 9, playerData: { A: { bid: 9, actual: 8, bonus: 0 } }, shouldPass: false, description: "8 players round 9, bid 9 (should fail - only 8 cards available)" },
+                { players: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], round: 10, playerData: { A: { bid: 8, actual: 8, bonus: 0 } }, shouldPass: true, description: "8 players round 10, bid 8 (max allowed)" },
+                { players: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], round: 10, playerData: { A: { bid: 9, actual: 8, bonus: 0 } }, shouldPass: false, description: "8 players round 10, bid 9 (should fail)" }
+            ];
+            
+            validationTests.forEach(test => {
+                // Set up game state
+                gameVM.state.players = test.players.map(name => ({ name, score: 0 }));
+                gameVM.state.currentRound = test.round;
+                
+                // Create full player data for validation
+                const fullPlayerData = {};
+                test.players.forEach(name => {
+                    if (test.playerData[name]) {
+                        fullPlayerData[name] = test.playerData[name];
+                    } else {
+                        fullPlayerData[name] = { bid: 0, actual: 0, bonus: 0 };
+                    }
+                });
+                
+                const validationResult = gameVM.validateRoundData(fullPlayerData);
+                const passed = test.shouldPass ? (validationResult === null) : (validationResult !== null);
+                const className = passed ? 'pass' : 'fail';
+                const status = passed ? 'PASS' : 'FAIL';
+                
+                results.push(`<div class="test-result ${className}">
+                    ${status}: ${test.description}<br>
+                    &nbsp;&nbsp;Expected: ${test.shouldPass ? 'Valid' : 'Invalid'}, Got: ${validationResult === null ? 'Valid' : 'Invalid'}
+                    ${!passed && validationResult ? `<br>&nbsp;&nbsp;Error: ${validationResult}` : ''}
+                </div>`);
+            });
+            
+            results.push('</div>');
+            
+            // Display summary
+            const totalTests = testCases.length + validationTests.length;
+            const passedTests = results.filter(r => r.includes('class="test-result pass"')).length;
+            
+            results.unshift(`<div class="test-section"><h2>Test Summary</h2>
+                <div class="test-result">Passed: ${passedTests}/${totalTests} tests</div>
+            </div>`);
+            
+            document.getElementById('test-results').innerHTML = results.join('');
+        }
+        
+        // Run tests when page loads
+        window.onload = runTests;
+    </script>
+</body>
+</html>

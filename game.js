@@ -119,6 +119,26 @@ class GameViewModel {
     getCurrentRoundNumber() {
         return this.state.currentRound;
     }
+    
+    // Card distribution logic for Skull King (70 card deck)
+    getCardsPerRound(roundNumber, playerCount) {
+        const totalCards = 70;
+        const idealCards = roundNumber;
+        const cardsNeeded = idealCards * playerCount;
+        
+        // If we can deal the ideal number of cards, do so
+        if (cardsNeeded <= totalCards) {
+            return idealCards;
+        }
+        
+        // Otherwise, calculate the maximum cards we can deal per player
+        return Math.floor(totalCards / playerCount);
+    }
+    
+    // Get maximum tricks available for current round
+    getMaxTricksForCurrentRound() {
+        return this.getCardsPerRound(this.state.currentRound, this.state.players.length);
+    }
     validateRoundData(data) {
         for (const [playerName, playerData] of Object.entries(data)) {
             const { bid, actual, bonus } = playerData;
@@ -134,12 +154,13 @@ class GameViewModel {
             if (bid < 0 || actual < 0) {
                 return `Bid and actual tricks must be non-negative for ${playerName}.`;
             }
-            // Round-specific validation: bids and actual tricks can't exceed round number
-            if (bid > this.state.currentRound) {
-                return `${playerName}'s bid (${bid}) can't exceed ${this.state.currentRound} tricks in round ${this.state.currentRound}.`;
+            // Round-specific validation: bids and actual tricks can't exceed available cards
+            const maxTricks = this.getMaxTricksForCurrentRound();
+            if (bid > maxTricks) {
+                return `${playerName}'s bid (${bid}) can't exceed ${maxTricks} tricks in round ${this.state.currentRound} with ${this.state.players.length} players.`;
             }
-            if (actual > this.state.currentRound) {
-                return `${playerName} can't win more than ${this.state.currentRound} tricks in round ${this.state.currentRound}. Actual: ${actual}`;
+            if (actual > maxTricks) {
+                return `${playerName} can't win more than ${maxTricks} tricks in round ${this.state.currentRound} with ${this.state.players.length} players. Actual: ${actual}`;
             }
             // Bonus point validation - only applies when correctly predicting tricks
             if (bid !== actual && bonus > 0) {
@@ -330,6 +351,45 @@ class GameViewModel {
         ];
         return defaultComments[Math.floor(Math.random() * defaultComments.length)];
     }
+    // Winner determination
+    getWinner() {
+        if (this.state.players.length === 0) return null;
+        
+        const sortedPlayers = [...this.state.players].sort((a, b) => b.score - a.score);
+        const highestScore = sortedPlayers[0].score;
+        
+        // Return all players with the highest score (in case of tie)
+        return sortedPlayers.filter(player => player.score === highestScore);
+    }
+    
+    generateWinnerAnnouncement() {
+        const winners = this.getWinner();
+        if (!winners || winners.length === 0) {
+            return "The seas have claimed all! No winners this voyage!";
+        }
+        
+        if (winners.length === 1) {
+            const winner = winners[0];
+            const winnerMessages = [
+                `Huzzah! Captain ${winner.name} emerges victorious with ${winner.score} pieces of eight! The crown of Skull King belongs to ye!`,
+                `Avast! ${winner.name} has conquered the seven seas with ${winner.score} doubloons! All hail the new Skull King!`,
+                `Shiver me timbers! ${winner.name} stands triumphant with ${winner.score} gold coins! Ye be the true master of these waters!`,
+                `Blimey! ${winner.name} has plundered the most treasure with ${winner.score} pieces of eight! The Skull King's throne is yours!`
+            ];
+            return winnerMessages[Math.floor(Math.random() * winnerMessages.length)];
+        } else {
+            // Multiple winners (tie)
+            const winnerNames = winners.map(w => w.name).join(' and ');
+            const score = winners[0].score;
+            const tieMessages = [
+                `Avast! We have a tie! ${winnerNames} both finish with ${score} pieces of eight! Ye must share the Skull King's crown!`,
+                `Blimey! ${winnerNames} have tied with ${score} doubloons each! Two captains, one throne - may the best pirate win!`,
+                `Shiver me timbers! ${winnerNames} are deadlocked at ${score} gold coins! The seas couldn't choose between such worthy pirates!`
+            ];
+            return tieMessages[Math.floor(Math.random() * tieMessages.length)];
+        }
+    }
+
     // Text-to-Speech
     createScoreAnnouncement() {
         if (this.state.players.length === 0) {
@@ -478,7 +538,18 @@ class SkullKingGame {
         else {
             this.showGame();
             this.updateScoreDisplay(gameState.players);
-            this.updateRoundInputs(gameState.players, gameState.currentRound);
+            
+            // Check if game is complete
+            const isGameComplete = this.viewModel.isGameComplete();
+            if (isGameComplete) {
+                this.showWinnerAnnouncement();
+                this.hideNewRoundInputs();
+            } else {
+                this.hideWinnerAnnouncement();
+                this.showNewRoundInputs();
+                this.updateRoundInputs(gameState.players, gameState.currentRound);
+            }
+            
             this.updatePreviousRounds(gameState.rounds);
         }
     }
@@ -541,20 +612,27 @@ class SkullKingGame {
         const roundNumberEl = document.getElementById('round-number');
         if (!container)
             return;
+        
+        const maxTricks = this.viewModel.getMaxTricksForCurrentRound();
+        const roundDisplay = maxTricks < currentRound ? 
+            `${currentRound} (${maxTricks} cards each)` : 
+            currentRound.toString();
+            
         if (roundNumberEl) {
-            roundNumberEl.textContent = currentRound.toString();
+            roundNumberEl.textContent = roundDisplay;
         }
+        
         container.innerHTML = players.map(player => `
             <div class="player-round-input">
                 <h4>${player.name}</h4>
                 <div class="round-input-row">
                     <div class="input-group">
                         <label for="bid-${player.name}" class="input-label">Bid</label>
-                        <input type="number" id="bid-${player.name}" placeholder="0" min="0" max="${currentRound}">
+                        <input type="number" id="bid-${player.name}" placeholder="0" min="0" max="${maxTricks}">
                     </div>
                     <div class="input-group">
                         <label for="actual-${player.name}" class="input-label">Won</label>
-                        <input type="number" id="actual-${player.name}" placeholder="0" min="0" max="${currentRound}">
+                        <input type="number" id="actual-${player.name}" placeholder="0" min="0" max="${maxTricks}">
                     </div>
                     <div class="input-group">
                         <label for="bonus-${player.name}" class="input-label">Bonus</label>
@@ -624,6 +702,37 @@ class SkullKingGame {
         if (commentaryEl && textEl && commentary) {
             textEl.textContent = commentary;
             commentaryEl.classList.remove('hidden');
+        }
+    }
+    
+    showWinnerAnnouncement() {
+        const winnerAnnouncement = document.getElementById('winner-announcement');
+        const winnerText = document.getElementById('winner-text');
+        if (winnerAnnouncement && winnerText) {
+            const announcement = this.viewModel.generateWinnerAnnouncement();
+            winnerText.textContent = announcement;
+            winnerAnnouncement.classList.remove('hidden');
+        }
+    }
+    
+    hideWinnerAnnouncement() {
+        const winnerAnnouncement = document.getElementById('winner-announcement');
+        if (winnerAnnouncement) {
+            winnerAnnouncement.classList.add('hidden');
+        }
+    }
+    
+    showNewRoundInputs() {
+        const newRoundEl = document.getElementById('new-round');
+        if (newRoundEl) {
+            newRoundEl.classList.remove('hidden');
+        }
+    }
+    
+    hideNewRoundInputs() {
+        const newRoundEl = document.getElementById('new-round');
+        if (newRoundEl) {
+            newRoundEl.classList.add('hidden');
         }
     }
     showNewGameModal(title, message, playerNames) {
