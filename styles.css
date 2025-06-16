@@ -166,19 +166,27 @@ label {
 input[type="number"],
 input[type="text"] {
     padding: 0.5rem;
-    border: 2px solid #8B4513;
+    border: 1px solid rgba(139, 69, 19, 0.3);
     border-radius: 4px;
     font-size: 1rem;
-    background: #fff8dc;
+    background: rgba(255, 248, 220, 0.7);
     width: 100%;
     margin-bottom: 1rem;
+    color: #000;
+}
+
+input[type="number"]::placeholder,
+input[type="text"]::placeholder {
+    color: #999;
+    opacity: 1;
 }
 
 input[type="number"]:focus,
 input[type="text"]:focus {
     outline: none;
-    border-color: #d4af37;
-    box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
+    border-color: rgba(212, 175, 55, 0.6);
+    box-shadow: 0 0 3px rgba(212, 175, 55, 0.2);
+    background: rgba(255, 248, 220, 0.9);
 }
 
 /* Buttons */
@@ -420,7 +428,7 @@ input[type="text"]:focus {
 
 .round-input-row {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
     gap: 0.5rem;
     margin-bottom: 0.5rem;
 }
@@ -440,6 +448,52 @@ input[type="text"]:focus {
     margin-bottom: 0.25rem;
     text-align: center;
     color: #8B4513;
+}
+
+/* Computed Score Display */
+.computed-score {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.5rem;
+    padding: 0.5rem;
+    background: rgba(139, 69, 19, 0.1);
+    border: 2px solid #d4af37;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 1rem;
+    text-align: center;
+    color: #8B4513;
+    min-width: 0;
+    width: 100%;
+}
+
+.computed-score.positive {
+    color: #228B22;
+    background: rgba(34, 139, 34, 0.1);
+    border: 2px solid #228B22;
+    font-weight: bold;
+}
+
+.computed-score.negative {
+    color: #DC143C;
+    background: rgba(220, 20, 60, 0.1);
+    border: 2px solid #DC143C;
+    font-weight: bold;
+}
+
+.computed-score.zero {
+    color: #708090;
+    background: rgba(112, 128, 144, 0.1);
+    border: 2px solid #708090;
+    font-weight: bold;
+}
+
+.computed-score.invalid {
+    color: #999;
+    background: rgba(153, 153, 153, 0.05);
+    border: 1px dashed rgba(153, 153, 153, 0.4);
+    font-weight: normal;
 }
 
 /* Previous Rounds */
@@ -590,7 +644,7 @@ input[type="text"]:focus {
     }
     
     .round-input-row {
-        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
         gap: 0.25rem;
     }
     
@@ -612,6 +666,13 @@ input[type="text"]:focus {
         display: flex;
         flex-direction: column;
         align-items: center;
+    }
+    
+    .computed-score {
+        padding: 0.4rem 0.2rem;
+        font-size: 16px;
+        max-width: 60px;
+        height: auto;
     }
     
     .player-round-input {
