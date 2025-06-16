@@ -1074,6 +1074,114 @@ describe('SkullKingGame Total Wins Validation', () => {
     });
 });
 
+describe('SkullKingGame Score Sorting', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        document.body.innerHTML = '<div id="score-display"></div>';
+        gameInstance = new window.SkullKingGame();
+        gameInstance.viewModel.startNewGame();
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        gameInstance.viewModel.validateAndStartGame();
+    });
+
+    test('should sort players by score in descending order', () => {
+        // Add rounds with different scores
+        // Round 1: 1 card each for 3 players (total tricks = 1)
+        gameInstance.viewModel.addRound({
+            'Alice': { bid: 1, actual: 1, bonus: 0 },    // 20 points
+            'Bob': { bid: 0, actual: 0, bonus: 0 },      // 10 points (zero bid success)
+            'Charlie': { bid: 0, actual: 0, bonus: 0 }   // 10 points (zero bid success)
+        });
+
+        // Round 2: 2 cards each for 3 players (total tricks must = 2)
+        gameInstance.viewModel.addRound({
+            'Alice': { bid: 1, actual: 1, bonus: 0 },    // 20 points (total: 40)
+            'Bob': { bid: 0, actual: 1, bonus: 0 },      // -20 points (total: -10)
+            'Charlie': { bid: 1, actual: 0, bonus: 0 }   // -10 points (total: 0)
+        });
+        
+        // Round 3: 3 cards each for 3 players (total tricks must = 3)
+        gameInstance.viewModel.addRound({
+            'Alice': { bid: 1, actual: 1, bonus: 0 },    // 20 points (total: 60)
+            'Bob': { bid: 1, actual: 1, bonus: 0 },      // 20 points (total: 10)
+            'Charlie': { bid: 1, actual: 1, bonus: 80 }  // 100 points (total: 100)
+        });
+
+        // Check the sorted players from view model
+        const sortedPlayers = gameInstance.viewModel.getPlayersSortedByScore();
+        
+        expect(sortedPlayers[0].name).toBe('Charlie');
+        expect(sortedPlayers[0].score).toBe(100);
+        
+        expect(sortedPlayers[1].name).toBe('Alice');
+        expect(sortedPlayers[1].score).toBe(60);
+        
+        expect(sortedPlayers[2].name).toBe('Bob');
+        expect(sortedPlayers[2].score).toBe(10);
+    });
+
+    test('should handle tied scores by maintaining original order', () => {
+        // Add a round where all players score the same
+        gameInstance.viewModel.addRound({
+            'Alice': { bid: 1, actual: 1, bonus: 0 },    // 20 points
+            'Bob': { bid: 1, actual: 1, bonus: 0 },      // 20 points
+            'Charlie': { bid: 1, actual: 1, bonus: 0 }   // 20 points
+        });
+
+        const sortedPlayers = gameInstance.viewModel.getPlayersSortedByScore();
+        
+        // When scores are tied, the original order should be maintained
+        expect(sortedPlayers[0].name).toBe('Alice');
+        expect(sortedPlayers[1].name).toBe('Bob');
+        expect(sortedPlayers[2].name).toBe('Charlie');
+    });
+
+    test('should update sorting after each round', () => {
+        // Round 1: Bob leads with bonus
+        gameInstance.viewModel.addRound({
+            'Alice': { bid: 0, actual: 0, bonus: 0 },    // 10 points (zero bid success in round 1)
+            'Bob': { bid: 1, actual: 1, bonus: 10 },     // 30 points (20 + 10 bonus)
+            'Charlie': { bid: 0, actual: 0, bonus: 0 }   // 10 points (zero bid success in round 1)
+        });
+
+        let sortedPlayers = gameInstance.viewModel.getPlayersSortedByScore();
+        
+        expect(sortedPlayers[0].name).toBe('Bob');
+        expect(sortedPlayers[1].name).toBe('Alice');
+        expect(sortedPlayers[2].name).toBe('Charlie');
+
+        // Round 2: Alice gets both tricks, Charlie gets zero bid bonus (total tricks = 2)
+        const round2Result = gameInstance.viewModel.addRound({
+            'Alice': { bid: 1, actual: 2, bonus: 0 },    // -10 points (total: 0)
+            'Bob': { bid: 1, actual: 0, bonus: 0 },      // -10 points (total: 20)
+            'Charlie': { bid: 0, actual: 0, bonus: 10 }  // 30 points (10*2 + 10 bonus, total: 40)
+        });
+        
+        sortedPlayers = gameInstance.viewModel.getPlayersSortedByScore();
+        
+        // Charlie leads with 40, Bob second with 20, Alice last with 0
+        expect(sortedPlayers[0].name).toBe('Charlie');
+        expect(sortedPlayers[1].name).toBe('Bob'); 
+        expect(sortedPlayers[2].name).toBe('Alice');
+        
+        // Round 3: Charlie takes clear lead (total tricks must = 3)
+        gameInstance.viewModel.addRound({
+            'Alice': { bid: 0, actual: 1, bonus: 0 },    // -10 points (total: 50)
+            'Bob': { bid: 0, actual: 1, bonus: 0 },      // -10 points (total: 30)
+            'Charlie': { bid: 1, actual: 1, bonus: 30 }  // 50 points (total: 90)
+        });
+
+        sortedPlayers = gameInstance.viewModel.getPlayersSortedByScore();
+        
+        expect(sortedPlayers[0].name).toBe('Charlie');
+        expect(sortedPlayers[1].name).toBe('Bob'); 
+        expect(sortedPlayers[2].name).toBe('Alice');
+        
+        // Final scores should be: Charlie: 90, Bob: -10, Alice: -30
+    });
+});
+
 describe('SkullKingGame Card Distribution Edge Cases', () => {
     let gameInstance: any;
     
