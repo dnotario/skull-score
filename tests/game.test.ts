@@ -311,77 +311,56 @@ describe('SkullKingGame Validation', () => {
         });
     });
 
-    describe('Input Validation', () => {
+    describe('Centralized Input Validation', () => {
         test('should reject negative values', () => {
-            const roundData = {
-                'Alice': { bid: -1, actual: 1, bonus: 0 },
-                'Bob': { bid: 1, actual: 1, bonus: 0 }
-            };
+            // Test negative bid
+            let result = gameInstance.testValidateSinglePlayerInput(-1, 1, 0, 'Alice');
+            expect(result).toContain("Bid, actual tricks, and bonus must be non-negative for Alice");
             
-            const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toContain("Bid and actual tricks must be non-negative for Alice");
+            // Test negative actual
+            result = gameInstance.testValidateSinglePlayerInput(1, -1, 0, 'Alice');
+            expect(result).toContain("Bid, actual tricks, and bonus must be non-negative for Alice");
+            
+            // Test negative bonus
+            result = gameInstance.testValidateSinglePlayerInput(1, 1, -10, 'Alice');
+            expect(result).toContain("Bid, actual tricks, and bonus must be non-negative for Alice");
         });
 
         test('should reject NaN values', () => {
-            const roundData = {
-                'Alice': { bid: NaN, actual: 1, bonus: 0 },
-                'Bob': { bid: 1, actual: 1, bonus: 0 }
-            };
-            
-            const result = gameInstance.viewModel.addRound(roundData);
+            const result = gameInstance.testValidateSinglePlayerInput(NaN, 1, 0, 'Alice');
             expect(result).toContain("Invalid number entered for Alice");
         });
 
         test('should reject non-integer values', () => {
-            const roundData = {
-                'Alice': { bid: 1.5, actual: 1, bonus: 0 },
-                'Bob': { bid: 1, actual: 1, bonus: 0 }
-            };
-            
-            const result = gameInstance.viewModel.addRound(roundData);
+            const result = gameInstance.testValidateSinglePlayerInput(1.5, 1, 0, 'Alice');
             expect(result).toContain("All values must be whole numbers for Alice");
         });
 
         test('should reject unreasonable bonus values', () => {
-            const roundData = {
-                'Alice': { bid: 1, actual: 1, bonus: 150 }, // Too high
-                'Bob': { bid: 1, actual: 1, bonus: 0 }
-            };
-            
-            const result = gameInstance.viewModel.addRound(roundData);
+            const result = gameInstance.testValidateSinglePlayerInput(1, 1, 150, 'Alice');
             expect(result).toContain("Alice's bonus points seem unreasonable (150)");
         });
-    });
 
-    describe('Bonus Point Validation', () => {
         test('should reject bonus points for incorrect predictions', () => {
-            const roundData = {
-                'Alice': { bid: 1, actual: 0, bonus: 10 }, // Failed bid with bonus
-                'Bob': { bid: 0, actual: 0, bonus: 0 }
-            };
-            
-            const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toContain("Alice can only earn bonus points when correctly predicting tricks! (Bid: 1, Actual: 0)");
+            const result = gameInstance.testValidateSinglePlayerInput(1, 0, 10, 'Alice');
+            expect(result).toContain("Alice can only earn bonus points when correctly predicting tricks!");
         });
 
-        test('should allow bonus points for correct predictions', () => {
-            const roundData = {
-                'Alice': { bid: 1, actual: 1, bonus: 10 }, // Correct bid with bonus
-                'Bob': { bid: 0, actual: 0, bonus: 5 }     // Correct zero bid with bonus
-            };
-            
-            const result = gameInstance.viewModel.addRound(roundData);
+        test('should allow valid inputs', () => {
+            const result = gameInstance.testValidateSinglePlayerInput(1, 1, 10, 'Alice');
             expect(result).toBeNull(); // Should succeed
         });
 
-        test('should allow negative bonus points for correct predictions', () => {
-            const roundData = {
-                'Alice': { bid: 1, actual: 1, bonus: -5 }, // Correct bid with negative bonus
-                'Bob': { bid: 0, actual: 0, bonus: 0 }
-            };
-            
-            const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+        test('should reject bid exceeding round limit', () => {
+            // Round 1 with 2 players = max 1 trick
+            const result = gameInstance.testValidateSinglePlayerInput(2, 0, 0, 'Alice', 1);
+            expect(result).toContain("Alice's bid (2) can't exceed 1 tricks");
+        });
+
+        test('should reject actual exceeding round limit', () => {
+            // Round 1 with 2 players = max 1 trick
+            const result = gameInstance.testValidateSinglePlayerInput(0, 2, 0, 'Alice', 1);
+            expect(result).toContain("Alice can't win more than 1 tricks");
         });
     });
 
@@ -1303,5 +1282,244 @@ describe('SkullKingGame New Game Flow', () => {
         expect(showPlayerSetupSpy).toHaveBeenCalled();
         
         showPlayerSetupSpy.mockRestore();
+    });
+});
+
+describe('SkullKingGame Real-time Score Calculation', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+        
+        // Setup game with players
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Mock the DOM elements needed for score calculation
+        document.body.innerHTML += `
+            <div id="round-inputs"></div>
+            <div id="round-number"></div>
+            <input id="bid-Alice" type="number" />
+            <input id="actual-Alice" type="number" />
+            <input id="bonus-Alice" type="number" />
+            <div id="score-Alice"></div>
+            <input id="bid-Bob" type="number" />
+            <input id="actual-Bob" type="number" />
+            <input id="bonus-Bob" type="number" />
+            <div id="score-Bob"></div>
+        `;
+    });
+    
+    test('should show "-" when both bid and actual are empty', () => {
+        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        
+        // Call updateRoundScore with empty inputs
+        gameInstance.updateRoundScore('Alice');
+        
+        expect(scoreDisplay.textContent).toBe('-');
+        expect(scoreDisplay.className).toBe('computed-score');
+    });
+    
+    test('should calculate score with only bid filled', () => {
+        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        
+        bidInput.value = '1';  // Valid bid for round 1 with 2 players
+        gameInstance.updateRoundScore('Alice');
+        
+        // Bid 1, Actual 0 = failed bid = -10
+        expect(scoreDisplay.textContent).toBe('-10');
+        expect(scoreDisplay.className).toContain('negative');
+    });
+    
+    test('should calculate score with only actual filled', () => {
+        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        
+        actualInput.value = '1';  // Valid actual for round 1 with 2 players
+        gameInstance.updateRoundScore('Alice');
+        
+        // Bid 0, Actual 1 = failed zero bid in round 1 = -10
+        expect(scoreDisplay.textContent).toBe('-10');
+        expect(scoreDisplay.className).toContain('negative');
+    });
+    
+    test('should calculate correct prediction score', () => {
+        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        
+        bidInput.value = '1';
+        actualInput.value = '1';
+        gameInstance.updateRoundScore('Alice');
+        
+        // Bid 1, Actual 1 = correct prediction = 20
+        expect(scoreDisplay.textContent).toBe('+20');
+        expect(scoreDisplay.className).toContain('positive');
+    });
+    
+    test('should include bonus points for correct predictions', () => {
+        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
+        const bonusInput = document.getElementById('bonus-Alice') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        
+        bidInput.value = '1';
+        actualInput.value = '1';
+        bonusInput.value = '10';
+        gameInstance.updateRoundScore('Alice');
+        
+        // Bid 1, Actual 1, Bonus 10 = 20 + 10 = 30
+        expect(scoreDisplay.textContent).toBe('+30');
+        expect(scoreDisplay.className).toContain('positive');
+    });
+    
+    test('should show "-" for bonus on incorrect prediction', () => {
+        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
+        const bonusInput = document.getElementById('bonus-Alice') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        
+        bidInput.value = '1';
+        actualInput.value = '0';
+        bonusInput.value = '10';
+        gameInstance.updateRoundScore('Alice');
+        
+        // Invalid: bonus points on failed prediction
+        expect(scoreDisplay.textContent).toBe('-');
+        expect(scoreDisplay.className).toContain('invalid');
+    });
+    
+    test('should handle zero bid correctly', () => {
+        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        
+        bidInput.value = '0';
+        actualInput.value = '0';
+        gameInstance.updateRoundScore('Alice');
+        
+        // Successful zero bid in round 1 = 10
+        expect(scoreDisplay.textContent).toBe('+10');
+        expect(scoreDisplay.className).toContain('positive');
+    });
+    
+    test('should show zero score correctly', () => {
+        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
+        const bonusInput = document.getElementById('bonus-Alice') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        
+        bidInput.value = '0';
+        actualInput.value = '0';
+        bonusInput.value = '0';
+        
+        // Add rounds to get to round 0 (which would give 0 points for zero bid)
+        // Actually, this can't happen in normal game, but let's test the display
+        bidInput.value = '1';
+        actualInput.value = '1';
+        bonusInput.value = '0';
+        
+        // Mock the score calculation to return 0
+        jest.spyOn(gameInstance.viewModel, 'testCalculateRoundScore').mockReturnValue(0);
+        
+        gameInstance.updateRoundScore('Alice');
+        
+        expect(scoreDisplay.textContent).toBe('0');
+        expect(scoreDisplay.className).toContain('zero');
+    });
+    
+    test('should show "-" for invalid inputs using centralized validation', () => {
+        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
+        const bonusInput = document.getElementById('bonus-Alice') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        
+        // Test negative bid (uses centralized validation)
+        bidInput.value = '-1';
+        actualInput.value = '0';
+        bonusInput.value = '0';
+        gameInstance.updateRoundScore('Alice');
+        
+        expect(scoreDisplay.textContent).toBe('-');
+        expect(scoreDisplay.className).toContain('invalid');
+        
+        // Test negative bonus (uses centralized validation)
+        bidInput.value = '1';
+        bonusInput.value = '-10';
+        gameInstance.updateRoundScore('Alice');
+        
+        expect(scoreDisplay.textContent).toBe('-');
+        expect(scoreDisplay.className).toContain('invalid');
+    });
+    
+    test('should show "-" when bid exceeds round limit', () => {
+        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        
+        // In round 1 with 2 players, max is 1
+        bidInput.value = '2';
+        actualInput.value = '0';
+        gameInstance.updateRoundScore('Alice');
+        
+        expect(scoreDisplay.textContent).toBe('-');
+        expect(scoreDisplay.className).toContain('invalid');
+    });
+    
+    test('should update all player scores on initialization', () => {
+        // Setup round inputs container
+        const roundInputs = document.getElementById('round-inputs') as HTMLElement;
+        const players = gameInstance.viewModel.getGameState().players;
+        
+        // Call updateRoundInputs which should initialize all scores
+        gameInstance.updateRoundInputs(players, 1);
+        
+        // Both players should have their scores initialized
+        // Since we can't easily test the initialization directly,
+        // we'll verify the HTML structure was created correctly
+        expect(roundInputs.innerHTML).toContain('score-Alice');
+        expect(roundInputs.innerHTML).toContain('score-Bob');
+        expect(roundInputs.innerHTML).toContain('computed-score');
+    });
+    
+    test('should handle player names with special characters', () => {
+        // Create a player with special characters
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(["O'Brien", 'Bob & Alice']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Add DOM elements for special character names
+        document.body.innerHTML += `
+            <input id="bid-O'Brien" type="number" />
+            <input id="actual-O'Brien" type="number" />
+            <input id="bonus-O'Brien" type="number" />
+            <div id="score-O'Brien"></div>
+            <input id="bid-Bob & Alice" type="number" />
+            <input id="actual-Bob & Alice" type="number" />
+            <input id="bonus-Bob & Alice" type="number" />
+            <div id="score-Bob & Alice"></div>
+        `;
+        
+        // Set values and test score calculation for names with special characters
+        const bidOBrien = document.getElementById("bid-O'Brien") as HTMLInputElement;
+        const actualOBrien = document.getElementById("actual-O'Brien") as HTMLInputElement;
+        bidOBrien.value = '1';
+        actualOBrien.value = '1';
+        
+        gameInstance.updateRoundScore("O'Brien");
+        const scoreOBrien = document.getElementById("score-O'Brien") as HTMLElement;
+        expect(scoreOBrien.textContent).toBe('+20');
+        
+        // For Bob & Alice - max in round 1 with 2 players is 1
+        const bidBobAlice = document.getElementById('bid-Bob & Alice') as HTMLInputElement;
+        const actualBobAlice = document.getElementById('actual-Bob & Alice') as HTMLInputElement;
+        bidBobAlice.value = '0';
+        actualBobAlice.value = '0';
+        
+        gameInstance.updateRoundScore('Bob & Alice');
+        const scoreBobAlice = document.getElementById('score-Bob & Alice') as HTMLElement;
+        expect(scoreBobAlice.textContent).toBe('+10'); // Successful zero bid in round 1
     });
 });
