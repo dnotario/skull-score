@@ -27,6 +27,7 @@ interface PlayerRoundData {
 interface RoundData {
     roundNumber: number;
     playerData: PlayerRoundData[];
+    commentary: string;
 }
 
 interface GameStateData {
@@ -284,7 +285,8 @@ class GameViewModel {
 
         const roundData: RoundData = {
             roundNumber: this.state.currentRound,
-            playerData: []
+            playerData: [],
+            commentary: ''
         };
 
         // Process each player's data
@@ -308,6 +310,9 @@ class GameViewModel {
             // Update player's total score
             player.score += roundScore;
         }
+
+        // Generate commentary for this round
+        roundData.commentary = this.generateRoundCommentary(roundData);
 
         this.state.rounds.push(roundData);
         this.state.currentRound++;
@@ -433,16 +438,11 @@ class GameViewModel {
         return this.state.rounds.length;
     }
 
-    // Commentary generation
-    generateCommentary(): string {
-        if (this.state.rounds.length === 0) {
-            return '';
-        }
-
-        const lastRound = this.state.rounds[this.state.rounds.length - 1];
-        const perfectPlayers = lastRound.playerData.filter(p => p.bid === p.actual);
-        const disasters = lastRound.playerData.filter(p => Math.abs(p.bid - p.actual) >= 3);
-        const bigScores = lastRound.playerData.filter(p => p.roundScore >= 40);
+    // Commentary generation for a specific round
+    generateRoundCommentary(roundData: RoundData): string {
+        const perfectPlayers = roundData.playerData.filter(p => p.bid === p.actual);
+        const disasters = roundData.playerData.filter(p => Math.abs(p.bid - p.actual) >= 3);
+        const bigScores = roundData.playerData.filter(p => p.roundScore >= 40);
 
         // Perfect round (everyone got their bid)
         if (perfectPlayers.length === this.state.players.length) {
@@ -475,13 +475,31 @@ class GameViewModel {
             return comments[Math.floor(Math.random() * comments.length)];
         }
 
-        // Default commentary
+        // Default commentary - always return something
         const defaultComments = [
             "Another round in the books! The seas be unpredictable as always!",
             "The tide turns with each round! Stay sharp, ye scurvy dogs!",
-            "Mixed fortunes this round! The ocean gives and takes as she pleases!"
+            "Mixed fortunes this round! The ocean gives and takes as she pleases!",
+            "The winds of fortune blow in mysterious ways, ye landlubbers!",
+            "Some pirates swim with the sharks, others sail to victory!"
         ];
         return defaultComments[Math.floor(Math.random() * defaultComments.length)];
+    }
+
+    // Get commentary for current state (for voice reading)
+    getCurrentCommentary(): string {
+        if (this.state.rounds.length === 0) {
+            const startComments = [
+                "Batten down the hatches, me hearties! The adventure begins!",
+                "Hoist the colors! Time to see which scallywag rules these waters!",
+                "All hands on deck! May the best pirate claim the treasure!"
+            ];
+            return startComments[Math.floor(Math.random() * startComments.length)];
+        }
+
+        // Return the commentary from the most recent round
+        const lastRound = this.state.rounds[this.state.rounds.length - 1];
+        return lastRound.commentary;
     }
 
     // Winner determination
@@ -531,11 +549,9 @@ class GameViewModel {
 
         let announcement = "Ahoy mateys! ";
 
-        // Add the pirate commentary from the last round first if available
-        const commentary = this.generateCommentary();
-        if (commentary) {
-            announcement += `${commentary} `;
-        }
+        // Always use the current commentary from the viewmodel
+        const commentary = this.getCurrentCommentary();
+        announcement += `${commentary} `;
 
         const sortedPlayers = [...this.state.players].sort((a, b) => b.score - a.score);
         
@@ -665,6 +681,12 @@ class SkullKingGame {
         this.updateUI();
         this.clearRoundInputs();
         this.showCommentary();
+        
+        // Scroll to the scores section after recording round
+        const scoresSection = document.querySelector('.current-scores');
+        if (scoresSection) {
+            scoresSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 
     private handleModalConfirm(): void {
@@ -851,13 +873,20 @@ class SkullKingGame {
                     ${index === 0 ? '<button class="btn btn-secondary" onclick="game.handleUpdateLastRound()">Edit Round</button>' : ''}
                 </div>
                 <div class="round-data">
+                    <div class="round-data-header">
+                        <span>Player</span>
+                        <span>Bid</span>
+                        <span>Won</span>
+                        <span>Bonus</span>
+                        <span>Score</span>
+                    </div>
                     ${round.playerData.map(data => `
                         <div class="player-round-data">
                             <strong>${data.playerName}</strong>
-                            <span>Bid: ${data.bid}</span>
-                            <span>Won: ${data.actual}</span>
-                            <span>Bonus: ${data.bonus}</span>
-                            <span>Score: ${data.roundScore > 0 ? '+' : ''}${data.roundScore}</span>
+                            <span>${data.bid}</span>
+                            <span>${data.actual}</span>
+                            <span>${data.bonus}</span>
+                            <span>${data.roundScore > 0 ? '+' : ''}${data.roundScore}</span>
                         </div>
                     `).join('')}
                 </div>
@@ -894,7 +923,7 @@ class SkullKingGame {
     }
 
     private showCommentary(): void {
-        const commentary = this.viewModel.generateCommentary();
+        const commentary = this.viewModel.getCurrentCommentary();
         const commentaryEl = document.getElementById('pirate-commentary');
         const textEl = document.getElementById('commentary-text');
 
@@ -1064,20 +1093,38 @@ class SkullKingGame {
         utterance.pitch = 0.7; // Lower pitch for gruff pirate voice
         utterance.volume = 1;
 
-        // Try to find the most pirate-sounding voice
-        const voices = window.speechSynthesis.getVoices();
-        const pirateVoice = voices.find(voice => 
-            voice.lang.startsWith('en') && 
-            (voice.name.toLowerCase().includes('male') ||
-             voice.name.toLowerCase().includes('daniel'))
-        ) || voices.find(voice => voice.lang.startsWith('en'));
+        // Function to set consistent male voice
+        const setConsistentVoice = () => {
+            const voices = window.speechSynthesis.getVoices();
+            
+            if (voices.length === 0) {
+                // Voices not loaded yet, try again in a moment
+                setTimeout(setConsistentVoice, 100);
+                return;
+            }
 
-        if (pirateVoice) {
-            utterance.voice = pirateVoice;
-        }
+            // Look for consistent male voices in priority order
+            const pirateVoice = voices.find(voice => 
+                voice.lang.startsWith('en') && 
+                (voice.name.toLowerCase().includes('male') ||
+                 voice.name.toLowerCase().includes('daniel') ||
+                 voice.name.toLowerCase().includes('david') ||
+                 voice.name.toLowerCase().includes('alex'))
+            ) || voices.find(voice => 
+                voice.lang.startsWith('en') && !voice.name.toLowerCase().includes('female')
+            ) || voices.find(voice => voice.lang.startsWith('en'));
 
-        // Speak!
-        window.speechSynthesis.speak(utterance);
+            if (pirateVoice) {
+                utterance.voice = pirateVoice;
+                console.log(`Using voice: ${pirateVoice.name} (${pirateVoice.lang})`);
+            }
+
+            // Speak!
+            window.speechSynthesis.speak(utterance);
+        };
+
+        // Set voice and speak
+        setConsistentVoice();
     }
 
     // Public API for HTML event handlers
@@ -1114,6 +1161,12 @@ class SkullKingGame {
             if (actualInput) actualInput.value = data.actual.toString();
             if (bonusInput) bonusInput.value = data.bonus.toString();
         }
+        
+        // Scroll to the round inputs section for editing
+        const roundInputsSection = document.getElementById('new-round');
+        if (roundInputsSection) {
+            roundInputsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 
     // PWA Install Functionality
@@ -1133,29 +1186,19 @@ class SkullKingGame {
     }
 
     private setupInstallButtons(): void {
-        // Add event listeners to the mobile install buttons
-        const installBtn = document.getElementById('install-app-btn');
-        const installBtnLanding = document.getElementById('install-app-btn-landing');
+        // Add event listener to the header install button
+        const installBtnHeader = document.getElementById('install-app-btn-header');
         
-        if (installBtn) {
-            installBtn.addEventListener('click', () => this.showInstallInstructions());
-        }
-        
-        if (installBtnLanding) {
-            installBtnLanding.addEventListener('click', () => this.showInstallInstructions());
+        if (installBtnHeader) {
+            installBtnHeader.addEventListener('click', () => this.showInstallInstructions());
         }
     }
 
     private hideInstallButtons(): void {
-        const installBtn = document.getElementById('install-app-btn');
-        const installBtnLanding = document.getElementById('install-app-btn-landing');
+        const installBtnHeader = document.getElementById('install-app-btn-header');
         
-        if (installBtn) {
-            installBtn.style.display = 'none';
-        }
-        
-        if (installBtnLanding) {
-            installBtnLanding.style.display = 'none';
+        if (installBtnHeader) {
+            installBtnHeader.style.display = 'none';
         }
     }
 

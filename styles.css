@@ -52,6 +52,13 @@ body {
     text-align: center;
 }
 
+/* Add padding for install button only on mobile */
+@media (max-width: 768px) {
+    .header-content {
+        padding-right: 4rem; /* Make room for install button */
+    }
+}
+
 .pirate-header h1 {
     font-size: 2.5rem;
     color: #f4e4c1;
@@ -449,7 +456,20 @@ input[type="text"]:focus {
 
 .round-data {
     display: grid;
+    gap: 0.25rem;
+}
+
+.round-data-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
     gap: 0.5rem;
+    align-items: center;
+    padding: 0.5rem;
+    background: rgba(139, 69, 19, 0.15);
+    border-radius: 4px;
+    font-weight: bold;
+    color: #8B4513;
+    font-size: 0.9rem;
 }
 
 .player-round-data {
@@ -457,9 +477,10 @@ input[type="text"]:focus {
     grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
     gap: 0.5rem;
     align-items: center;
-    padding: 0.5rem;
+    padding: 0.4rem 0.5rem;
     background: rgba(139, 69, 19, 0.05);
     border-radius: 4px;
+    font-size: 0.9rem;
 }
 
 .player-round-data strong {
@@ -569,32 +590,51 @@ input[type="text"]:focus {
     }
     
     .round-input-row {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 0.25rem;
     }
     
     .round-input-row input {
-        margin-bottom: 0.5rem;
+        margin-bottom: 0;
+        padding: 0.4rem 0.2rem;
+        font-size: 16px;
+        width: 100%;
+        max-width: 60px;
+        text-align: center;
+    }
+    
+    .input-label {
+        font-size: 0.75rem;
+        margin-bottom: 0.15rem;
+    }
+    
+    .input-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
     
     .player-round-input {
-        padding: 0.75rem;
-        margin-bottom: 1rem;
+        padding: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .round-data-header {
+        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+        padding: 0.4rem 0.5rem;
+        font-size: 0.8rem;
     }
     
     .player-round-data {
-        grid-template-columns: 1fr;
-        text-align: left;
-        padding: 0.75rem;
-    }
-    
-    .player-round-data > * {
-        display: block;
-        margin: 0.25rem 0;
+        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+        text-align: center;
+        padding: 0.3rem 0.5rem;
+        font-size: 0.8rem;
     }
     
     .player-round-data strong {
-        font-size: 1.1rem;
-        margin-bottom: 0.5rem;
+        text-align: left;
+        font-size: 0.85rem;
     }
     
     .btn {
@@ -840,16 +880,40 @@ input[type="text"]:focus {
     }
 }
 
-/* Install App Button - Mobile Only */
-.install-app-btn-mobile {
+/* Install App Button in Header - Mobile Only */
+.install-app-btn-header {
     display: none; /* Hidden by default on desktop */
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(212, 175, 55, 0.9);
+    color: #2c1810;
+    border: 2px solid rgba(44, 24, 16, 0.3);
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    z-index: 100;
+    font-family: 'Georgia', serif;
+}
+
+.install-app-btn-header:hover {
+    background: rgba(244, 228, 193, 0.95);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.install-app-btn-header:active {
+    transform: scale(0.95);
 }
 
 /* Show install button only on mobile */
 @media (max-width: 768px) {
-    .install-app-btn-mobile {
-        display: inline-block;
-        margin-top: 0.5rem;
+    .install-app-btn-header {
+        display: block;
     }
 }
 
