@@ -788,8 +788,8 @@ describe('SkullKingGame Score Announcement', () => {
         // Get announcement with no rounds played
         const announcement = gameInstance.viewModel.createScoreAnnouncement();
         
-        // Should start with greeting and go straight to scores (no commentary)
-        expect(announcement).toMatch(/^Ahoy mateys! Now for the current bounty/);
+        // Should start with greeting and include game start commentary
+        expect(announcement).toMatch(/^Ahoy mateys! (Batten down the hatches|Hoist the colors|All hands on deck)/);
         expect(announcement).toContain('Now for the current bounty after round 0');
         expect(announcement).toContain('Alice');
         expect(announcement).toContain('Bob');
