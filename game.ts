@@ -173,18 +173,38 @@ class GameViewModel {
         for (const [playerName, playerData] of Object.entries(data)) {
             const { bid, actual, bonus } = playerData;
 
-            // Basic validation
-            if (bid < 0 || actual < 0 || bonus < 0) {
-                return `All values must be non-negative for ${playerName}`;
+            // Check for invalid numbers (NaN)
+            if (isNaN(bid) || isNaN(actual) || isNaN(bonus)) {
+                return `Invalid number entered for ${playerName}. Please enter valid numbers only.`;
             }
 
-            if (bid > this.state.currentRound || actual > this.state.currentRound) {
-                return `Bids and tricks can't exceed ${this.state.currentRound} for round ${this.state.currentRound}`;
+            // Integer validation (check first)
+            if (!Number.isInteger(bid) || !Number.isInteger(actual) || !Number.isInteger(bonus)) {
+                return `All values must be whole numbers for ${playerName}.`;
+            }
+
+            // Basic validation
+            if (bid < 0 || actual < 0) {
+                return `Bid and actual tricks must be non-negative for ${playerName}.`;
+            }
+
+            // Round-specific validation: bids and actual tricks can't exceed round number
+            if (bid > this.state.currentRound) {
+                return `${playerName}'s bid (${bid}) can't exceed ${this.state.currentRound} tricks in round ${this.state.currentRound}.`;
+            }
+
+            if (actual > this.state.currentRound) {
+                return `${playerName} can't win more than ${this.state.currentRound} tricks in round ${this.state.currentRound}. Actual: ${actual}`;
             }
 
             // Bonus point validation - only applies when correctly predicting tricks
             if (bid !== actual && bonus > 0) {
-                return `${playerName} can only earn bonus points when correctly predicting tricks!`;
+                return `${playerName} can only earn bonus points when correctly predicting tricks! (Bid: ${bid}, Actual: ${actual})`;
+            }
+
+            // Reasonable bonus limits
+            if (Math.abs(bonus) > 100) {
+                return `${playerName}'s bonus points seem unreasonable (${bonus}). Please check your entry.`;
             }
         }
 
@@ -424,9 +444,17 @@ class GameViewModel {
             return "No active game to announce, ye landlubber!";
         }
 
+        let announcement = "Ahoy mateys! ";
+
+        // Add the pirate commentary from the last round first if available
+        const commentary = this.generateCommentary();
+        if (commentary) {
+            announcement += `${commentary} `;
+        }
+
         const sortedPlayers = [...this.state.players].sort((a, b) => b.score - a.score);
         
-        let announcement = `Ahoy! Here be the current bounty after round ${this.state.rounds.length}... `;
+        announcement += `Now for the current bounty after round ${this.state.rounds.length}... `;
         
         sortedPlayers.forEach((player, index) => {
             if (index === 0) {
@@ -706,10 +734,15 @@ class SkullKingGame {
             const actualInput = document.getElementById(`actual-${player.name}`) as HTMLInputElement;
             const bonusInput = document.getElementById(`bonus-${player.name}`) as HTMLInputElement;
 
+            // Parse values, defaulting to 0 for empty inputs
+            const bidValue = bidInput?.value?.trim() || '0';
+            const actualValue = actualInput?.value?.trim() || '0';
+            const bonusValue = bonusInput?.value?.trim() || '0';
+
             data[player.name] = {
-                bid: parseInt(bidInput?.value || '0'),
-                actual: parseInt(actualInput?.value || '0'),
-                bonus: parseInt(bonusInput?.value || '0')
+                bid: parseInt(bidValue),
+                actual: parseInt(actualValue),
+                bonus: parseInt(bonusValue)
             };
         }
 
@@ -737,17 +770,63 @@ class SkullKingGame {
         const titleEl = document.getElementById('modal-title');
         const messageEl = document.getElementById('modal-message');
         const checkboxContainer = document.getElementById('modal-checkbox-container');
+        const modalButtons = document.getElementById('modal-buttons');
+        const modalOptions = document.getElementById('modal-options');
+        const newGameOptions = document.getElementById('new-game-options');
 
         if (!modal || !titleEl || !messageEl) return;
 
         titleEl.textContent = title;
         messageEl.textContent = message;
 
+        // Hide all optional sections by default
+        checkboxContainer?.classList.add('hidden');
+        modalOptions?.classList.add('hidden');
+        newGameOptions?.classList.add('hidden');
+        
+        // Show standard buttons
+        modalButtons?.classList.remove('hidden');
+
         if (showCheckbox && checkboxContainer) {
             checkboxContainer.classList.remove('hidden');
-        } else if (checkboxContainer) {
-            checkboxContainer.classList.add('hidden');
         }
+
+        modal.classList.remove('hidden');
+    }
+
+    private showErrorModal(message: string): void {
+        const modal = document.getElementById('modal');
+        const titleEl = document.getElementById('modal-title');
+        const messageEl = document.getElementById('modal-message');
+        const checkboxContainer = document.getElementById('modal-checkbox-container');
+        const modalButtons = document.getElementById('modal-buttons');
+        const modalOptions = document.getElementById('modal-options');
+        const newGameOptions = document.getElementById('new-game-options');
+        const modalConfirm = document.getElementById('modal-confirm');
+        const modalCancel = document.getElementById('modal-cancel');
+
+        if (!modal || !titleEl || !messageEl) return;
+
+        titleEl.textContent = 'Arr! Input Error';
+        messageEl.textContent = message;
+
+        // Hide all optional sections
+        checkboxContainer?.classList.add('hidden');
+        modalOptions?.classList.add('hidden');
+        newGameOptions?.classList.add('hidden');
+        modalButtons?.classList.remove('hidden');
+
+        // Show only the confirm button (OK)
+        if (modalConfirm && modalCancel) {
+            modalConfirm.textContent = 'Aye, I\'ll fix it!';
+            modalCancel.style.display = 'none';
+        }
+
+        // Clear any existing callback and set error modal behavior
+        this.viewModel.setModalConfirmCallback(() => {
+            if (modalCancel) modalCancel.style.display = 'inline-block';
+            if (modalConfirm) modalConfirm.textContent = 'Aye';
+        });
 
         modal.classList.remove('hidden');
     }
@@ -763,13 +842,13 @@ class SkullKingGame {
     }
 
     private showError(message: string): void {
-        alert(message); // Simple error display - could be enhanced
+        this.showErrorModal(message);
     }
 
     private readScores(): void {
         // Check if browser supports speech synthesis
-        if (!('speechSynthesis' in window)) {
-            alert('Arr! Yer browser doesn\'t support speech. Try a newer vessel!');
+        if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
+            this.showErrorModal('Arr! Yer browser doesn\'t support speech. Try a newer vessel!');
             return;
         }
 

@@ -222,87 +222,214 @@ describe('SkullKingGame Player Limits', () => {
 });
 
 describe('SkullKingGame Validation', () => {
-    test('should validate bid ranges correctly', () => {
-        // Assuming round 5 (max 5 tricks)
-        const maxTricks = 5;
-        
-        // Valid bids
-        expect(0).toBeGreaterThanOrEqual(0);
-        expect(0).toBeLessThanOrEqual(maxTricks);
-        expect(maxTricks).toBeGreaterThanOrEqual(0);
-        expect(maxTricks).toBeLessThanOrEqual(maxTricks);
-        
-        // Invalid bids would be < 0 or > maxTricks
-        expect(-1).toBeLessThan(0);
-        expect(maxTricks + 1).toBeGreaterThan(maxTricks);
-    });
+    let gameInstance: any;
     
-    test('should validate actual tricks correctly', () => {
-        const maxTricks = 5;
-        
-        // Valid actual values
-        expect(0).toBeGreaterThanOrEqual(0);
-        expect(maxTricks).toBeLessThanOrEqual(maxTricks);
-        
-        // Invalid actual values
-        expect(-1).toBeLessThan(0);
-        expect(maxTricks + 1).toBeGreaterThan(maxTricks);
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+        // Setup a game with 2 players for testing
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
     });
-    
-    test('should validate bonus points range', () => {
-        // Bonus points should be reasonable (assuming -50 to 50 range)
-        const minBonus = -50;
-        const maxBonus = 50;
-        
-        expect(0).toBeGreaterThanOrEqual(minBonus);
-        expect(0).toBeLessThanOrEqual(maxBonus);
-        expect(minBonus).toBeGreaterThanOrEqual(minBonus);
-        expect(maxBonus).toBeLessThanOrEqual(maxBonus);
+
+    describe('Round Limit Validation', () => {
+        test('should reject bids exceeding current round number', () => {
+            // Round 1: max bid should be 1
+            const roundData = {
+                'Alice': { bid: 2, actual: 1, bonus: 0 }, // Invalid: bid > round
+                'Bob': { bid: 1, actual: 1, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toContain("Alice's bid (2) can't exceed 1 tricks in round 1");
+        });
+
+        test('should reject actual tricks exceeding current round number', () => {
+            // Round 1: max actual should be 1
+            const roundData = {
+                'Alice': { bid: 1, actual: 2, bonus: 0 }, // Invalid: actual > round
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toContain("Alice can't win more than 1 tricks in round 1. Actual: 2");
+        });
+
+        test('should accept valid bids and actuals within round limits', () => {
+            // Round 1: bid and actual = 1 should be valid
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toBeNull(); // Should succeed
+        });
+
+        test('should validate different round numbers correctly', () => {
+            // Add several rounds to get to round 3
+            expect(gameInstance.viewModel.addRound({
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            })).toBeNull();
+            
+            expect(gameInstance.viewModel.addRound({
+                'Alice': { bid: 2, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 1, bonus: 0 }
+            })).toBeNull();
+            
+            // Now in round 3, max should be 3
+            const validRoundData = {
+                'Alice': { bid: 3, actual: 2, bonus: 0 },
+                'Bob': { bid: 1, actual: 1, bonus: 0 }
+            };
+            
+            // Create a fresh game instance for testing the invalid data
+            // since adding the valid round would move us to round 4
+            const freshGame = new window.SkullKingGame();
+            freshGame.viewModel.startNewGame(false);
+            freshGame.viewModel.setTempPlayers(['Alice', 'Bob']);
+            freshGame.viewModel.validateAndStartGame();
+            
+            // Add rounds to get to round 3
+            freshGame.viewModel.addRound({
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            });
+            freshGame.viewModel.addRound({
+                'Alice': { bid: 2, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 1, bonus: 0 }
+            });
+            
+            const invalidRoundData = {
+                'Alice': { bid: 4, actual: 2, bonus: 0 }, // Invalid: bid > 3
+                'Bob': { bid: 1, actual: 1, bonus: 0 }
+            };
+            
+            expect(gameInstance.viewModel.addRound(validRoundData)).toBeNull();
+            expect(freshGame.viewModel.addRound(invalidRoundData)).toContain("Alice's bid (4) can't exceed 3 tricks in round 3");
+        });
     });
-    
-    test('should not allow bonus points for incorrect predictions', () => {
-        const gameInstance = new window.SkullKingGame();
-        
-        // Test failed bid with bonus points should not add bonus to score
-        const bid = 3;
-        const actual = 1; // Incorrect prediction
-        const bonus = 20; // Bonus should be ignored
-        const round = 5;
-        
-        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
-        const expectedScore = -10 * Math.abs(bid - actual); // -20, bonus ignored
-        
-        expect(actualScore).toBe(expectedScore);
+
+    describe('Input Validation', () => {
+        test('should reject negative values', () => {
+            const roundData = {
+                'Alice': { bid: -1, actual: 1, bonus: 0 },
+                'Bob': { bid: 1, actual: 1, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toContain("Bid and actual tricks must be non-negative for Alice");
+        });
+
+        test('should reject NaN values', () => {
+            const roundData = {
+                'Alice': { bid: NaN, actual: 1, bonus: 0 },
+                'Bob': { bid: 1, actual: 1, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toContain("Invalid number entered for Alice");
+        });
+
+        test('should reject non-integer values', () => {
+            const roundData = {
+                'Alice': { bid: 1.5, actual: 1, bonus: 0 },
+                'Bob': { bid: 1, actual: 1, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toContain("All values must be whole numbers for Alice");
+        });
+
+        test('should reject unreasonable bonus values', () => {
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 150 }, // Too high
+                'Bob': { bid: 1, actual: 1, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toContain("Alice's bonus points seem unreasonable (150)");
+        });
     });
-    
-    test('should allow bonus points only for correct predictions', () => {
-        const gameInstance = new window.SkullKingGame();
-        
-        // Test correct bid with bonus points
-        const bid = 2;
-        const actual = 2; // Correct prediction
-        const bonus = 15;
-        const round = 3;
-        
-        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
-        const expectedScore = 20 * actual + bonus; // 40 + 15 = 55
-        
-        expect(actualScore).toBe(expectedScore);
+
+    describe('Bonus Point Validation', () => {
+        test('should reject bonus points for incorrect predictions', () => {
+            const roundData = {
+                'Alice': { bid: 1, actual: 0, bonus: 10 }, // Failed bid with bonus
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toContain("Alice can only earn bonus points when correctly predicting tricks! (Bid: 1, Actual: 0)");
+        });
+
+        test('should allow bonus points for correct predictions', () => {
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 10 }, // Correct bid with bonus
+                'Bob': { bid: 0, actual: 0, bonus: 5 }     // Correct zero bid with bonus
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toBeNull(); // Should succeed
+        });
+
+        test('should allow negative bonus points for correct predictions', () => {
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: -5 }, // Correct bid with negative bonus
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toBeNull(); // Should succeed
+        });
     });
-    
-    test('should allow bonus points for successful zero bids', () => {
-        const gameInstance = new window.SkullKingGame();
+
+    describe('Scoring Logic Validation', () => {
+        test('should not allow bonus points for incorrect predictions', () => {
+            const gameInstance = new window.SkullKingGame();
+            
+            // Test failed bid with bonus points should not add bonus to score
+            const bid = 3;
+            const actual = 1; // Incorrect prediction
+            const bonus = 20; // Bonus should be ignored
+            const round = 5;
+            
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+            const expectedScore = -10 * Math.abs(bid - actual); // -20, bonus ignored
+            
+            expect(actualScore).toBe(expectedScore);
+        });
         
-        // Test successful zero bid with bonus points
-        const bid = 0;
-        const actual = 0; // Correct zero prediction
-        const bonus = 10;
-        const round = 7;
+        test('should allow bonus points only for correct predictions', () => {
+            const gameInstance = new window.SkullKingGame();
+            
+            // Test correct bid with bonus points
+            const bid = 2;
+            const actual = 2; // Correct prediction
+            const bonus = 15;
+            const round = 3;
+            
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+            const expectedScore = 20 * actual + bonus; // 40 + 15 = 55
+            
+            expect(actualScore).toBe(expectedScore);
+        });
         
-        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
-        const expectedScore = 10 * round + bonus; // 70 + 10 = 80
-        
-        expect(actualScore).toBe(expectedScore);
+        test('should allow bonus points for successful zero bids', () => {
+            const gameInstance = new window.SkullKingGame();
+            
+            // Test successful zero bid with bonus points
+            const bid = 0;
+            const actual = 0; // Correct zero prediction
+            const bonus = 10;
+            const round = 7;
+            
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+            const expectedScore = 10 * round + bonus; // 70 + 10 = 80
+            
+            expect(actualScore).toBe(expectedScore);
+        });
     });
 });
 
@@ -379,16 +506,16 @@ describe('SkullKingGame Update Last Round', () => {
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
         gameInstance.viewModel.validateAndStartGame();
         
-        // Mock alert to capture the message
-        const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+        // Mock the showErrorModal method instead of alert
+        const showErrorSpy = jest.spyOn(gameInstance, 'showErrorModal').mockImplementation(() => {});
         
         // Try to update last round
         gameInstance.handleUpdateLastRound();
         
-        // Should show error message
-        expect(alertSpy).toHaveBeenCalledWith('No rounds to update!');
+        // Should show error message via modal
+        expect(showErrorSpy).toHaveBeenCalledWith('No rounds to update!');
         
-        alertSpy.mockRestore();
+        showErrorSpy.mockRestore();
     });
     
     test('should properly get last round data for editing', () => {
@@ -468,5 +595,133 @@ describe('SkullKingGame Update Last Round', () => {
         expect(gameState.rounds.length).toBe(1); // Still 1 round
         expect(gameState.players[0].score).toBe(-10); // Alice: -10 points for failed bid
         expect(gameState.players[1].score).toBe(-10); // Bob: -10 points for failed zero bid (round 1)
+    });
+});
+
+describe('SkullKingGame Modal Error Display', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+    });
+
+    test('should use showErrorModal instead of alert', () => {
+        // Mock the showErrorModal method
+        const showErrorSpy = jest.spyOn(gameInstance, 'showErrorModal').mockImplementation(() => {});
+        
+        // Call showError directly
+        gameInstance.showError('Test error message');
+        
+        // Verify showErrorModal was called
+        expect(showErrorSpy).toHaveBeenCalledWith('Test error message');
+        
+        showErrorSpy.mockRestore();
+    });
+
+    test('should handle speech synthesis error with modal', () => {
+        // Mock speech synthesis not supported
+        const originalSpeechSynthesis = window.speechSynthesis;
+        delete (window as any).speechSynthesis;
+        
+        // Also mock SpeechSynthesisUtterance
+        const originalSpeechSynthesisUtterance = (window as any).SpeechSynthesisUtterance;
+        delete (window as any).SpeechSynthesisUtterance;
+        
+        // Mock the showErrorModal method
+        const showErrorSpy = jest.spyOn(gameInstance, 'showErrorModal').mockImplementation(() => {});
+        
+        // Try to read scores (should trigger error modal)
+        gameInstance.readScores();
+        
+        // Verify error modal is called
+        expect(showErrorSpy).toHaveBeenCalledWith('Arr! Yer browser doesn\'t support speech. Try a newer vessel!');
+        
+        // Restore speech synthesis
+        (window as any).speechSynthesis = originalSpeechSynthesis;
+        (window as any).SpeechSynthesisUtterance = originalSpeechSynthesisUtterance;
+        showErrorSpy.mockRestore();
+    });
+
+    test('should call showErrorModal when validation fails', () => {
+        // Setup a game with players  
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Mock the showErrorModal method
+        const showErrorSpy = jest.spyOn(gameInstance, 'showErrorModal').mockImplementation(() => {});
+        
+        // Mock the handleAddRound method to trigger an error
+        const invalidRoundData = {
+            'Alice': { bid: 5, actual: 1, bonus: 0 }, // Invalid: bid > round 1
+            'Bob': { bid: 1, actual: 1, bonus: 0 }
+        };
+        
+        // Simulate the error flow
+        const error = gameInstance.viewModel.addRound(invalidRoundData);
+        expect(error).not.toBeNull(); // Should fail validation
+        
+        // Simulate calling showError with the validation error
+        gameInstance.showError(error);
+        
+        // Verify showErrorModal was called with the correct error message
+        expect(showErrorSpy).toHaveBeenCalledWith("Alice's bid (5) can't exceed 1 tricks in round 1.");
+        
+        showErrorSpy.mockRestore();
+    });
+});
+
+describe('SkullKingGame Score Announcement', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+        // Setup a game with 2 players for testing
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+    });
+
+    test('should include pirate commentary before scores in announcement', () => {
+        // Add a round to generate commentary
+        const roundData = {
+            'Alice': { bid: 1, actual: 1, bonus: 0 }, // Correct bid
+            'Bob': { bid: 1, actual: 0, bonus: 0 }    // Failed bid
+        };
+        gameInstance.viewModel.addRound(roundData);
+        
+        // Get the score announcement
+        const announcement = gameInstance.viewModel.createScoreAnnouncement();
+        
+        // Verify it starts with greeting and commentary comes first
+        expect(announcement).toMatch(/^Ahoy mateys! .+ Now for the current bounty/);
+        
+        // Verify it includes scores after commentary
+        expect(announcement).toContain('Now for the current bounty after round 1');
+        expect(announcement).toContain('Alice');
+        expect(announcement).toContain('Bob');
+        
+        // Should end with the traditional pirate farewell
+        expect(announcement).toContain('May the winds favor the worthy! Arrr!');
+    });
+
+    test('should handle score announcement with no rounds', () => {
+        // Get announcement with no rounds played
+        const announcement = gameInstance.viewModel.createScoreAnnouncement();
+        
+        // Should start with greeting and go straight to scores (no commentary)
+        expect(announcement).toMatch(/^Ahoy mateys! Now for the current bounty/);
+        expect(announcement).toContain('Now for the current bounty after round 0');
+        expect(announcement).toContain('Alice');
+        expect(announcement).toContain('Bob');
+    });
+
+    test('should handle score announcement with no active game', () => {
+        // Create fresh instance with no game
+        const freshInstance = new window.SkullKingGame();
+        
+        const announcement = freshInstance.viewModel.createScoreAnnouncement();
+        
+        expect(announcement).toBe('No active game to announce, ye landlubber!');
     });
 });
