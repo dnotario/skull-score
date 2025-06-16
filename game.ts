@@ -857,13 +857,20 @@ class SkullKingGame {
                     ${index === 0 ? '<button class="btn btn-secondary" onclick="game.handleUpdateLastRound()">Edit Round</button>' : ''}
                 </div>
                 <div class="round-data">
+                    <div class="round-data-header">
+                        <span>Player</span>
+                        <span>Bid</span>
+                        <span>Won</span>
+                        <span>Bonus</span>
+                        <span>Score</span>
+                    </div>
                     ${round.playerData.map(data => `
                         <div class="player-round-data">
                             <strong>${data.playerName}</strong>
-                            <span>Bid: ${data.bid}</span>
-                            <span>Won: ${data.actual}</span>
-                            <span>Bonus: ${data.bonus}</span>
-                            <span>Score: ${data.roundScore > 0 ? '+' : ''}${data.roundScore}</span>
+                            <span>${data.bid}</span>
+                            <span>${data.actual}</span>
+                            <span>${data.bonus}</span>
+                            <span>${data.roundScore > 0 ? '+' : ''}${data.roundScore}</span>
                         </div>
                     `).join('')}
                 </div>
@@ -1119,6 +1126,12 @@ class SkullKingGame {
             if (bidInput) bidInput.value = data.bid.toString();
             if (actualInput) actualInput.value = data.actual.toString();
             if (bonusInput) bonusInput.value = data.bonus.toString();
+        }
+        
+        // Scroll to the round inputs section for editing
+        const roundInputsSection = document.getElementById('new-round');
+        if (roundInputsSection) {
+            roundInputsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 
