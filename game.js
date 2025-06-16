@@ -93,7 +93,10 @@ class GameViewModel {
         this.saveState();
         // Track analytics
         this.trackEvent('game_start', {
-            player_count: this.state.players.length
+            event_category: 'game',
+            event_label: 'new_game', 
+            player_count: this.state.players.length,
+            value: this.state.players.length
         });
         return null; // Success
     }
@@ -201,8 +204,11 @@ class GameViewModel {
         this.saveState();
         // Track analytics
         this.trackEvent('round_complete', {
+            event_category: 'gameplay',
+            event_label: 'round_finished',
             round_number: roundData.roundNumber,
-            player_count: this.state.players.length
+            player_count: this.state.players.length,
+            value: roundData.roundNumber
         });
         return null; // Success
     }
@@ -239,7 +245,10 @@ class GameViewModel {
         this.saveState();
         // Track analytics
         this.trackEvent('round_updated', {
-            round_number: lastRound.roundNumber
+            event_category: 'gameplay',
+            event_label: 'round_edited',
+            round_number: lastRound.roundNumber,
+            value: lastRound.roundNumber
         });
         return null; // Success
     }
@@ -280,14 +289,22 @@ class GameViewModel {
         }
         // Track analytics
         this.trackEvent('new_game_started', {
+            event_category: 'navigation',
+            event_label: keepNames ? 'same_players' : 'new_players',
             kept_names: keepNames,
-            player_count: existingNames.length
+            player_count: existingNames.length,
+            value: existingNames.length
         });
     }
     // Analytics
     trackEvent(eventName, parameters = {}) {
+        console.log('🔍 Analytics Event:', eventName, parameters);
+        
         if (typeof gtag !== 'undefined') {
             gtag('event', eventName, parameters);
+            console.log('✅ Event sent to Google Analytics');
+        } else {
+            console.warn('⚠️ gtag not available - analytics event not sent');
         }
     }
     // Game Status
