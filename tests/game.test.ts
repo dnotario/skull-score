@@ -1321,28 +1321,28 @@ describe('SkullKingGame Real-time Score Calculation', () => {
         expect(scoreDisplay.className).toBe('computed-score');
     });
     
-    test('should calculate score with only bid filled', () => {
+    test('should show "-" with only bid filled (Progressive Disclosure)', () => {
         const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
         const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
         
         bidInput.value = '1';  // Valid bid for round 1 with 2 players
         gameInstance.updateRoundScore('Alice');
         
-        // Bid 1, Actual 0 = failed bid = -10
-        expect(scoreDisplay.textContent).toBe('-10');
-        expect(scoreDisplay.className).toContain('negative');
+        // With Option 1: Progressive Disclosure, score only shows when both bid and actual are filled
+        expect(scoreDisplay.textContent).toBe('-');
+        expect(scoreDisplay.className).toBe('computed-score');
     });
     
-    test('should calculate score with only actual filled', () => {
+    test('should show "-" with only actual filled (Progressive Disclosure)', () => {
         const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
         const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
         
         actualInput.value = '1';  // Valid actual for round 1 with 2 players
         gameInstance.updateRoundScore('Alice');
         
-        // Bid 0, Actual 1 = failed zero bid in round 1 = -10
-        expect(scoreDisplay.textContent).toBe('-10');
-        expect(scoreDisplay.className).toContain('negative');
+        // With Option 1: Progressive Disclosure, score only shows when both bid and actual are filled
+        expect(scoreDisplay.textContent).toBe('-');
+        expect(scoreDisplay.className).toBe('computed-score');
     });
     
     test('should calculate correct prediction score', () => {

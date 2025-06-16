@@ -1159,16 +1159,16 @@ class SkullKingGame {
         const actualValue = actualInput.value.trim();
         const bonusValue = bonusInput.value.trim();
         
-        // If both bid and actual are empty, show '-'
-        if (!bidValue && !actualValue) {
+        // Only show score when both bid and actual have values (Option 1: Progressive Disclosure)
+        if (!bidValue || !actualValue) {
             scoreDisplay.textContent = '-';
             scoreDisplay.className = 'computed-score';
             return;
         }
         
-        // Default empty values to 0
-        const bid = bidValue ? parseInt(bidValue) : 0;
-        const actual = actualValue ? parseInt(actualValue) : 0;
+        // Parse values (bonus defaults to 0 if empty)
+        const bid = parseInt(bidValue);
+        const actual = parseInt(actualValue);
         const bonus = bonusValue ? parseInt(bonusValue) : 0;
         
         // Use the centralized validation
