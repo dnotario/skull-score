@@ -71,6 +71,9 @@ class GameViewModel {
             this.tempPlayers[0] = '';
         }
     }
+    setTempPlayers(players) {
+        this.tempPlayers = [...players];
+    }
     validateAndStartGame() {
         const validNames = this.tempPlayers.filter(name => name.trim() !== '');
         if (validNames.length < 2) {
@@ -374,13 +377,6 @@ class SkullKingGame {
         modalConfirm === null || modalConfirm === void 0 ? void 0 : modalConfirm.addEventListener('click', () => this.handleModalConfirm());
         const modalCancel = document.getElementById('modal-cancel');
         modalCancel === null || modalCancel === void 0 ? void 0 : modalCancel.addEventListener('click', () => this.hideModal());
-        // New game options
-        const samePlayersBtn = document.getElementById('same-players-btn');
-        samePlayersBtn === null || samePlayersBtn === void 0 ? void 0 : samePlayersBtn.addEventListener('click', () => this.handleNewGameSamePlayers());
-        const newPlayersBtn = document.getElementById('new-players-btn');
-        newPlayersBtn === null || newPlayersBtn === void 0 ? void 0 : newPlayersBtn.addEventListener('click', () => this.handleNewGameNewPlayers());
-        const cancelNewGameBtn = document.getElementById('cancel-new-game-btn');
-        cancelNewGameBtn === null || cancelNewGameBtn === void 0 ? void 0 : cancelNewGameBtn.addEventListener('click', () => this.hideModal());
     }
     // Event Handlers
     handleNewGame() {
@@ -424,16 +420,6 @@ class SkullKingGame {
         this.viewModel.executeModalConfirm();
         this.hideModal();
     }
-    handleNewGameSamePlayers() {
-        this.viewModel.startNewGame(true);
-        this.hideModal();
-        this.startPlayerSetup();
-    }
-    handleNewGameNewPlayers() {
-        this.viewModel.startNewGame(false);
-        this.hideModal();
-        this.startPlayerSetup();
-    }
     // Helper Methods
     startPlayerSetup() {
         this.viewModel.initializeTempPlayers();
@@ -441,7 +427,12 @@ class SkullKingGame {
         this.updatePlayerInputs();
     }
     confirmNewGame() {
-        this.showNewGameModal();
+        this.showModal('Start New Game', 'Are ye sure ye want to start a new adventure? This will clear the current game.', true);
+        this.viewModel.setModalConfirmCallback(() => {
+            const keepNames = this.getKeepNamesCheckbox();
+            this.viewModel.startNewGame(keepNames);
+            this.startPlayerSetup();
+        });
     }
     // View Methods
     updateUI() {
@@ -597,53 +588,16 @@ class SkullKingGame {
         const titleEl = document.getElementById('modal-title');
         const messageEl = document.getElementById('modal-message');
         const checkboxContainer = document.getElementById('modal-checkbox-container');
-        const newGameOptions = document.getElementById('new-game-options');
-        const modalButtons = document.getElementById('modal-buttons');
         if (!modal || !titleEl || !messageEl)
             return;
         titleEl.textContent = title;
         messageEl.textContent = message;
-        // Hide new game options and show regular modal buttons
-        if (newGameOptions) {
-            newGameOptions.classList.add('hidden');
-        }
-        if (modalButtons) {
-            modalButtons.classList.remove('hidden');
-        }
         if (showCheckbox && checkboxContainer) {
             checkboxContainer.classList.remove('hidden');
         }
         else if (checkboxContainer) {
             checkboxContainer.classList.add('hidden');
         }
-        modal.classList.remove('hidden');
-    }
-    showNewGameModal() {
-        const modal = document.getElementById('modal');
-        const titleEl = document.getElementById('modal-title');
-        const messageEl = document.getElementById('modal-message');
-        const checkboxContainer = document.getElementById('modal-checkbox-container');
-        const newGameOptions = document.getElementById('new-game-options');
-        const modalButtons = document.getElementById('modal-buttons');
-        const samePlayersBtn = document.getElementById('same-players-btn');
-        if (!modal || !titleEl || !messageEl || !samePlayersBtn)
-            return;
-        titleEl.textContent = 'Start New Game';
-        messageEl.textContent = 'Choose how to start your new adventure:';
-        // Hide regular modal elements and show new game options
-        if (checkboxContainer) {
-            checkboxContainer.classList.add('hidden');
-        }
-        if (modalButtons) {
-            modalButtons.classList.add('hidden');
-        }
-        if (newGameOptions) {
-            newGameOptions.classList.remove('hidden');
-        }
-        // Update the "Same Players" button text with current player names
-        const gameState = this.viewModel.getGameState();
-        const playerNames = gameState.players.map(p => p.name).join(', ');
-        samePlayersBtn.textContent = `Same Players (${playerNames})`;
         modal.classList.remove('hidden');
     }
     hideModal() {

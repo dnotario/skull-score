@@ -112,6 +112,10 @@ class GameViewModel {
         }
     }
 
+    setTempPlayers(players: string[]): void {
+        this.tempPlayers = [...players];
+    }
+
     validateAndStartGame(): string | null {
         const validNames = this.tempPlayers.filter(name => name.trim() !== '');
         

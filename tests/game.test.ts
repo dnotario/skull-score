@@ -174,7 +174,7 @@ describe('SkullKingGame Player Limits', () => {
     
     test('should enforce maximum of 8 players', () => {
         // Setup with exactly 8 players (should work)
-        gameInstance.viewModel.tempPlayers = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry'];
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry']);
         
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBeNull(); // Should succeed
@@ -182,7 +182,7 @@ describe('SkullKingGame Player Limits', () => {
     
     test('should reject more than 8 players', () => {
         // Setup with 9 players (should fail)
-        gameInstance.viewModel.tempPlayers = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy'];
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy']);
         
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBe('Too many pirates! Maximum 8 scallywags allowed.');
@@ -190,7 +190,7 @@ describe('SkullKingGame Player Limits', () => {
     
     test('should require minimum of 2 players', () => {
         // Setup with 1 player (should fail)
-        gameInstance.viewModel.tempPlayers = ['Alice'];
+        gameInstance.viewModel.setTempPlayers(['Alice']);
         
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBe('Ye need at least 2 pirates to sail these waters!');
@@ -198,7 +198,7 @@ describe('SkullKingGame Player Limits', () => {
     
     test('should accept minimum of 2 players', () => {
         // Setup with exactly 2 players (should work)
-        gameInstance.viewModel.tempPlayers = ['Alice', 'Bob'];
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
         
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBeNull(); // Should succeed
@@ -206,7 +206,7 @@ describe('SkullKingGame Player Limits', () => {
     
     test('should reject duplicate player names', () => {
         // Setup with duplicate names
-        gameInstance.viewModel.tempPlayers = ['Alice', 'Bob', 'alice']; // case-insensitive duplicate
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'alice']); // case-insensitive duplicate
         
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBe('Each pirate needs a unique name, ye scurvy dogs!');
@@ -214,7 +214,7 @@ describe('SkullKingGame Player Limits', () => {
     
     test('should handle empty and whitespace-only names', () => {
         // Setup with empty/whitespace names that should be filtered out
-        gameInstance.viewModel.tempPlayers = ['Alice', '', '  ', 'Bob'];
+        gameInstance.viewModel.setTempPlayers(['Alice', '', '  ', 'Bob']);
         
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBeNull(); // Should succeed with 2 valid names
@@ -375,11 +375,9 @@ describe('SkullKingGame Update Last Round', () => {
     
     test('should not allow update when no rounds exist', () => {
         // Setup game with no rounds
-        gameInstance.state = {
-            players: [{ name: 'Alice', score: 0 }, { name: 'Bob', score: 0 }],
-            rounds: [],
-            currentRound: 1
-        };
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
         
         // Mock alert to capture the message
         const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
@@ -393,110 +391,82 @@ describe('SkullKingGame Update Last Round', () => {
         alertSpy.mockRestore();
     });
     
-    test('should properly undo last round and populate form fields', () => {
-        // Setup game with completed rounds
-        const testRoundData = {
-            roundNumber: 2,
-            playerData: [
-                { playerName: 'Alice', bid: 2, actual: 2, bonus: 5, roundScore: 45 },
-                { playerName: 'Bob', bid: 1, actual: 0, bonus: 0, roundScore: -10 }
-            ]
+    test('should properly get last round data for editing', () => {
+        // Setup game with players
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Add a round (round 1, so max bid/actual is 1)
+        const roundData = {
+            'Alice': { bid: 1, actual: 1, bonus: 5 },
+            'Bob': { bid: 1, actual: 0, bonus: 0 }
         };
+        gameInstance.viewModel.addRound(roundData);
         
-        gameInstance.state = {
-            players: [
-                { name: 'Alice', score: 55 }, // 10 from round 1 + 45 from round 2
-                { name: 'Bob', score: 10 }     // 20 from round 1 - 10 from round 2
-            ],
-            rounds: [
-                {
-                    roundNumber: 1,
-                    playerData: [
-                        { playerName: 'Alice', bid: 1, actual: 1, bonus: 0, roundScore: 20 },
-                        { playerName: 'Bob', bid: 1, actual: 1, bonus: 0, roundScore: 20 }
-                    ]
-                },
-                testRoundData
-            ],
-            currentRound: 3
-        };
+        // Get last round data
+        const lastRoundData = gameInstance.viewModel.getLastRoundData();
         
-        // Mock populateRoundInputs method to verify it's called with correct data
-        const populateSpy = jest.spyOn(gameInstance, 'populateRoundInputs');
-        
-        // Trigger the update (simulate modal confirmation)
-        gameInstance.handleUpdateLastRound();
-        
-        // Simulate clicking confirm in the modal
-        if (gameInstance.modalConfirmCallback) {
-            gameInstance.modalConfirmCallback();
-        }
-        
-        // Verify the last round was removed
-        expect(gameInstance.state.rounds.length).toBe(1);
-        expect(gameInstance.state.currentRound).toBe(2);
-        
-        // Verify scores were recalculated (only round 1 scores)
-        expect(gameInstance.state.players[0].score).toBe(20); // Alice: only round 1
-        expect(gameInstance.state.players[1].score).toBe(20); // Bob: only round 1
-        
-        // Verify populateRoundInputs was called with the removed round data
-        expect(populateSpy).toHaveBeenCalledWith(testRoundData);
-        
-        populateSpy.mockRestore();
+        // Verify the data is correct
+        expect(lastRoundData).toEqual(roundData);
     });
     
-    test('should populate form fields with correct values', (done) => {
-        const testRoundData = {
-            roundNumber: 1,
-            playerData: [
-                { playerName: 'Alice', bid: 3, actual: 2, bonus: 10, roundScore: 30 },
-                { playerName: 'Bob', bid: 0, actual: 0, bonus: 0, roundScore: 10 }
-            ]
+    test('should handle update last round functionality', () => {
+        // Setup game with players
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Add a round (round 1, so max bid/actual is 1)
+        const roundData = {
+            'Alice': { bid: 1, actual: 1, bonus: 10 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
         };
+        gameInstance.viewModel.addRound(roundData);
         
-        // Call populateRoundInputs
-        gameInstance.populateRoundInputs(testRoundData);
+        // Verify the round was added
+        const gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
         
-        // Wait for setTimeout to complete
-        setTimeout(() => {
-            // Check that form fields were populated correctly
-            const aliceBid = document.getElementById('bid-Alice') as HTMLInputElement;
-            const aliceActual = document.getElementById('actual-Alice') as HTMLInputElement;
-            const aliceBonus = document.getElementById('bonus-Alice') as HTMLInputElement;
-            const bobBid = document.getElementById('bid-Bob') as HTMLInputElement;
-            const bobActual = document.getElementById('actual-Bob') as HTMLInputElement;
-            const bobBonus = document.getElementById('bonus-Bob') as HTMLInputElement;
-            
-            expect(aliceBid.value).toBe('3');
-            expect(aliceActual.value).toBe('2');
-            expect(aliceBonus.value).toBe('10');
-            expect(bobBid.value).toBe('0');
-            expect(bobActual.value).toBe('0');
-            expect(bobBonus.value).toBe('0');
-            
-            done();
-        }, 150);
+        // Get last round data for editing
+        const lastRoundData = gameInstance.viewModel.getLastRoundData();
+        expect(lastRoundData).toEqual(roundData);
     });
     
-    test('should update round state correctly after edit', () => {
-        // Setup game with a round
-        gameInstance.state = {
-            players: [{ name: 'Alice', score: 20 }],
-            rounds: [{ roundNumber: 1, playerData: [{ playerName: 'Alice', bid: 1, actual: 1, bonus: 0, roundScore: 20 }] }],
-            currentRound: 2
+    test('should update last round correctly', () => {
+        // Setup game with players (need at least 2)
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        const setupResult = gameInstance.viewModel.validateAndStartGame();
+        expect(setupResult).toBeNull(); // Should succeed
+        
+        // Add initial round
+        const initialRoundData = {
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
         };
+        const addResult = gameInstance.viewModel.addRound(initialRoundData);
+        expect(addResult).toBeNull(); // Should succeed
         
-        gameInstance.handleUpdateLastRound();
+        // Verify initial state
+        let gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.players.length).toBe(2);
+        expect(gameState.players[0].score).toBe(20); // Alice: 20 points for correct bid
+        expect(gameState.players[1].score).toBe(10); // Bob: 10 points for successful zero bid (round 1)
         
-        // Simulate modal confirmation
-        if (gameInstance.modalConfirmCallback) {
-            gameInstance.modalConfirmCallback();
-        }
+        // Update the last round
+        const updatedRoundData = {
+            'Alice': { bid: 1, actual: 0, bonus: 0 }, // Changed actual from 1 to 0
+            'Bob': { bid: 0, actual: 1, bonus: 0 }    // Changed actual from 0 to 1 (failed zero bid)
+        };
+        const updateResult = gameInstance.viewModel.updateLastRound(updatedRoundData);
+        expect(updateResult).toBeNull(); // Should succeed
         
-        // Verify game is ready for editing the previous round
-        expect(gameInstance.state.rounds.length).toBe(0); // Round removed
-        expect(gameInstance.state.currentRound).toBe(1); // Back to round 1
-        expect(gameInstance.state.players[0].score).toBe(0); // Score reset
+        // Verify updated state
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1); // Still 1 round
+        expect(gameState.players[0].score).toBe(-10); // Alice: -10 points for failed bid
+        expect(gameState.players[1].score).toBe(-10); // Bob: -10 points for failed zero bid (round 1)
     });
 });

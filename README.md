@@ -28,7 +28,7 @@ A pirate-themed web application for tracking scores in the Skull King card game,
 
 ### Quick Start
 1. Visit the live site: 
-   - **Production**: [skull-score-deploy.github.io](https://dnotario.github.io/skull-score-deploy)
+   - **Production**: [www.skullkingscorekeeper.com](https://www.skullkingscorekeeper.com)
    - **Staging**: [skull-score-staging.github.io](https://dnotario.github.io/skull-score-staging)
 2. Click "Start New Game"
 3. Add player names (2-8 players)
@@ -63,13 +63,13 @@ This project uses a professional deployment pipeline with separate staging and p
 
 ### Repository Structure
 - **`skull-score`** (main): Development repository with source code, tests, and workflows
-- **`skull-score-deploy`**: Production deployment repository (clean files only)
+- **`skull-score-prod`**: Production deployment repository (clean files only)
 - **`skull-score-staging`**: Staging deployment repository (clean files only)
 
 ### Branch Strategy
 - **`main`** → Active development (no auto-deploy)
 - **`staging`** → Staging deployment → `dnotario.github.io/skull-score-staging`
-- **`deploy`** → Production deployment → `www.skullkingscorekeeper.com`
+- **`prod`** → Production deployment → `www.skullkingscorekeeper.com`
 
 ### Development Workflow
 
@@ -103,7 +103,7 @@ git push origin main
 
 #### 3. Deploy to Staging
 ```bash
-# Merge main to staging for testing
+# IMPORTANT: Always merge from main to staging
 git checkout staging
 git merge main
 git push origin staging
@@ -114,10 +114,10 @@ git push origin staging
 
 #### 4. Deploy to Production
 ```bash
-# After testing staging, merge to deploy branch
-git checkout deploy
+# After testing staging, merge to prod branch
+git checkout prod
 git merge staging
-git push origin deploy
+git push origin prod
 
 # 🚀 This automatically triggers deployment to production!
 # View at: https://www.skullkingscorekeeper.com
@@ -138,7 +138,7 @@ git push origin deploy
 gh run list --repo dnotario/skull-score
 
 # View deployment repositories
-gh repo view dnotario/skull-score-deploy
+gh repo view dnotario/skull-score-prod
 gh repo view dnotario/skull-score-staging
 ```
 
