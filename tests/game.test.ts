@@ -725,3 +725,177 @@ describe('SkullKingGame Score Announcement', () => {
         expect(announcement).toBe('No active game to announce, ye landlubber!');
     });
 });
+
+describe('SkullKingGame New Game Flow', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        // Create fresh instance for each test
+        gameInstance = new window.SkullKingGame();
+        
+        // Mock DOM elements needed for the tests
+        document.body.innerHTML = `
+            <div id="landing-section" class="hidden"></div>
+            <div id="player-names-section" class="hidden"></div>
+            <div id="game-section" class="hidden"></div>
+            <div id="new-game-section" class="hidden"></div>
+            <div id="score-display"></div>
+            <div id="round-inputs"></div>
+            <div id="round-number"></div>
+            <div id="previous-rounds"></div>
+            <div id="winner-announcement" class="hidden"></div>
+            <div id="winner-text"></div>
+            <div id="new-round"></div>
+        `;
+    });
+
+    test('should skip player setup when using same players with valid names', () => {
+        // Setup: Start with an existing game with players
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Verify we have an active game
+        expect(gameInstance.viewModel.isGameActive()).toBe(true);
+        expect(gameInstance.viewModel.state.players.length).toBe(3);
+        
+        // Mock updateUI to track if it's called
+        const updateUISpy = jest.spyOn(gameInstance, 'updateUI');
+        
+        // Mock showPlayerSetup to ensure it's NOT called
+        const showPlayerSetupSpy = jest.spyOn(gameInstance, 'showPlayerSetup');
+        
+        // Test: Call handleSamePlayersNewGame
+        gameInstance.handleSamePlayersNewGame();
+        
+        // Verify: Should have started a new game with same players
+        expect(gameInstance.viewModel.isGameActive()).toBe(true);
+        expect(gameInstance.viewModel.state.players.length).toBe(3);
+        expect(gameInstance.viewModel.state.players[0].name).toBe('Alice');
+        expect(gameInstance.viewModel.state.players[1].name).toBe('Bob');
+        expect(gameInstance.viewModel.state.players[2].name).toBe('Charlie');
+        
+        // Verify: Should have called updateUI (goes to game) but NOT showPlayerSetup
+        expect(updateUISpy).toHaveBeenCalled();
+        expect(showPlayerSetupSpy).not.toHaveBeenCalled();
+        
+        // Verify: Game should be reset (round 1, no previous rounds)
+        expect(gameInstance.viewModel.getCurrentRoundNumber()).toBe(1);
+        expect(gameInstance.viewModel.state.rounds.length).toBe(0);
+        
+        updateUISpy.mockRestore();
+        showPlayerSetupSpy.mockRestore();
+    });
+
+    test('should go to player setup when same players has insufficient valid names', () => {
+        // Setup: Start with a game that has only 1 player (invalid for new game)
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice']);
+        gameInstance.viewModel.validateAndStartGame(); // This should fail but we force it for testing
+        gameInstance.viewModel.state.players = [{ name: 'Alice', score: 0 }]; // Force invalid state
+        
+        // Mock showPlayerSetup to track if it's called
+        const showPlayerSetupSpy = jest.spyOn(gameInstance, 'showPlayerSetup').mockImplementation(() => {});
+        
+        // Mock updateUI to ensure it's NOT called for direct game start
+        const updateUISpy = jest.spyOn(gameInstance, 'updateUI');
+        
+        // Test: Call handleSamePlayersNewGame with insufficient players
+        gameInstance.handleSamePlayersNewGame();
+        
+        // Verify: Should have gone to player setup since we don't have enough valid players
+        expect(showPlayerSetupSpy).toHaveBeenCalled();
+        expect(updateUISpy).not.toHaveBeenCalled(); // Should not start game directly
+        
+        showPlayerSetupSpy.mockRestore();
+        updateUISpy.mockRestore();
+    });
+
+    test('should handle new players flow correctly', () => {
+        // Setup: Start with an existing game
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Mock showPlayerSetup to track if it's called
+        const showPlayerSetupSpy = jest.spyOn(gameInstance, 'showPlayerSetup').mockImplementation(() => {});
+        
+        // Test: Call handleNewPlayersNewGame
+        gameInstance.handleNewPlayersNewGame();
+        
+        // Verify: Should clear state and go to player setup
+        expect(gameInstance.viewModel.isGameActive()).toBe(false);
+        expect(showPlayerSetupSpy).toHaveBeenCalled();
+        
+        // Verify: Temp players should be reset
+        const tempPlayers = gameInstance.viewModel.getTempPlayers();
+        expect(tempPlayers).toEqual(['']); // Should have one empty slot
+        
+        showPlayerSetupSpy.mockRestore();
+    });
+
+    test('should preserve player names when starting new game with keepNames=true', () => {
+        // Setup: Start with an existing game
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Add some rounds to verify they get cleared
+        const roundData = {
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 },
+            'Charlie': { bid: 0, actual: 0, bonus: 0 }
+        };
+        gameInstance.viewModel.addRound(roundData);
+        
+        // Verify we have rounds and scores
+        expect(gameInstance.viewModel.state.rounds.length).toBe(1);
+        expect(gameInstance.viewModel.state.players[0].score).toBe(20); // Alice got 20 points
+        
+        // Test: Start new game keeping names
+        gameInstance.viewModel.startNewGame(true);
+        
+        // Verify: Names are preserved in tempPlayers
+        const tempPlayers = gameInstance.viewModel.getTempPlayers();
+        expect(tempPlayers).toEqual(['Alice', 'Bob', 'Charlie']);
+        
+        // Verify: Game state is cleared
+        expect(gameInstance.viewModel.state.rounds.length).toBe(0);
+        expect(gameInstance.viewModel.state.players.length).toBe(0); // Cleared until validateAndStartGame
+        expect(gameInstance.viewModel.getCurrentRoundNumber()).toBe(1);
+    });
+
+    test('should clear everything when starting new game with keepNames=false', () => {
+        // Setup: Start with an existing game
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Test: Start new game without keeping names
+        gameInstance.viewModel.startNewGame(false);
+        
+        // Verify: Everything is cleared including temp players
+        const tempPlayers = gameInstance.viewModel.getTempPlayers();
+        expect(tempPlayers).toEqual(['']); // Should have one empty slot
+        expect(gameInstance.viewModel.state.players.length).toBe(0);
+        expect(gameInstance.viewModel.state.rounds.length).toBe(0);
+    });
+
+    test('should handle edge case when same players flow fails validation', () => {
+        // Setup: Create a scenario where keeping names might fail validation
+        gameInstance.viewModel.startNewGame(false);
+        // Manually set invalid temp players that would fail validation
+        gameInstance.viewModel.tempPlayers = ['', '', '']; // All empty names
+        
+        // Mock showPlayerSetup
+        const showPlayerSetupSpy = jest.spyOn(gameInstance, 'showPlayerSetup').mockImplementation(() => {});
+        
+        // Test: Call handleSamePlayersNewGame with invalid names
+        gameInstance.handleSamePlayersNewGame();
+        
+        // Verify: Should fall back to player setup
+        expect(showPlayerSetupSpy).toHaveBeenCalled();
+        
+        showPlayerSetupSpy.mockRestore();
+    });
+});
