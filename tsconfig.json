@@ -9,6 +9,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["game.ts"],
+  "include": ["game.ts", "translations.ts"],
   "exclude": ["node_modules", "tests"]
 }

@@ -28,6 +28,11 @@ interface RoundData {
     roundNumber: number;
     playerData: PlayerRoundData[];
     commentary: string;
+    commentaryMeta?: {
+        type: 'perfect' | 'disaster' | 'big_scores' | 'default' | 'start';
+        index: number;
+        playerName?: string;
+    };
 }
 
 interface GameStateData {
@@ -38,6 +43,9 @@ interface GameStateData {
 
 // Google Analytics gtag function declaration
 declare function gtag(...args: any[]): void;
+
+// Translation system global declaration
+declare var i18n: any;
 
 // PWA Install Prompt Interface
 interface BeforeInstallPromptEvent extends Event {
@@ -139,17 +147,17 @@ class GameViewModel {
         const validNames = this.tempPlayers.filter(name => name.trim() !== '');
         
         if (validNames.length < 2) {
-            return 'Ye need at least 2 pirates to sail these waters!';
+            return this.t('min_players_error');
         }
 
         if (validNames.length > 8) {
-            return 'Too many pirates! Maximum 8 scallywags allowed.';
+            return this.t('max_players_error');
         }
 
         // Check for duplicate names
         const uniqueNames = new Set(validNames.map(name => name.trim().toLowerCase()));
         if (uniqueNames.size !== validNames.length) {
-            return 'Each pirate needs a unique name, ye scurvy dogs!';
+            return this.t('duplicate_names_error');
         }
 
         // Initialize game state
@@ -192,36 +200,55 @@ class GameViewModel {
         
         // Check for invalid numbers (NaN)
         if (isNaN(bid) || isNaN(actual) || isNaN(bonus)) {
-            return `Invalid number entered for ${playerName}. Please enter valid numbers only.`;
+            return this.t('invalid_number_error', { playerName });
         }
 
         // Integer validation
         if (!Number.isInteger(bid) || !Number.isInteger(actual) || !Number.isInteger(bonus)) {
-            return `All values must be whole numbers for ${playerName}.`;
+            return this.t('whole_numbers_error', { playerName });
         }
 
         // Basic validation
         if (bid < 0 || actual < 0 || bonus < 0) {
-            return `Bid, actual tricks, and bonus must be non-negative for ${playerName}.`;
+            return this.t('non_negative_error', { playerName });
         }
 
         // Round-specific validation: bids and actual tricks can't exceed available cards
         const maxTricks = this.getCardsPerRound(targetRound, this.state.players.length);
         if (bid > maxTricks) {
-            return `${playerName}'s bid (${bid}) can't exceed ${maxTricks} tricks in round ${targetRound} with ${this.state.players.length} players.`;
+            return this.t('bid_exceeds_tricks_error', {
+                playerName,
+                bid: bid.toString(),
+                maxTricks: maxTricks.toString(),
+                round: targetRound.toString(),
+                playerCount: this.state.players.length.toString()
+            });
         }
         if (actual > maxTricks) {
-            return `${playerName} can't win more than ${maxTricks} tricks in round ${targetRound} with ${this.state.players.length} players. Actual: ${actual}`;
+            return this.t('actual_exceeds_tricks_error', {
+                playerName,
+                maxTricks: maxTricks.toString(),
+                round: targetRound.toString(),
+                playerCount: this.state.players.length.toString(),
+                actual: actual.toString()
+            });
         }
 
         // Bonus point validation - only applies when correctly predicting tricks
         if (bid !== actual && bonus > 0) {
-            return `${playerName} can only earn bonus points when correctly predicting tricks! (Bid: ${bid}, Actual: ${actual})`;
+            return this.t('bonus_without_correct_bid_error', {
+                playerName,
+                bid: bid.toString(),
+                actual: actual.toString()
+            });
         }
 
         // Reasonable bonus limits
         if (Math.abs(bonus) > 100) {
-            return `${playerName}'s bonus points seem unreasonable (${bonus}). Please check your entry.`;
+            return this.t('unreasonable_bonus_error', {
+                playerName,
+                bonus: bonus.toString()
+            });
         }
 
         return null; // Valid
@@ -283,7 +310,12 @@ class GameViewModel {
         const totalActualWins = Object.values(data).reduce((sum, playerData) => sum + playerData.actual, 0);
         
         if (totalActualWins !== maxTricks) {
-            return `Total tricks won (${totalActualWins}) must equal the number of tricks available (${maxTricks}) in round ${targetRound} with ${this.state.players.length} players.`;
+            return this.t('total_tricks_mismatch_error', {
+                totalActual: totalActualWins.toString(),
+                maxTricks: maxTricks.toString(),
+                round: targetRound.toString(),
+                playerCount: this.state.players.length.toString()
+            });
         }
 
         return null; // Valid
@@ -456,62 +488,141 @@ class GameViewModel {
         const disasters = roundData.playerData.filter(p => Math.abs(p.bid - p.actual) >= 3);
         const bigScores = roundData.playerData.filter(p => p.roundScore >= 40);
 
+        let commentaryMeta: any = {};
+
         // Perfect round (everyone got their bid)
         if (perfectPlayers.length === this.state.players.length) {
+            const index = Math.floor(Math.random() * 3);
+            commentaryMeta = { type: 'perfect', index };
             const comments = [
-                "Blimey! Every scallywag nailed their bid! The sea gods smile upon ye all!",
-                "Shiver me timbers! Perfect round for all hands! Not a single miscalculation!",
-                "Avast! Every pirate sailed true to their word! What sorcery be this?"
+                this.t('perfect_round_1'),
+                this.t('perfect_round_2'),
+                this.t('perfect_round_3')
             ];
-            return comments[Math.floor(Math.random() * comments.length)];
+            roundData.commentaryMeta = commentaryMeta;
+            return comments[index];
         }
 
         // Single disaster
         if (disasters.length === 1) {
             const player = disasters[0];
+            const index = Math.floor(Math.random() * 3);
+            commentaryMeta = { type: 'disaster', index, playerName: player.playerName };
             const comments = [
-                `Avast! ${player.playerName} be sinkin' faster than a ship with no hull!`,
-                `${player.playerName} just sailed straight into a kraken! What a disaster!`,
-                `Blimey! ${player.playerName} be drownin' in their own overconfidence!`
+                this.t('disaster_1', { playerName: player.playerName }),
+                this.t('disaster_2', { playerName: player.playerName }),
+                this.t('disaster_3', { playerName: player.playerName })
             ];
-            return comments[Math.floor(Math.random() * comments.length)];
+            roundData.commentaryMeta = commentaryMeta;
+            return comments[index];
         }
 
         // Multiple big scores
         if (bigScores.length >= 2) {
+            const index = Math.floor(Math.random() * 3);
+            commentaryMeta = { type: 'big_scores', index };
             const comments = [
-                "Pieces of eight! Multiple pirates be strikin' gold this round!",
-                "Shiver me timbers! Several captains just filled their treasure chests!",
-                "Multiple pirates be countin' serious doubloons after that performance!"
+                this.t('big_scores_1'),
+                this.t('big_scores_2'),
+                this.t('big_scores_3')
             ];
-            return comments[Math.floor(Math.random() * comments.length)];
+            roundData.commentaryMeta = commentaryMeta;
+            return comments[index];
         }
 
         // Default commentary - always return something
+        const index = Math.floor(Math.random() * 5);
+        commentaryMeta = { type: 'default', index };
         const defaultComments = [
-            "Another round in the books! The seas be unpredictable as always!",
-            "The tide turns with each round! Stay sharp, ye scurvy dogs!",
-            "Mixed fortunes this round! The ocean gives and takes as she pleases!",
-            "The winds of fortune blow in mysterious ways, ye landlubbers!",
-            "Some pirates swim with the sharks, others sail to victory!"
+            this.t('default_1'),
+            this.t('default_2'),
+            this.t('default_3'),
+            this.t('default_4'),
+            this.t('default_5')
         ];
-        return defaultComments[Math.floor(Math.random() * defaultComments.length)];
+        roundData.commentaryMeta = commentaryMeta;
+        return defaultComments[index];
+    }
+
+    // Regenerate commentary from metadata (for language changes)
+    regenerateCommentaryFromMeta(meta: any): string {
+        if (!meta) return this.t('default_1');
+
+        switch (meta.type) {
+            case 'perfect':
+                const perfectComments = [
+                    this.t('perfect_round_1'),
+                    this.t('perfect_round_2'),
+                    this.t('perfect_round_3')
+                ];
+                return perfectComments[meta.index] || perfectComments[0];
+            
+            case 'disaster':
+                const disasterComments = [
+                    this.t('disaster_1', { playerName: meta.playerName }),
+                    this.t('disaster_2', { playerName: meta.playerName }),
+                    this.t('disaster_3', { playerName: meta.playerName })
+                ];
+                return disasterComments[meta.index] || disasterComments[0];
+            
+            case 'big_scores':
+                const bigScoreComments = [
+                    this.t('big_scores_1'),
+                    this.t('big_scores_2'),
+                    this.t('big_scores_3')
+                ];
+                return bigScoreComments[meta.index] || bigScoreComments[0];
+            
+            case 'start':
+                const startComments = [
+                    this.t('start_1'),
+                    this.t('start_2'),
+                    this.t('start_3')
+                ];
+                return startComments[meta.index] || startComments[0];
+            
+            case 'default':
+            default:
+                const defaultComments = [
+                    this.t('default_1'),
+                    this.t('default_2'),
+                    this.t('default_3'),
+                    this.t('default_4'),
+                    this.t('default_5')
+                ];
+                return defaultComments[meta.index] || defaultComments[0];
+        }
     }
 
     // Get commentary for current state (for voice reading)
     getCurrentCommentary(): string {
         if (this.state.rounds.length === 0) {
             const startComments = [
-                "Batten down the hatches, me hearties! The adventure begins!",
-                "Hoist the colors! Time to see which scallywag rules these waters!",
-                "All hands on deck! May the best pirate claim the treasure!"
+                this.t('start_1'),
+                this.t('start_2'),
+                this.t('start_3')
             ];
             return startComments[Math.floor(Math.random() * startComments.length)];
         }
 
-        // Return the commentary from the most recent round
+        // Return the commentary from the most recent round, regenerated in current language
         const lastRound = this.state.rounds[this.state.rounds.length - 1];
-        return lastRound.commentary;
+        if (lastRound.commentaryMeta) {
+            const regeneratedCommentary = this.regenerateCommentaryFromMeta(lastRound.commentaryMeta);
+            // Update the stored commentary text to match current language
+            lastRound.commentary = regeneratedCommentary;
+            return regeneratedCommentary;
+        }
+        return lastRound.commentary; // Fallback to stored text for backwards compatibility
+    }
+
+    // Update all round commentaries to current language
+    updateAllCommentariesToCurrentLanguage(): void {
+        this.state.rounds.forEach(round => {
+            if (round.commentaryMeta) {
+                round.commentary = this.regenerateCommentaryFromMeta(round.commentaryMeta);
+            }
+        });
     }
 
     // Winner determination
@@ -534,10 +645,10 @@ class GameViewModel {
         if (winners.length === 1) {
             const winner = winners[0];
             const winnerMessages = [
-                `Huzzah! Captain ${winner.name} emerges victorious with ${winner.score} pieces of eight! The crown of Skull King belongs to ye!`,
-                `Avast! ${winner.name} has conquered the seven seas with ${winner.score} doubloons! All hail the new Skull King!`,
-                `Shiver me timbers! ${winner.name} stands triumphant with ${winner.score} gold coins! Ye be the true master of these waters!`,
-                `Blimey! ${winner.name} has plundered the most treasure with ${winner.score} pieces of eight! The Skull King's throne is yours!`
+                this.t('winner_single_1', { name: winner.name, score: winner.score.toString() }),
+                this.t('winner_single_2', { name: winner.name, score: winner.score.toString() }),
+                this.t('winner_single_3', { name: winner.name, score: winner.score.toString() }),
+                this.t('winner_single_4', { name: winner.name, score: winner.score.toString() })
             ];
             return winnerMessages[Math.floor(Math.random() * winnerMessages.length)];
         } else {
@@ -545,9 +656,9 @@ class GameViewModel {
             const winnerNames = winners.map(w => w.name).join(' and ');
             const score = winners[0].score;
             const tieMessages = [
-                `Avast! We have a tie! ${winnerNames} both finish with ${score} pieces of eight! Ye must share the Skull King's crown!`,
-                `Blimey! ${winnerNames} have tied with ${score} doubloons each! Two captains, one throne - may the best pirate win!`,
-                `Shiver me timbers! ${winnerNames} are deadlocked at ${score} gold coins! The seas couldn't choose between such worthy pirates!`
+                this.t('winner_tie_1', { names: winnerNames, score: score.toString() }),
+                this.t('winner_tie_2', { names: winnerNames, score: score.toString() }),
+                this.t('winner_tie_3', { names: winnerNames, score: score.toString() })
             ];
             return tieMessages[Math.floor(Math.random() * tieMessages.length)];
         }
@@ -556,10 +667,10 @@ class GameViewModel {
     // Text-to-Speech
     createScoreAnnouncement(): string {
         if (this.state.players.length === 0) {
-            return "No active game to announce, ye landlubber!";
+            return this.t('no_game_announce');
         }
 
-        let announcement = "Ahoy mateys! ";
+        let announcement = this.t('ahoy_mateys');
 
         // Always use the current commentary from the viewmodel
         const commentary = this.getCurrentCommentary();
@@ -567,20 +678,84 @@ class GameViewModel {
 
         const sortedPlayers = [...this.state.players].sort((a, b) => b.score - a.score);
         
-        announcement += `Now for the current bounty after round ${this.state.rounds.length}... `;
+        announcement += this.t('current_bounty_after', { roundCount: this.state.rounds.length.toString() });
         
         sortedPlayers.forEach((player, index) => {
             if (index === 0) {
-                announcement += `Leading the fleet, we have ${player.name} with ${player.score} pieces of eight! `;
+                announcement += this.t('leading_fleet', { name: player.name, score: player.score.toString() });
             } else if (index === sortedPlayers.length - 1 && sortedPlayers.length > 2) {
-                announcement += `And bringing up the rear, ${player.name} with ${player.score} doubloons. `;
+                announcement += this.t('bringing_rear', { name: player.name, score: player.score.toString() });
             } else {
-                announcement += `${player.name} follows with ${player.score} gold coins. `;
+                announcement += this.t('follows_with', { name: player.name, score: player.score.toString() });
             }
         });
 
-        announcement += "May the winds favor the worthy! Arrr!";
+        announcement += this.t('may_winds_favor');
         return announcement;
+    }
+
+    // Safe translation helper
+    private t(key: string, params?: { [key: string]: string | number }): string {
+        if (typeof i18n === 'undefined') {
+            // Fallback English translations for testing
+            const fallbacks: { [key: string]: string } = {
+                'min_players_error': 'Ye need at least 2 pirates to sail these waters!',
+                'max_players_error': 'Too many pirates! Maximum 8 scallywags allowed.',
+                'duplicate_names_error': 'Each pirate needs a unique name, ye scurvy dogs!',
+                'invalid_number_error': 'Invalid number entered for {playerName}. Please enter valid numbers only.',
+                'whole_numbers_error': 'All values must be whole numbers for {playerName}.',
+                'non_negative_error': 'Bid, actual tricks, and bonus must be non-negative for {playerName}.',
+                'bid_exceeds_tricks_error': '{playerName}\'s bid ({bid}) can\'t exceed {maxTricks} tricks in round {round} with {playerCount} players.',
+                'actual_exceeds_tricks_error': '{playerName} can\'t win more than {maxTricks} tricks in round {round} with {playerCount} players. Actual: {actual}',
+                'bonus_without_correct_bid_error': '{playerName} can only earn bonus points when correctly predicting tricks! (Bid: {bid}, Actual: {actual})',
+                'unreasonable_bonus_error': '{playerName}\'s bonus points seem unreasonable ({bonus}). Please check your entry.',
+                'total_tricks_mismatch_error': 'Total tricks won ({totalActual}) must equal the number of tricks available ({maxTricks}) in round {round} with {playerCount} players.',
+                'perfect_round_1': 'Blimey! Every scallywag nailed their bid! The sea gods smile upon ye all!',
+                'perfect_round_2': 'Shiver me timbers! Perfect round for all hands! Not a single miscalculation!',
+                'perfect_round_3': 'Avast! Every pirate sailed true to their word! What sorcery be this?',
+                'disaster_1': 'Avast! {playerName} be sinkin\' faster than a ship with no hull!',
+                'disaster_2': '{playerName} just sailed straight into a kraken! What a disaster!',
+                'disaster_3': 'Blimey! {playerName} be drownin\' in their own overconfidence!',
+                'big_scores_1': 'Pieces of eight! Multiple pirates be strikin\' gold this round!',
+                'big_scores_2': 'Shiver me timbers! Several captains just filled their treasure chests!',
+                'big_scores_3': 'Multiple pirates be countin\' serious doubloons after that performance!',
+                'default_1': 'Another round in the books! The seas be unpredictable as always!',
+                'default_2': 'The tide turns with each round! Stay sharp, ye scurvy dogs!',
+                'default_3': 'Mixed fortunes this round! The ocean gives and takes as she pleases!',
+                'default_4': 'The winds of fortune blow in mysterious ways, ye landlubbers!',
+                'default_5': 'Some pirates swim with the sharks, others sail to victory!',
+                'start_1': 'Batten down the hatches, me hearties! The adventure begins!',
+                'start_2': 'Hoist the colors! Time to see which scallywag rules these waters!',
+                'start_3': 'All hands on deck! May the best pirate claim the treasure!',
+                'winner_single_1': 'Huzzah! Captain {name} emerges victorious with {score} pieces of eight! The crown of Skull King belongs to ye!',
+                'winner_single_2': 'Avast! {name} has conquered the seven seas with {score} doubloons! All hail the new Skull King!',
+                'winner_single_3': 'Shiver me timbers! {name} stands triumphant with {score} gold coins! Ye be the true master of these waters!',
+                'winner_single_4': 'Blimey! {name} has plundered the most treasure with {score} pieces of eight! The Skull King\'s throne is yours!',
+                'winner_tie_1': 'Avast! We have a tie! {names} both finish with {score} pieces of eight! Ye must share the Skull King\'s crown!',
+                'winner_tie_2': 'Blimey! {names} have tied with {score} doubloons each! Two captains, one throne - may the best pirate win!',
+                'winner_tie_3': 'Shiver me timbers! {names} are deadlocked at {score} gold coins! The seas couldn\'t choose between such worthy pirates!',
+                'no_game_announce': 'No active game to announce, ye landlubber!',
+                'ahoy_mateys': 'Ahoy mateys! ',
+                'current_bounty_after': 'Now for the current bounty after round {roundCount}... ',
+                'leading_fleet': 'Leading the fleet, we have {name} with {score} pieces of eight! ',
+                'bringing_rear': 'And bringing up the rear, {name} with {score} doubloons. ',
+                'follows_with': '{name} follows with {score} gold coins. ',
+                'may_winds_favor': 'May the winds favor the worthy! Arrr!'
+            };
+            
+            let result = fallbacks[key] || key;
+            
+            // Replace parameters if provided
+            if (params) {
+                Object.entries(params).forEach(([param, value]) => {
+                    result = result.replace(new RegExp(`\\{${param}\\}`, 'g'), value.toString());
+                });
+            }
+            
+            return result;
+        }
+        
+        return i18n.translate(key, params);
     }
 
     // Public method for testing
@@ -605,6 +780,7 @@ class SkullKingGame {
     private init(): void {
         this.setupEventListeners();
         this.initializePWA();
+        this.initializeTranslations();
         this.updateUI();
     }
 
@@ -649,6 +825,10 @@ class SkullKingGame {
 
         const cancelNewGameBtn = document.getElementById('cancel-new-game-btn');
         cancelNewGameBtn?.addEventListener('click', () => this.hideModal());
+
+        // Language selector
+        const languageSelector = document.getElementById('language-selector') as HTMLSelectElement;
+        languageSelector?.addEventListener('change', () => this.handleLanguageChange(languageSelector.value));
     }
 
     // Event Handlers
@@ -663,7 +843,7 @@ class SkullKingGame {
     private handleAddPlayer(): void {
         const tempPlayers = this.viewModel.getTempPlayers();
         if (tempPlayers.length >= 8) {
-            this.showError('Maximum 8 pirates allowed! Can\'t add more players.');
+            this.showError(this.t('max_players_add_error'));
             return;
         }
         this.viewModel.addTempPlayer();
@@ -743,8 +923,8 @@ class SkullKingGame {
         const playerNames = gameState.players.map(p => p.name).join(', ');
         
         this.showNewGameModal(
-            'Start New Game',
-            'Choose how ye want to start yer new adventure:',
+            this.t('new_game_modal_title'),
+            this.t('new_game_modal_message'),
             playerNames
         );
     }
@@ -771,6 +951,11 @@ class SkullKingGame {
             }
             
             this.updatePreviousRounds(gameState.rounds);
+            
+            // Show commentary if we have rounds
+            if (gameState.rounds.length > 0) {
+                this.showCommentary();
+            }
         }
     }
 
@@ -803,7 +988,7 @@ class SkullKingGame {
         const tempPlayers = this.viewModel.getTempPlayers();
         container.innerHTML = tempPlayers.map((name, index) => `
             <div class="player-name-input">
-                <input type="text" id="player-${index}" placeholder="Enter pirate name..." value="${name}" onchange="game.updateTempPlayer(${index}, this.value)">
+                <input type="text" id="player-${index}" placeholder="${this.t('player_placeholder')}" value="${name}" onchange="game.updateTempPlayer(${index}, this.value)">
                 <button class="btn-remove" onclick="game.removePlayer(${index})" title="Remove player">✕</button>
             </div>
         `).join('');
@@ -850,19 +1035,19 @@ class SkullKingGame {
                 <h4>${player.name}</h4>
                 <div class="round-input-row">
                     <div class="input-group">
-                        <label for="bid-${player.name}" class="input-label">Bid</label>
+                        <label for="bid-${player.name}" class="input-label">${this.t('bid_label')}</label>
                         <input type="number" id="bid-${player.name}" placeholder="0" min="0" max="${maxTricks}" oninput="game.updateRoundScore(&quot;${player.name}&quot;)">
                     </div>
                     <div class="input-group">
-                        <label for="actual-${player.name}" class="input-label">Won</label>
+                        <label for="actual-${player.name}" class="input-label">${this.t('won_label')}</label>
                         <input type="number" id="actual-${player.name}" placeholder="0" min="0" max="${maxTricks}" oninput="game.updateRoundScore(&quot;${player.name}&quot;)">
                     </div>
                     <div class="input-group">
-                        <label for="bonus-${player.name}" class="input-label">Bonus</label>
+                        <label for="bonus-${player.name}" class="input-label">${this.t('bonus_label')}</label>
                         <input type="number" id="bonus-${player.name}" placeholder="0" min="0" oninput="game.updateRoundScore(&quot;${player.name}&quot;)">
                     </div>
                     <div class="input-group">
-                        <label class="input-label">Score</label>
+                        <label class="input-label">${this.t('score_label')}</label>
                         <div id="score-${player.name}" class="computed-score">-</div>
                     </div>
                 </div>
@@ -889,7 +1074,7 @@ class SkullKingGame {
             <div class="round-display parchment">
                 <div class="round-header">
                     <h3>Round ${round.roundNumber}</h3>
-                    ${index === 0 ? '<button class="btn btn-secondary" onclick="game.handleUpdateLastRound()">Edit Round</button>' : ''}
+                    ${index === 0 ? `<button class="btn btn-secondary" onclick="game.handleUpdateLastRound()">${this.t('edit_round_button')}</button>` : ''}
                 </div>
                 <div class="round-data">
                     <div class="round-data-header">
@@ -946,9 +1131,13 @@ class SkullKingGame {
         const commentaryEl = document.getElementById('pirate-commentary');
         const textEl = document.getElementById('commentary-text');
 
-        if (commentaryEl && textEl && commentary) {
-            textEl.textContent = commentary;
-            commentaryEl.classList.remove('hidden');
+        if (commentaryEl && textEl) {
+            if (commentary) {
+                textEl.textContent = commentary;
+                commentaryEl.classList.remove('hidden');
+            } else {
+                commentaryEl.classList.add('hidden');
+            }
         }
     }
     
@@ -1008,7 +1197,7 @@ class SkullKingGame {
         
         // Update same players button text
         if (samePlayersBtn) {
-            samePlayersBtn.textContent = `Same Players (${playerNames})`;
+            samePlayersBtn.textContent = `${this.t('same_players_prefix')} (${playerNames})`;
         }
 
         modal.classList.remove('hidden');
@@ -1056,7 +1245,7 @@ class SkullKingGame {
 
         if (!modal || !titleEl || !messageEl) return;
 
-        titleEl.textContent = 'Arr! Input Error';
+        titleEl.textContent = this.t('input_error_title');
         messageEl.textContent = message;
 
         // Hide all optional sections
@@ -1067,14 +1256,14 @@ class SkullKingGame {
 
         // Show only the confirm button (OK)
         if (modalConfirm && modalCancel) {
-            modalConfirm.textContent = 'Aye, I\'ll fix it!';
+            modalConfirm.textContent = this.t('fix_it_button');
             modalCancel.style.display = 'none';
         }
 
         // Clear any existing callback and set error modal behavior
         this.viewModel.setModalConfirmCallback(() => {
             if (modalCancel) modalCancel.style.display = 'inline-block';
-            if (modalConfirm) modalConfirm.textContent = 'Aye';
+            if (modalConfirm) modalConfirm.textContent = this.t('aye_button');
         });
 
         modal.classList.remove('hidden');
@@ -1094,48 +1283,139 @@ class SkullKingGame {
         this.showErrorModal(message);
     }
 
+    private getLanguageSpecificSpeechSettings(language: string): { rate: number; pitch: number; volume: number } {
+        // Language-specific speech settings for authentic pirate voices
+        interface SpeechSettings {
+            rate: number;
+            pitch: number;
+            volume: number;
+        }
+        
+        const settings: { [key: string]: SpeechSettings } = {
+            'en': {
+                rate: 0.7,   // Slower and more dramatic for English
+                pitch: 0.7,  // Lower pitch for gruff pirate voice
+                volume: 1.0
+            },
+            'de': {
+                rate: 0.65,  // Slightly slower for German to sound more commanding
+                pitch: 0.6,  // Even lower pitch for authoritative German pirate
+                volume: 1.0
+            },
+            'es': {
+                rate: 0.75,  // Slightly faster for Spanish passion
+                pitch: 0.75, // Slightly higher pitch for Spanish expressiveness
+                volume: 1.0
+            }
+        };
+
+        return settings[language] || settings['en'];
+    }
+
     private readScores(): void {
         // Check if browser supports speech synthesis
         if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
-            this.showErrorModal('Arr! Yer browser doesn\'t support speech. Try a newer vessel!');
+            this.showErrorModal(this.t('browser_speech_error'));
             return;
         }
 
         // Cancel any ongoing speech
         window.speechSynthesis.cancel();
 
+        // Force refresh the view model's translation context before creating announcement
         const announcement = this.viewModel.createScoreAnnouncement();
 
         // Create and configure the utterance for maximum pirate effect
         const utterance = new SpeechSynthesisUtterance(announcement);
-        utterance.rate = 0.7; // Slower and more dramatic
-        utterance.pitch = 0.7; // Lower pitch for gruff pirate voice
-        utterance.volume = 1;
+        
+        // Get current language
+        const currentLang = typeof i18n !== 'undefined' ? i18n.getCurrentLanguage() : 'en';
+        
+        // Set the utterance language based on current selection
+        utterance.lang = currentLang === 'de' ? 'de-DE' : 
+                        currentLang === 'es' ? 'es-ES' : 'en-US';
+        
+        // Set language-specific speech parameters for pirate effect
+        const speechSettings = this.getLanguageSpecificSpeechSettings(currentLang);
+        utterance.rate = speechSettings.rate;
+        utterance.pitch = speechSettings.pitch;
+        utterance.volume = speechSettings.volume;
 
-        // Function to set consistent male voice
-        const setConsistentVoice = () => {
+        // Function to set language-appropriate voice
+        const setLanguageVoice = () => {
             const voices = window.speechSynthesis.getVoices();
             
             if (voices.length === 0) {
                 // Voices not loaded yet, try again in a moment
-                setTimeout(setConsistentVoice, 100);
+                setTimeout(setLanguageVoice, 100);
                 return;
             }
 
-            // Look for consistent male voices in priority order
-            const pirateVoice = voices.find(voice => 
-                voice.lang.startsWith('en') && 
-                (voice.name.toLowerCase().includes('male') ||
-                 voice.name.toLowerCase().includes('daniel') ||
-                 voice.name.toLowerCase().includes('david') ||
-                 voice.name.toLowerCase().includes('alex'))
-            ) || voices.find(voice => 
-                voice.lang.startsWith('en') && !voice.name.toLowerCase().includes('female')
-            ) || voices.find(voice => voice.lang.startsWith('en'));
+            let pirateVoice = null;
+
+            // Define language preferences for voice selection
+            interface VoicePreference {
+                langCodes: string[];
+                preferredNames: string[];
+            }
+            
+            const voicePreferences: { [key: string]: VoicePreference } = {
+                'en': {
+                    langCodes: ['en-US', 'en-GB', 'en-AU', 'en'],
+                    preferredNames: ['daniel', 'david', 'alex', 'male', 'aaron', 'fred']
+                },
+                'de': {
+                    langCodes: ['de-DE', 'de-AT', 'de-CH', 'de'],
+                    preferredNames: ['male', 'markus', 'stefan', 'hans', 'dieter']
+                },
+                'es': {
+                    langCodes: ['es-ES', 'es-MX', 'es-AR', 'es-US', 'es'],
+                    preferredNames: ['male', 'carlos', 'diego', 'jorge', 'manuel', 'pablo']
+                }
+            };
+
+            const prefs = voicePreferences[currentLang] || voicePreferences['en'];
+
+            // Try to find the best voice for the current language
+            for (const langCode of prefs.langCodes) {
+                // First, try to find preferred male voices
+                for (const preferredName of prefs.preferredNames) {
+                    pirateVoice = voices.find(voice => 
+                        voice.lang.toLowerCase().startsWith(langCode.toLowerCase()) &&
+                        voice.name.toLowerCase().includes(preferredName.toLowerCase())
+                    );
+                    if (pirateVoice) break;
+                }
+                if (pirateVoice) break;
+
+                // If no preferred voice found, try any male voice for this language
+                pirateVoice = voices.find(voice => 
+                    voice.lang.toLowerCase().startsWith(langCode.toLowerCase()) &&
+                    !voice.name.toLowerCase().includes('female')
+                );
+                if (pirateVoice) break;
+
+                // If still no voice, try any voice for this language
+                pirateVoice = voices.find(voice => 
+                    voice.lang.toLowerCase().startsWith(langCode.toLowerCase())
+                );
+                if (pirateVoice) break;
+            }
+
+            // Fallback to any English voice if no voice found for selected language
+            if (!pirateVoice) {
+                pirateVoice = voices.find(voice => 
+                    voice.lang.startsWith('en') && 
+                    !voice.name.toLowerCase().includes('female')
+                ) || voices.find(voice => voice.lang.startsWith('en'));
+            }
 
             if (pirateVoice) {
                 utterance.voice = pirateVoice;
-                console.log(`Using voice: ${pirateVoice.name} (${pirateVoice.lang})`);
+                utterance.lang = pirateVoice.lang; // Set the language explicitly
+                console.log(`🗣️ Using voice: ${pirateVoice.name} (${pirateVoice.lang}) for language: ${currentLang}`);
+            } else {
+                console.warn(`⚠️ No suitable voice found for language: ${currentLang}`);
             }
 
             // Speak!
@@ -1143,7 +1423,7 @@ class SkullKingGame {
         };
 
         // Set voice and speak
-        setConsistentVoice();
+        setLanguageVoice();
     }
 
     private updateRoundScoreInternal(playerName: string): void {
@@ -1206,7 +1486,7 @@ class SkullKingGame {
         // Remove the last round and get its data for pre-filling
         const lastRoundData = this.viewModel.removeLastRound();
         if (!lastRoundData) {
-            this.showError('No rounds to edit!');
+            this.showError(this.t('no_rounds_to_edit_error'));
             return;
         }
 
@@ -1235,6 +1515,318 @@ class SkullKingGame {
         if (roundInputsSection) {
             roundInputsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+    }
+
+    // Translation Management
+    private initializeTranslations(): void {
+        // Guard for test environment
+        if (typeof i18n === 'undefined') return;
+        
+        // Set initial language in selector
+        const languageSelector = document.getElementById('language-selector') as HTMLSelectElement;
+        if (languageSelector) {
+            languageSelector.value = i18n.getCurrentLanguage();
+        }
+
+        // Listen for language change events
+        window.addEventListener('languageChanged', () => {
+            this.updateAllTranslations();
+        });
+
+        // Initial translation update
+        this.updateAllTranslations();
+    }
+
+    private handleLanguageChange(language: string): void {
+        if (typeof i18n !== 'undefined') {
+            i18n.setLanguage(language);
+        }
+    }
+    
+    // Safe translation helper
+    private t(key: string, params?: { [key: string]: string | number }): string {
+        if (typeof i18n === 'undefined') {
+            // Fallback English translations for testing
+            const fallbacks: { [key: string]: string } = {
+                'min_players_error': 'Ye need at least 2 pirates to sail these waters!',
+                'max_players_error': 'Too many pirates! Maximum 8 scallywags allowed.',
+                'duplicate_names_error': 'Each pirate needs a unique name, ye scurvy dogs!',
+                'max_players_add_error': 'Maximum 8 pirates allowed! Can\'t add more players.',
+                'invalid_number_error': 'Invalid number entered for {playerName}. Please enter valid numbers only.',
+                'whole_numbers_error': 'All values must be whole numbers for {playerName}.',
+                'non_negative_error': 'Bid, actual tricks, and bonus must be non-negative for {playerName}.',
+                'bid_exceeds_tricks_error': '{playerName}\'s bid ({bid}) can\'t exceed {maxTricks} tricks in round {round} with {playerCount} players.',
+                'actual_exceeds_tricks_error': '{playerName} can\'t win more than {maxTricks} tricks in round {round} with {playerCount} players. Actual: {actual}',
+                'bonus_without_correct_bid_error': '{playerName} can only earn bonus points when correctly predicting tricks! (Bid: {bid}, Actual: {actual})',
+                'unreasonable_bonus_error': '{playerName}\'s bonus points seem unreasonable ({bonus}). Please check your entry.',
+                'total_tricks_mismatch_error': 'Total tricks won ({totalActual}) must equal the number of tricks available ({maxTricks}) in round {round} with {playerCount} players.',
+                'no_rounds_to_edit_error': 'No rounds to edit!',
+                'browser_speech_error': 'Arr! Yer browser doesn\'t support speech. Try a newer vessel!',
+                'input_error_title': 'Arr! Input Error',
+                'fix_it_button': 'Aye, I\'ll fix it!',
+                'player_placeholder': 'Enter pirate name...',
+                'bid_label': 'Bid',
+                'won_label': 'Won',
+                'bonus_label': 'Bonus',
+                'score_label': 'Score',
+                'edit_round_button': 'Edit Round',
+                'new_game_modal_title': 'Start New Game',
+                'new_game_modal_message': 'Choose how ye want to start yer new adventure:',
+                'same_players_prefix': 'Same Players',
+                'aye_button': 'Aye',
+                'no_game_announce': 'No active game to announce, ye landlubber!',
+                'ahoy_mateys': 'Ahoy mateys! ',
+                'current_bounty_after': 'Now for the current bounty after round {roundCount}... ',
+                'leading_fleet': 'Leading the fleet, we have {name} with {score} pieces of eight! ',
+                'bringing_rear': 'And bringing up the rear, {name} with {score} doubloons. ',
+                'follows_with': '{name} follows with {score} gold coins. ',
+                'may_winds_favor': 'May the winds favor the worthy! Arrr!',
+                'perfect_round_1': 'Blimey! Every scallywag nailed their bid! The sea gods smile upon ye all!',
+                'perfect_round_2': 'Shiver me timbers! Perfect round for all hands! Not a single miscalculation!',
+                'perfect_round_3': 'Avast! Every pirate sailed true to their word! What sorcery be this?',
+                'disaster_1': 'Avast! {playerName} be sinkin\' faster than a ship with no hull!',
+                'disaster_2': '{playerName} just sailed straight into a kraken! What a disaster!',
+                'disaster_3': 'Blimey! {playerName} be drownin\' in their own overconfidence!',
+                'big_scores_1': 'Pieces of eight! Multiple pirates be strikin\' gold this round!',
+                'big_scores_2': 'Shiver me timbers! Several captains just filled their treasure chests!',
+                'big_scores_3': 'Multiple pirates be countin\' serious doubloons after that performance!',
+                'default_1': 'Another round in the books! The seas be unpredictable as always!',
+                'default_2': 'The tide turns with each round! Stay sharp, ye scurvy dogs!',
+                'default_3': 'Mixed fortunes this round! The ocean gives and takes as she pleases!',
+                'default_4': 'The winds of fortune blow in mysterious ways, ye landlubbers!',
+                'default_5': 'Some pirates swim with the sharks, others sail to victory!',
+                'start_1': 'Batten down the hatches, me hearties! The adventure begins!',
+                'start_2': 'Hoist the colors! Time to see which scallywag rules these waters!',
+                'start_3': 'All hands on deck! May the best pirate claim the treasure!',
+                'winner_single_1': 'Huzzah! Captain {name} emerges victorious with {score} pieces of eight! The crown of Skull King belongs to ye!',
+                'winner_single_2': 'Avast! {name} has conquered the seven seas with {score} doubloons! All hail the new Skull King!',
+                'winner_single_3': 'Shiver me timbers! {name} stands triumphant with {score} gold coins! Ye be the true master of these waters!',
+                'winner_single_4': 'Blimey! {name} has plundered the most treasure with {score} pieces of eight! The Skull King\'s throne is yours!',
+                'winner_tie_1': 'Avast! We have a tie! {names} both finish with {score} pieces of eight! Ye must share the Skull King\'s crown!',
+                'winner_tie_2': 'Blimey! {names} have tied with {score} doubloons each! Two captains, one throne - may the best pirate win!',
+                'winner_tie_3': 'Shiver me timbers! {names} are deadlocked at {score} gold coins! The seas couldn\'t choose between such worthy pirates!',
+                // Additional fallbacks for UI elements  
+                'page_title': 'Skull King Score Keeper - Free Digital Scorecard & Score Tracker',
+                'page_description': 'Free Skull King score keeper and digital scorecard.',
+                'page_keywords': 'Skull King, score keeper, scorecard',
+                'og_title': 'Skull King Score Keeper - Free Digital Scorecard',
+                'og_description': 'Free digital score keeper for Skull King card game.',
+                'twitter_description': 'Free digital score keeper for Skull King card game.',
+                'app_title': 'Skull King',
+                'header_title': '⚓ Skull King Score Keeper ☠️',
+                'header_tagline': 'Track Yer Plunder, Ye Scurvy Dogs!',
+                'landing_title': 'Free Skull King Score Keeper & Digital Scorecard',
+                'landing_description': 'The ultimate Skull King score tracker.',
+                'landing_subtitle': 'Perfect Skull King Scoring Solution',
+                'feature_mobile': '📱 <strong>Mobile Skull King Scorecard</strong>',
+                'feature_calculator': '🧮 <strong>Automatic Score Calculator</strong>',
+                'feature_commentary': '🦜 <strong>Pirate Commentary</strong>',
+                'feature_audio': '🔊 <strong>Audio Score Reader</strong>',
+                'feature_saving': '💾 <strong>Game State Saving</strong>',
+                'why_choose_title': 'Why Choose Our Skull King Score Keeper?',
+                'why_choose_description': 'Perfect for Skull King enthusiasts.',
+                'start_button': 'Start Your Skull King Score Tracking',
+                'name_crew_title': 'Name Yer Crew',
+                'add_pirate_button': 'Add Pirate',
+                'set_sail_button': 'Set Sail!',
+                'back_to_port_button': 'Back to Port',
+                'new_game_button': 'New Game',
+                'current_bounty_title': 'Current Bounty',
+                'read_scores_button': 'Read Scores',
+                'game_complete_title': '🏴‍☠️ Game Complete! 🏴‍☠️',
+                'round_label': 'Round',
+                'record_round_button': 'Record Round',
+                'confirm_action_title': 'Confirm Action',
+                'keep_names_label': 'Keep player names',
+                'new_players_button': 'New Players',
+                'cancel_button': 'Cancel',
+                'nay_button': 'Nay',
+                'disclaimer_title': 'Disclaimer:',
+                'disclaimer_text_1': 'This website is an independent fan-created score keeper.',
+                'disclaimer_text_2': 'This tool is provided for educational purposes.',
+                'feedback_text': 'For feedback, contact: ',
+                'add_to_home_title': '📱 Add to Home Screen',
+                'android_chrome_title': 'For Android Chrome:',
+                'android_step_1': 'Tap the menu (⋮) in browser',
+                'android_step_2': 'Select "Add to Home screen"',
+                'android_step_3': 'Tap "Add" to confirm',
+                'ios_safari_title': 'For iOS Safari:',
+                'ios_step_1': 'Tap the share button (⎘)',
+                'ios_step_2': 'Scroll down and tap "Add to Home Screen"',
+                'ios_step_3': 'Tap "Add" to confirm',
+                'close_button': '✕ Close'
+            };
+            
+            let result = fallbacks[key] || key;
+            
+            // Replace parameters if provided
+            if (params) {
+                Object.entries(params).forEach(([param, value]) => {
+                    result = result.replace(new RegExp(`\\{${param}\\}`, 'g'), value.toString());
+                });
+            }
+            
+            return result;
+        }
+        
+        return i18n.translate(key, params);
+    }
+
+    private updateAllTranslations(): void {
+        // Update meta tags
+        this.updateMetaTags();
+        
+        // Update static content
+        this.updateStaticContent();
+        
+        // Update dynamic content if game is active
+        if (this.viewModel.isGameActive()) {
+            // Update all round commentaries to current language
+            this.viewModel.updateAllCommentariesToCurrentLanguage();
+            this.updateUI();
+            // Force refresh commentary with new language
+            this.showCommentary();
+        }
+    }
+
+    private updateMetaTags(): void {
+        // Update document title
+        const title = document.getElementById('page-title') as HTMLTitleElement;
+        if (title) title.textContent = this.t('page_title');
+
+        // Update meta description
+        const description = document.querySelector('meta[name="description"]') as HTMLMetaElement;
+        if (description) description.content = this.t('page_description');
+
+        // Update meta keywords
+        const keywords = document.querySelector('meta[name="keywords"]') as HTMLMetaElement;
+        if (keywords) keywords.content = this.t('page_keywords');
+
+        // Update Open Graph tags
+        const ogTitle = document.querySelector('meta[property="og:title"]') as HTMLMetaElement;
+        if (ogTitle) ogTitle.content = this.t('og_title');
+
+        const ogDescription = document.querySelector('meta[property="og:description"]') as HTMLMetaElement;
+        if (ogDescription) ogDescription.content = this.t('og_description');
+
+        // Update Twitter tags
+        const twitterTitle = document.querySelector('meta[name="twitter:title"]') as HTMLMetaElement;
+        if (twitterTitle) twitterTitle.content = this.t('og_title');
+
+        const twitterDescription = document.querySelector('meta[name="twitter:description"]') as HTMLMetaElement;
+        if (twitterDescription) twitterDescription.content = this.t('twitter_description');
+
+        // Update app title
+        const appTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement;
+        if (appTitle) appTitle.content = this.t('app_title');
+    }
+
+    private updateStaticContent(): void {
+        // Header
+        const headerTitle = document.getElementById('header-title');
+        if (headerTitle) headerTitle.textContent = this.t('header_title');
+
+        const headerTagline = document.getElementById('header-tagline');
+        if (headerTagline) headerTagline.textContent = this.t('header_tagline');
+
+        // Landing page
+        const landingTitle = document.getElementById('landing-title');
+        if (landingTitle) landingTitle.textContent = this.t('landing_title');
+
+        const landingDescription = document.getElementById('landing-description');
+        if (landingDescription) landingDescription.textContent = this.t('landing_description');
+
+        const landingSubtitle = document.getElementById('landing-subtitle');
+        if (landingSubtitle) landingSubtitle.textContent = this.t('landing_subtitle');
+
+        // Features
+        const featureMobile = document.getElementById('feature-mobile');
+        if (featureMobile) featureMobile.innerHTML = this.t('feature_mobile');
+
+        const featureCalculator = document.getElementById('feature-calculator');
+        if (featureCalculator) featureCalculator.innerHTML = this.t('feature_calculator');
+
+        const featureCommentary = document.getElementById('feature-commentary');
+        if (featureCommentary) featureCommentary.innerHTML = this.t('feature_commentary');
+
+        const featureAudio = document.getElementById('feature-audio');
+        if (featureAudio) featureAudio.innerHTML = this.t('feature_audio');
+
+        const featureSaving = document.getElementById('feature-saving');
+        if (featureSaving) featureSaving.innerHTML = this.t('feature_saving');
+
+        const whyChooseTitle = document.getElementById('why-choose-title');
+        if (whyChooseTitle) whyChooseTitle.textContent = this.t('why_choose_title');
+
+        const whyChooseDescription = document.getElementById('why-choose-description');
+        if (whyChooseDescription) whyChooseDescription.textContent = this.t('why_choose_description');
+
+        // Buttons
+        const newGameBtn = document.getElementById('new-game-btn');
+        if (newGameBtn) newGameBtn.textContent = this.t('start_button');
+
+        const nameCrewTitle = document.getElementById('name-crew-title');
+        if (nameCrewTitle) nameCrewTitle.textContent = this.t('name_crew_title');
+
+        const addPlayerBtn = document.getElementById('add-player-btn');
+        if (addPlayerBtn) addPlayerBtn.textContent = this.t('add_pirate_button');
+
+        const startGameBtn = document.getElementById('start-game-btn');
+        if (startGameBtn) startGameBtn.textContent = this.t('set_sail_button');
+
+        const cancelSetupBtn = document.getElementById('cancel-setup-btn');
+        if (cancelSetupBtn) cancelSetupBtn.textContent = this.t('back_to_port_button');
+
+        const newGameIngameBtn = document.getElementById('new-game-ingame-btn');
+        if (newGameIngameBtn) newGameIngameBtn.textContent = this.t('new_game_button');
+
+        // Game section
+        const currentBountyTitle = document.getElementById('current-bounty-title');
+        if (currentBountyTitle) currentBountyTitle.textContent = this.t('current_bounty_title');
+
+        const readScoresBtn = document.getElementById('read-scores-btn');
+        if (readScoresBtn) readScoresBtn.innerHTML = `🔊 ${this.t('read_scores_button').replace('🔊 ', '')}`;
+
+        const gameCompleteTitle = document.getElementById('game-complete-title');
+        if (gameCompleteTitle) gameCompleteTitle.textContent = this.t('game_complete_title');
+
+        const roundLabel = document.getElementById('round-label');
+        if (roundLabel) roundLabel.textContent = this.t('round_label');
+
+        const addRoundBtn = document.getElementById('add-round-btn');
+        if (addRoundBtn) addRoundBtn.textContent = this.t('record_round_button');
+
+        // Modal
+        const modalTitle = document.getElementById('modal-title');
+        if (modalTitle) modalTitle.textContent = this.t('confirm_action_title');
+
+        const keepNamesLabel = document.getElementById('keep-names-label');
+        if (keepNamesLabel) keepNamesLabel.textContent = this.t('keep_names_label');
+
+        const newPlayersBtn = document.getElementById('new-players-btn');
+        if (newPlayersBtn) newPlayersBtn.textContent = this.t('new_players_button');
+
+        const cancelNewGameBtn = document.getElementById('cancel-new-game-btn');
+        if (cancelNewGameBtn) cancelNewGameBtn.textContent = this.t('cancel_button');
+
+        const modalConfirm = document.getElementById('modal-confirm');
+        if (modalConfirm) modalConfirm.textContent = this.t('aye_button');
+
+        const modalCancel = document.getElementById('modal-cancel');
+        if (modalCancel) modalCancel.textContent = this.t('nay_button');
+
+        // Footer
+        const disclaimerTitle = document.getElementById('disclaimer-title');
+        if (disclaimerTitle) disclaimerTitle.textContent = this.t('disclaimer_title');
+
+        const disclaimerText1 = document.getElementById('disclaimer-text-1');
+        if (disclaimerText1) disclaimerText1.textContent = this.t('disclaimer_text_1');
+
+        const disclaimerText2 = document.getElementById('disclaimer-text-2');
+        if (disclaimerText2) disclaimerText2.textContent = this.t('disclaimer_text_2');
+
+        const feedbackText = document.getElementById('feedback-text');
+        if (feedbackText) feedbackText.textContent = this.t('feedback_text');
     }
 
     // PWA Install Functionality
@@ -1279,22 +1871,22 @@ class SkullKingGame {
             modal.className = 'install-modal';
             modal.innerHTML = `
                 <div class="install-modal-content">
-                    <h3>📱 Add to Home Screen</h3>
+                    <h3>${this.t('add_to_home_title')}</h3>
                     <div class="install-instructions">
-                        <p><strong>For Android Chrome:</strong></p>
+                        <p><strong>${this.t('android_chrome_title')}</strong></p>
                         <ol>
-                            <li>Tap the menu (⋮) in browser</li>
-                            <li>Select "Add to Home screen"</li>
-                            <li>Tap "Add" to confirm</li>
+                            <li>${this.t('android_step_1')}</li>
+                            <li>${this.t('android_step_2')}</li>
+                            <li>${this.t('android_step_3')}</li>
                         </ol>
-                        <p><strong>For iOS Safari:</strong></p>
+                        <p><strong>${this.t('ios_safari_title')}</strong></p>
                         <ol>
-                            <li>Tap the share button (⎘)</li>
-                            <li>Scroll down and tap "Add to Home Screen"</li>
-                            <li>Tap "Add" to confirm</li>
+                            <li>${this.t('ios_step_1')}</li>
+                            <li>${this.t('ios_step_2')}</li>
+                            <li>${this.t('ios_step_3')}</li>
                         </ol>
                     </div>
-                    <button class="install-modal-close" onclick="this.parentElement.parentElement.style.display='none'">✕ Close</button>
+                    <button class="install-modal-close" onclick="this.parentElement.parentElement.style.display='none'">${this.t('close_button')}</button>
                 </div>
             `;
             document.body.appendChild(modal);

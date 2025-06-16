@@ -52,7 +52,33 @@ body {
     text-align: center;
 }
 
-/* Add padding for install button only on mobile */
+/* Language selector styles */
+.language-selector {
+    background: rgba(212, 175, 55, 0.9);
+    color: #2c1810;
+    border: 2px solid rgba(212, 175, 55, 0.5);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-family: 'Georgia', serif;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.language-selector:hover {
+    background: rgba(244, 228, 193, 0.95);
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.language-selector:focus {
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.5);
+}
+
+/* Mobile adjustments */
 @media (max-width: 768px) {
     .header-content {
         padding-right: 4rem; /* Make room for install button */
@@ -831,6 +857,11 @@ input[type="text"]:focus {
     margin-top: 3rem;
     padding: 2rem 0;
     color: #f4e4c1;
+}
+
+.language-selector-container {
+    margin-top: 1.5rem;
+    text-align: center;
 }
 
 .disclaimer-content {
