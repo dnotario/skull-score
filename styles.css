@@ -73,6 +73,36 @@ body {
     padding: 0 1rem;
 }
 
+/* Desktop optimizations */
+@media (min-width: 1024px) {
+    .container {
+        max-width: 1000px;
+    }
+    
+    .score-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .player-score {
+        padding: 1.5rem;
+    }
+    
+    .score-value {
+        font-size: 2.5rem;
+    }
+    
+    .round-inputs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+    
+    .round-input-row {
+        gap: 1rem;
+    }
+}
+
 /* Parchment Style */
 .parchment {
     background: #f4e4c1;
@@ -224,6 +254,8 @@ input[type="text"]:focus {
 .btn-small {
     padding: 0.5rem 0.75rem;
     font-size: 0.85rem;
+    margin-left: 1rem;
+    white-space: nowrap;
 }
 
 .btn-remove {
@@ -340,6 +372,12 @@ input[type="text"]:focus {
     gap: 1.5rem;
 }
 
+.record-round-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
 
 .player-round-input {
     background: rgba(139, 69, 19, 0.05);
@@ -447,6 +485,18 @@ input[type="text"]:focus {
     margin-bottom: 0.5rem;
     text-align: left;
     padding: 1rem;
+}
+
+.new-game-options {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.new-game-options button {
+    width: 100%;
+    margin: 0;
 }
 
 /* Utility Classes */

@@ -1,14 +1,350 @@
 "use strict";
-class SkullKingGame {
+/**
+ * GameState - Handles data persistence and storage
+ * Pure data layer that only manages localStorage operations
+ */
+class GameState {
     constructor() {
         this.storageKey = 'skullKingGameState';
-        this.tempPlayers = [];
-        this.modalConfirmCallback = null;
-        this.state = this.loadState() || {
+    }
+    load() {
+        const saved = localStorage.getItem(this.storageKey);
+        return saved ? JSON.parse(saved) : null;
+    }
+    save(state) {
+        localStorage.setItem(this.storageKey, JSON.stringify(state));
+    }
+    clear() {
+        localStorage.removeItem(this.storageKey);
+    }
+    getDefaultState() {
+        return {
             players: [],
             rounds: [],
             currentRound: 1
         };
+    }
+}
+/**
+ * GameViewModel - Contains all business logic and state management
+ * Manages game rules, scoring calculations, validation, and analytics
+ */
+class GameViewModel {
+    constructor() {
+        this.tempPlayers = [];
+        this.modalConfirmCallback = null;
+        this.gameState = new GameState();
+        this.state = this.gameState.load() || this.gameState.getDefaultState();
+    }
+    // State Management
+    getGameState() {
+        return Object.assign({}, this.state);
+    }
+    saveState() {
+        this.gameState.save(this.state);
+    }
+    clearState() {
+        this.gameState.clear();
+        this.state = this.gameState.getDefaultState();
+    }
+    // Player Management
+    getTempPlayers() {
+        return [...this.tempPlayers];
+    }
+    initializeTempPlayers() {
+        this.tempPlayers = this.state.players.map(p => p.name);
+        if (this.tempPlayers.length === 0) {
+            this.tempPlayers = [''];
+        }
+    }
+    updateTempPlayer(index, value) {
+        this.tempPlayers[index] = value;
+    }
+    addTempPlayer() {
+        this.tempPlayers.push('');
+    }
+    removeTempPlayer(index) {
+        if (this.tempPlayers.length > 1) {
+            this.tempPlayers.splice(index, 1);
+        }
+        else {
+            this.tempPlayers[0] = '';
+        }
+    }
+    validateAndStartGame() {
+        const validNames = this.tempPlayers.filter(name => name.trim() !== '');
+        if (validNames.length < 2) {
+            return 'Ye need at least 2 pirates to sail these waters!';
+        }
+        if (validNames.length > 8) {
+            return 'Too many pirates! Maximum 8 scallywags allowed.';
+        }
+        // Check for duplicate names
+        const uniqueNames = new Set(validNames.map(name => name.trim().toLowerCase()));
+        if (uniqueNames.size !== validNames.length) {
+            return 'Each pirate needs a unique name, ye scurvy dogs!';
+        }
+        // Initialize game state
+        this.state.players = validNames.map(name => ({ name: name.trim(), score: 0 }));
+        this.state.rounds = [];
+        this.state.currentRound = 1;
+        this.saveState();
+        // Track analytics
+        this.trackEvent('game_start', {
+            player_count: this.state.players.length
+        });
+        return null; // Success
+    }
+    // Scoring Logic
+    calculateRoundScore(bid, actual, bonus, roundNumber) {
+        if (bid === 0) {
+            // Zero bid scoring
+            return actual === 0 ? 10 * roundNumber + bonus : -10 * roundNumber;
+        }
+        else {
+            // Non-zero bid scoring
+            if (bid === actual) {
+                // Correct prediction: 20 points per trick + bonus
+                return 20 * actual + bonus;
+            }
+            else {
+                // Incorrect prediction: -10 points per difference (no bonus)
+                return -10 * Math.abs(bid - actual);
+            }
+        }
+    }
+    // Round Management
+    getCurrentRoundNumber() {
+        return this.state.currentRound;
+    }
+    validateRoundData(data) {
+        for (const [playerName, playerData] of Object.entries(data)) {
+            const { bid, actual, bonus } = playerData;
+            // Basic validation
+            if (bid < 0 || actual < 0 || bonus < 0) {
+                return `All values must be non-negative for ${playerName}`;
+            }
+            if (bid > this.state.currentRound || actual > this.state.currentRound) {
+                return `Bids and tricks can't exceed ${this.state.currentRound} for round ${this.state.currentRound}`;
+            }
+            // Bonus point validation - only applies when correctly predicting tricks
+            if (bid !== actual && bonus > 0) {
+                return `${playerName} can only earn bonus points when correctly predicting tricks!`;
+            }
+        }
+        return null; // Valid
+    }
+    addRound(data) {
+        const validationError = this.validateRoundData(data);
+        if (validationError) {
+            return validationError;
+        }
+        const roundData = {
+            roundNumber: this.state.currentRound,
+            playerData: []
+        };
+        // Process each player's data
+        for (const player of this.state.players) {
+            const playerRoundData = data[player.name];
+            const roundScore = this.calculateRoundScore(playerRoundData.bid, playerRoundData.actual, playerRoundData.bonus, this.state.currentRound);
+            roundData.playerData.push({
+                playerName: player.name,
+                bid: playerRoundData.bid,
+                actual: playerRoundData.actual,
+                bonus: playerRoundData.bonus,
+                roundScore
+            });
+            // Update player's total score
+            player.score += roundScore;
+        }
+        this.state.rounds.push(roundData);
+        this.state.currentRound++;
+        this.saveState();
+        // Track analytics
+        this.trackEvent('round_complete', {
+            round_number: roundData.roundNumber,
+            player_count: this.state.players.length
+        });
+        return null; // Success
+    }
+    updateLastRound(data) {
+        if (this.state.rounds.length === 0) {
+            return 'No rounds to update!';
+        }
+        const validationError = this.validateRoundData(data);
+        if (validationError) {
+            return validationError;
+        }
+        const lastRound = this.state.rounds[this.state.rounds.length - 1];
+        // Revert old scores
+        for (const oldPlayerData of lastRound.playerData) {
+            const player = this.state.players.find(p => p.name === oldPlayerData.playerName);
+            if (player) {
+                player.score -= oldPlayerData.roundScore;
+            }
+        }
+        // Apply new scores
+        lastRound.playerData = [];
+        for (const player of this.state.players) {
+            const playerRoundData = data[player.name];
+            const roundScore = this.calculateRoundScore(playerRoundData.bid, playerRoundData.actual, playerRoundData.bonus, lastRound.roundNumber);
+            lastRound.playerData.push({
+                playerName: player.name,
+                bid: playerRoundData.bid,
+                actual: playerRoundData.actual,
+                bonus: playerRoundData.bonus,
+                roundScore
+            });
+            player.score += roundScore;
+        }
+        this.saveState();
+        // Track analytics
+        this.trackEvent('round_updated', {
+            round_number: lastRound.roundNumber
+        });
+        return null; // Success
+    }
+    getLastRoundData() {
+        if (this.state.rounds.length === 0) {
+            return null;
+        }
+        const lastRound = this.state.rounds[this.state.rounds.length - 1];
+        const result = {};
+        for (const playerData of lastRound.playerData) {
+            result[playerData.playerName] = {
+                bid: playerData.bid,
+                actual: playerData.actual,
+                bonus: playerData.bonus
+            };
+        }
+        return result;
+    }
+    // Modal Management
+    setModalConfirmCallback(callback) {
+        this.modalConfirmCallback = callback;
+    }
+    executeModalConfirm() {
+        if (this.modalConfirmCallback) {
+            this.modalConfirmCallback();
+            this.modalConfirmCallback = null;
+        }
+    }
+    // New Game Logic
+    startNewGame(keepNames) {
+        const existingNames = keepNames ? this.state.players.map(p => p.name) : [];
+        this.clearState();
+        if (existingNames.length > 0) {
+            this.tempPlayers = [...existingNames];
+        }
+        else {
+            this.tempPlayers = [''];
+        }
+        // Track analytics
+        this.trackEvent('new_game_started', {
+            kept_names: keepNames,
+            player_count: existingNames.length
+        });
+    }
+    // Analytics
+    trackEvent(eventName, parameters = {}) {
+        if (typeof gtag !== 'undefined') {
+            gtag('event', eventName, parameters);
+        }
+    }
+    // Game Status
+    isGameActive() {
+        return this.state.players.length > 0;
+    }
+    isGameComplete() {
+        return this.state.currentRound > 10;
+    }
+    hasRounds() {
+        return this.state.rounds.length > 0;
+    }
+    getPlayerCount() {
+        return this.state.players.length;
+    }
+    getRoundCount() {
+        return this.state.rounds.length;
+    }
+    // Commentary generation
+    generateCommentary() {
+        if (this.state.rounds.length === 0) {
+            return '';
+        }
+        const lastRound = this.state.rounds[this.state.rounds.length - 1];
+        const perfectPlayers = lastRound.playerData.filter(p => p.bid === p.actual);
+        const disasters = lastRound.playerData.filter(p => Math.abs(p.bid - p.actual) >= 3);
+        const bigScores = lastRound.playerData.filter(p => p.roundScore >= 40);
+        // Perfect round (everyone got their bid)
+        if (perfectPlayers.length === this.state.players.length) {
+            const comments = [
+                "Blimey! Every scallywag nailed their bid! The sea gods smile upon ye all!",
+                "Shiver me timbers! Perfect round for all hands! Not a single miscalculation!",
+                "Avast! Every pirate sailed true to their word! What sorcery be this?"
+            ];
+            return comments[Math.floor(Math.random() * comments.length)];
+        }
+        // Single disaster
+        if (disasters.length === 1) {
+            const player = disasters[0];
+            const comments = [
+                `Avast! ${player.playerName} be sinkin' faster than a ship with no hull!`,
+                `${player.playerName} just sailed straight into a kraken! What a disaster!`,
+                `Blimey! ${player.playerName} be drownin' in their own overconfidence!`
+            ];
+            return comments[Math.floor(Math.random() * comments.length)];
+        }
+        // Multiple big scores
+        if (bigScores.length >= 2) {
+            const comments = [
+                "Pieces of eight! Multiple pirates be strikin' gold this round!",
+                "Shiver me timbers! Several captains just filled their treasure chests!",
+                "Multiple pirates be countin' serious doubloons after that performance!"
+            ];
+            return comments[Math.floor(Math.random() * comments.length)];
+        }
+        // Default commentary
+        const defaultComments = [
+            "Another round in the books! The seas be unpredictable as always!",
+            "The tide turns with each round! Stay sharp, ye scurvy dogs!",
+            "Mixed fortunes this round! The ocean gives and takes as she pleases!"
+        ];
+        return defaultComments[Math.floor(Math.random() * defaultComments.length)];
+    }
+    // Text-to-Speech
+    createScoreAnnouncement() {
+        if (this.state.players.length === 0) {
+            return "No active game to announce, ye landlubber!";
+        }
+        const sortedPlayers = [...this.state.players].sort((a, b) => b.score - a.score);
+        let announcement = `Ahoy! Here be the current bounty after round ${this.state.rounds.length}... `;
+        sortedPlayers.forEach((player, index) => {
+            if (index === 0) {
+                announcement += `Leading the fleet, we have ${player.name} with ${player.score} pieces of eight! `;
+            }
+            else if (index === sortedPlayers.length - 1 && sortedPlayers.length > 2) {
+                announcement += `And bringing up the rear, ${player.name} with ${player.score} doubloons. `;
+            }
+            else {
+                announcement += `${player.name} follows with ${player.score} gold coins. `;
+            }
+        });
+        announcement += "May the winds favor the worthy! Arrr!";
+        return announcement;
+    }
+    // Public method for testing
+    testCalculateRoundScore(bid, actual, bonus, roundNumber) {
+        return this.calculateRoundScore(bid, actual, bonus, roundNumber);
+    }
+}
+/**
+ * SkullKingGame - Main game controller using MVVM architecture
+ * Coordinates between ViewModel (business logic) and DOM (view)
+ */
+class SkullKingGame {
+    constructor() {
+        this.viewModel = new GameViewModel();
         this.init();
     }
     init() {
@@ -21,7 +357,7 @@ class SkullKingGame {
         newGameBtn === null || newGameBtn === void 0 ? void 0 : newGameBtn.addEventListener('click', () => this.handleNewGame());
         // Player names setup
         const addPlayerBtn = document.getElementById('add-player-btn');
-        addPlayerBtn === null || addPlayerBtn === void 0 ? void 0 : addPlayerBtn.addEventListener('click', () => this.addPlayer());
+        addPlayerBtn === null || addPlayerBtn === void 0 ? void 0 : addPlayerBtn.addEventListener('click', () => this.handleAddPlayer());
         const startGameBtn = document.getElementById('start-game-btn');
         startGameBtn === null || startGameBtn === void 0 ? void 0 : startGameBtn.addEventListener('click', () => this.handleStartGame());
         const cancelSetupBtn = document.getElementById('cancel-setup-btn');
@@ -38,20 +374,86 @@ class SkullKingGame {
         modalConfirm === null || modalConfirm === void 0 ? void 0 : modalConfirm.addEventListener('click', () => this.handleModalConfirm());
         const modalCancel = document.getElementById('modal-cancel');
         modalCancel === null || modalCancel === void 0 ? void 0 : modalCancel.addEventListener('click', () => this.hideModal());
+        // New game options
+        const samePlayersBtn = document.getElementById('same-players-btn');
+        samePlayersBtn === null || samePlayersBtn === void 0 ? void 0 : samePlayersBtn.addEventListener('click', () => this.handleNewGameSamePlayers());
+        const newPlayersBtn = document.getElementById('new-players-btn');
+        newPlayersBtn === null || newPlayersBtn === void 0 ? void 0 : newPlayersBtn.addEventListener('click', () => this.handleNewGameNewPlayers());
+        const cancelNewGameBtn = document.getElementById('cancel-new-game-btn');
+        cancelNewGameBtn === null || cancelNewGameBtn === void 0 ? void 0 : cancelNewGameBtn.addEventListener('click', () => this.hideModal());
     }
-    loadState() {
-        const saved = localStorage.getItem(this.storageKey);
-        return saved ? JSON.parse(saved) : null;
+    // Event Handlers
+    handleNewGame() {
+        if (this.viewModel.isGameActive()) {
+            this.confirmNewGame();
+        }
+        else {
+            this.startPlayerSetup();
+        }
     }
-    saveState() {
-        localStorage.setItem(this.storageKey, JSON.stringify(this.state));
+    handleAddPlayer() {
+        const tempPlayers = this.viewModel.getTempPlayers();
+        if (tempPlayers.length >= 8) {
+            this.showError('Maximum 8 pirates allowed! Can\'t add more players.');
+            return;
+        }
+        this.viewModel.addTempPlayer();
+        this.updatePlayerInputs();
     }
+    handleStartGame() {
+        const error = this.viewModel.validateAndStartGame();
+        if (error) {
+            this.showError(error);
+            return;
+        }
+        this.updateUI();
+    }
+    handleAddRound() {
+        const gameState = this.viewModel.getGameState();
+        const roundData = this.collectRoundData(gameState.players);
+        const error = this.viewModel.addRound(roundData);
+        if (error) {
+            this.showError(error);
+            return;
+        }
+        this.updateUI();
+        this.clearRoundInputs();
+        this.showCommentary();
+    }
+    handleModalConfirm() {
+        this.viewModel.executeModalConfirm();
+        this.hideModal();
+    }
+    handleNewGameSamePlayers() {
+        this.viewModel.startNewGame(true);
+        this.hideModal();
+        this.startPlayerSetup();
+    }
+    handleNewGameNewPlayers() {
+        this.viewModel.startNewGame(false);
+        this.hideModal();
+        this.startPlayerSetup();
+    }
+    // Helper Methods
+    startPlayerSetup() {
+        this.viewModel.initializeTempPlayers();
+        this.showPlayerSetup();
+        this.updatePlayerInputs();
+    }
+    confirmNewGame() {
+        this.showNewGameModal();
+    }
+    // View Methods
     updateUI() {
-        if (this.state.players.length === 0) {
+        const gameState = this.viewModel.getGameState();
+        if (gameState.players.length === 0) {
             this.showLanding();
         }
         else {
             this.showGame();
+            this.updateScoreDisplay(gameState.players);
+            this.updateRoundInputs(gameState.players, gameState.currentRound);
+            this.updatePreviousRounds(gameState.rounds);
         }
     }
     showLanding() {
@@ -65,81 +467,65 @@ class SkullKingGame {
         (_a = document.getElementById('landing-section')) === null || _a === void 0 ? void 0 : _a.classList.add('hidden');
         (_b = document.getElementById('player-names-section')) === null || _b === void 0 ? void 0 : _b.classList.remove('hidden');
         (_c = document.getElementById('game-section')) === null || _c === void 0 ? void 0 : _c.classList.add('hidden');
-        // Initialize with existing players or start fresh
-        this.tempPlayers = this.state.players.map(p => p.name);
-        if (this.tempPlayers.length === 0) {
-            this.tempPlayers = [''];
-        }
-        this.updatePlayerInputs();
-    }
-    updatePlayerInputs() {
-        const container = document.getElementById('player-names-inputs');
-        if (!container)
-            return;
-        container.innerHTML = this.tempPlayers.map((name, index) => `
-            <div class="player-name-input">
-                <input type="text" id="player-${index}" placeholder="Enter pirate name..." value="${name}" onchange="game.updateTempPlayer(${index}, this.value)">
-                <button class="btn-remove" onclick="game.removePlayer(${index})" title="Remove player">✕</button>
-            </div>
-        `).join('');
-    }
-    updateTempPlayer(index, value) {
-        this.tempPlayers[index] = value;
-    }
-    addPlayer() {
-        this.tempPlayers.push('');
-        this.updatePlayerInputs();
-    }
-    removePlayer(index) {
-        if (this.tempPlayers.length > 1) {
-            this.tempPlayers.splice(index, 1);
-            this.updatePlayerInputs();
-        }
-        else {
-            // If only one player, just clear the name
-            this.tempPlayers[0] = '';
-            const input = document.getElementById(`player-0`);
-            if (input) {
-                input.value = '';
-            }
-        }
     }
     showGame() {
         var _a, _b, _c;
         (_a = document.getElementById('landing-section')) === null || _a === void 0 ? void 0 : _a.classList.add('hidden');
         (_b = document.getElementById('player-names-section')) === null || _b === void 0 ? void 0 : _b.classList.add('hidden');
         (_c = document.getElementById('game-section')) === null || _c === void 0 ? void 0 : _c.classList.remove('hidden');
-        this.updateScoreDisplay();
-        this.updateRoundInputs();
-        this.updatePreviousRounds();
-        this.updateRoundNumber();
     }
-    updateScoreDisplay() {
+    updatePlayerInputs() {
+        const container = document.getElementById('player-names-inputs');
+        const addPlayerBtn = document.getElementById('add-player-btn');
+        if (!container)
+            return;
+        const tempPlayers = this.viewModel.getTempPlayers();
+        container.innerHTML = tempPlayers.map((name, index) => `
+            <div class="player-name-input">
+                <input type="text" id="player-${index}" placeholder="Enter pirate name..." value="${name}" onchange="game.updateTempPlayer(${index}, this.value)">
+                <button class="btn-remove" onclick="game.removePlayer(${index})" title="Remove player">✕</button>
+            </div>
+        `).join('');
+        // Hide/show Add Pirate button based on player count (max 8)
+        if (addPlayerBtn) {
+            if (tempPlayers.length >= 8) {
+                addPlayerBtn.style.display = 'none';
+            }
+            else {
+                addPlayerBtn.style.display = 'inline-block';
+            }
+        }
+    }
+    updateScoreDisplay(players) {
         const scoreDisplay = document.getElementById('score-display');
         if (!scoreDisplay)
             return;
-        scoreDisplay.innerHTML = this.state.players.map(player => `
+        scoreDisplay.innerHTML = players.map(player => `
             <div class="player-score">
                 <h4>${player.name}</h4>
                 <div class="score-value">${player.score}</div>
             </div>
         `).join('');
     }
-    updateRoundInputs() {
+    updateRoundInputs(players, currentRound) {
         const container = document.getElementById('round-inputs');
+        const roundNumberEl = document.getElementById('round-number');
         if (!container)
             return;
-        container.innerHTML = this.state.players.map(player => `
+        if (roundNumberEl) {
+            roundNumberEl.textContent = currentRound.toString();
+        }
+        container.innerHTML = players.map(player => `
             <div class="player-round-input">
                 <h4>${player.name}</h4>
                 <div class="round-input-row">
                     <div class="input-group">
                         <label for="bid-${player.name}" class="input-label">Bid</label>
-                        <input type="number" id="bid-${player.name}" placeholder="0" min="0" max="${this.state.currentRound}">
+                        <input type="number" id="bid-${player.name}" placeholder="0" min="0" max="${currentRound}">
                     </div>
                     <div class="input-group">
                         <label for="actual-${player.name}" class="input-label">Won</label>
-                        <input type="number" id="actual-${player.name}" placeholder="0" min="0" max="${this.state.currentRound}">
+                        <input type="number" id="actual-${player.name}" placeholder="0" min="0" max="${currentRound}">
                     </div>
                     <div class="input-group">
                         <label for="bonus-${player.name}" class="input-label">Bonus</label>
@@ -149,331 +535,129 @@ class SkullKingGame {
             </div>
         `).join('');
     }
-    updateRoundNumber() {
-        const roundNumber = document.getElementById('round-number');
-        if (roundNumber) {
-            roundNumber.textContent = this.state.currentRound.toString();
-        }
-    }
-    updatePreviousRounds() {
+    updatePreviousRounds(rounds) {
         const container = document.getElementById('previous-rounds');
         if (!container)
             return;
-        container.innerHTML = this.state.rounds
-            .slice()
-            .reverse()
-            .map((round, index) => `
-                <div class="round-display parchment">
-                    <div class="round-header">
-                        <h3>Round ${round.roundNumber}</h3>
-                        ${index === 0 ? '<button class="btn btn-secondary" onclick="game.handleUpdateLastRound()">Edit Round</button>' : ''}
-                    </div>
-                    <div class="round-data">
-                        ${round.playerData.map(data => `
-                            <div class="player-round-data">
-                                <strong>${data.playerName}</strong>
-                                <span>Bid: ${data.bid}</span>
-                                <span>Won: ${data.actual}</span>
-                                <span>Bonus: ${data.bonus}</span>
-                                <span>Score: ${data.roundScore > 0 ? '+' : ''}${data.roundScore}</span>
-                            </div>
-                        `).join('')}
-                    </div>
+        if (rounds.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+        // Display rounds in reverse order (newest first)
+        const sortedRounds = [...rounds].reverse();
+        container.innerHTML = sortedRounds.map((round, index) => `
+            <div class="round-display parchment">
+                <div class="round-header">
+                    <h3>Round ${round.roundNumber}</h3>
+                    ${index === 0 ? '<button class="btn btn-secondary" onclick="game.handleUpdateLastRound()">Edit Round</button>' : ''}
                 </div>
-            `).join('');
+                <div class="round-data">
+                    ${round.playerData.map(data => `
+                        <div class="player-round-data">
+                            <strong>${data.playerName}</strong>
+                            <span>Bid: ${data.bid}</span>
+                            <span>Won: ${data.actual}</span>
+                            <span>Bonus: ${data.bonus}</span>
+                            <span>Score: ${data.roundScore > 0 ? '+' : ''}${data.roundScore}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
     }
-    // Public method for testing the scoring logic
-    testCalculateRoundScore(bid, actual, bonus, roundNumber) {
-        const currentRound = this.state.currentRound;
-        this.state.currentRound = roundNumber; // Temporarily set round for testing
-        const score = this.calculateRoundScore(bid, actual, bonus);
-        this.state.currentRound = currentRound; // Restore original round
-        return score;
-    }
-    // Google Analytics event tracking
-    trackEvent(action, parameters) {
-        if (typeof gtag !== 'undefined') {
-            gtag('event', action, Object.assign({ event_category: 'Skull King Game' }, parameters));
-        }
-    }
-    calculateRoundScore(bid, actual, bonus) {
-        if (bid === actual) {
-            if (bid === 0) {
-                // Zero bid success: 10 points per card dealt (round number)
-                return 10 * this.state.currentRound + bonus;
-            }
-            else {
-                // Exact bid: 20 points per trick taken
-                return 20 * actual + bonus;
-            }
-        }
-        else {
-            // Failed bid: no bonus points allowed
-            if (bid === 0) {
-                // Failed zero bid: lose 10 points per card dealt (round number)
-                return -10 * this.state.currentRound;
-            }
-            else {
-                // Failed bid: lose 10 points per trick you were off by
-                return -10 * Math.abs(bid - actual);
-            }
-        }
-    }
-    handleNewGame() {
-        if (this.state.players.length > 0) {
-            this.confirmNewGame();
-        }
-        else {
-            this.showPlayerSetup();
-        }
-    }
-    handleStartGame() {
-        const players = [];
-        // Filter out empty names and create players
-        this.tempPlayers.forEach((name, index) => {
-            const trimmedName = name.trim();
-            if (trimmedName) {
-                players.push({ name: trimmedName, score: 0 });
-            }
-        });
-        if (players.length < 2) {
-            alert('Ye need at least 2 pirates to play!');
-            return;
-        }
-        this.state = {
-            players,
-            rounds: [],
-            currentRound: 1
-        };
-        // Track new game start
-        this.trackEvent('new_game', {
-            player_count: players.length
-        });
-        this.saveState();
-        this.showGame();
-    }
-    handleAddRound() {
-        const roundData = {
-            roundNumber: this.state.currentRound,
-            playerData: []
-        };
-        let totalWins = 0;
-        const tempPlayerData = [];
-        // First pass: collect data and validate
-        for (const player of this.state.players) {
+    collectRoundData(players) {
+        const data = {};
+        for (const player of players) {
             const bidInput = document.getElementById(`bid-${player.name}`);
             const actualInput = document.getElementById(`actual-${player.name}`);
             const bonusInput = document.getElementById(`bonus-${player.name}`);
-            const bid = parseInt((bidInput === null || bidInput === void 0 ? void 0 : bidInput.value) || '0');
-            const actual = parseInt((actualInput === null || actualInput === void 0 ? void 0 : actualInput.value) || '0');
-            const bonus = parseInt((bonusInput === null || bonusInput === void 0 ? void 0 : bonusInput.value) || '0');
-            totalWins += actual;
-            const roundScore = this.calculateRoundScore(bid, actual, bonus);
-            tempPlayerData.push({
-                playerName: player.name,
-                bid,
-                actual,
-                bonus,
-                roundScore
-            });
+            data[player.name] = {
+                bid: parseInt((bidInput === null || bidInput === void 0 ? void 0 : bidInput.value) || '0'),
+                actual: parseInt((actualInput === null || actualInput === void 0 ? void 0 : actualInput.value) || '0'),
+                bonus: parseInt((bonusInput === null || bonusInput === void 0 ? void 0 : bonusInput.value) || '0')
+            };
         }
-        // Validation
-        const errors = [];
-        // Check total wins
-        if (totalWins !== this.state.currentRound) {
-            errors.push(`Total wins (${totalWins}) must equal the round number (${this.state.currentRound})!`);
+        return data;
+    }
+    clearRoundInputs() {
+        const inputs = document.querySelectorAll('#round-inputs input');
+        inputs.forEach(input => input.value = '');
+    }
+    showCommentary() {
+        const commentary = this.viewModel.generateCommentary();
+        const commentaryEl = document.getElementById('pirate-commentary');
+        const textEl = document.getElementById('commentary-text');
+        if (commentaryEl && textEl && commentary) {
+            textEl.textContent = commentary;
+            commentaryEl.classList.remove('hidden');
         }
-        // Check bonus only allowed if wins > 0 and bid is correct
-        for (const data of tempPlayerData) {
-            if (data.actual === 0 && data.bonus > 0) {
-                errors.push(`${data.playerName} cannot have bonus points with 0 wins!`);
-            }
-            if (data.bid !== data.actual && data.bonus > 0) {
-                errors.push(`${data.playerName} cannot have bonus points without correctly predicting tricks (bid: ${data.bid}, actual: ${data.actual})!`);
-            }
-        }
-        if (errors.length > 0) {
-            this.showValidationModal(errors);
-            return;
-        }
-        this.finishAddRound(roundData, tempPlayerData);
     }
-    finishAddRound(roundData, tempPlayerData) {
-        // Update player scores and round data
-        tempPlayerData.forEach(data => {
-            const player = this.state.players.find(p => p.name === data.playerName);
-            if (player) {
-                player.score += data.roundScore;
-            }
-            roundData.playerData.push(data);
-        });
-        // Clear inputs
-        this.state.players.forEach(player => {
-            const bidInput = document.getElementById(`bid-${player.name}`);
-            const actualInput = document.getElementById(`actual-${player.name}`);
-            const bonusInput = document.getElementById(`bonus-${player.name}`);
-            if (bidInput)
-                bidInput.value = '';
-            if (actualInput)
-                actualInput.value = '';
-            if (bonusInput)
-                bonusInput.value = '';
-        });
-        this.state.rounds.push(roundData);
-        this.state.currentRound++;
-        // Track round completion
-        this.trackEvent('record_round', {
-            round_number: roundData.roundNumber,
-            player_count: this.state.players.length,
-            total_rounds_completed: this.state.rounds.length
-        });
-        this.saveState();
-        this.updateCommentary(roundData);
-        this.updateUI();
-    }
-    confirmNewGame() {
-        const playerNames = this.state.players.map(p => p.name).join(', ');
-        this.showNewGameModal(playerNames);
-    }
-    handleUpdateLastRound() {
-        if (this.state.rounds.length === 0) {
-            alert('No rounds to update!');
-            return;
-        }
-        this.showModal('Update Last Round?', 'This will undo the last round and let you edit the values. Continue?', false, () => {
-            // Get the last round data before removing it
-            const lastRound = this.state.rounds[this.state.rounds.length - 1];
-            // Remove the last round (same logic as delete)
-            this.state.rounds.pop();
-            // Recalculate scores without the last round
-            this.state.players.forEach(player => {
-                player.score = 0;
-            });
-            this.state.rounds.forEach(round => {
-                round.playerData.forEach(data => {
-                    const player = this.state.players.find(p => p.name === data.playerName);
-                    if (player) {
-                        player.score += data.roundScore;
-                    }
-                });
-            });
-            // Go back to the previous round for input
-            this.state.currentRound--;
-            // Populate the form fields with the last round's data
-            this.populateRoundInputs(lastRound);
-            this.saveState();
-            this.updateUI();
-        });
-    }
-    populateRoundInputs(roundData) {
-        // Wait for UI to update, then populate the inputs
-        setTimeout(() => {
-            roundData.playerData.forEach(data => {
-                const bidInput = document.getElementById(`bid-${data.playerName}`);
-                const actualInput = document.getElementById(`actual-${data.playerName}`);
-                const bonusInput = document.getElementById(`bonus-${data.playerName}`);
-                if (bidInput)
-                    bidInput.value = data.bid.toString();
-                if (actualInput)
-                    actualInput.value = data.actual.toString();
-                if (bonusInput)
-                    bonusInput.value = data.bonus.toString();
-            });
-        }, 100);
-    }
-    showModal(title, message, showCheckbox, onConfirm) {
+    showModal(title, message, showCheckbox = false) {
         const modal = document.getElementById('modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMessage = document.getElementById('modal-message');
+        const titleEl = document.getElementById('modal-title');
+        const messageEl = document.getElementById('modal-message');
         const checkboxContainer = document.getElementById('modal-checkbox-container');
-        if (modal && modalTitle && modalMessage && checkboxContainer) {
-            modalTitle.textContent = title;
-            modalMessage.textContent = message;
-            if (showCheckbox) {
-                checkboxContainer.classList.remove('hidden');
-            }
-            else {
-                checkboxContainer.classList.add('hidden');
-            }
-            modal.classList.remove('hidden');
-            this.modalConfirmCallback = onConfirm;
+        const newGameOptions = document.getElementById('new-game-options');
+        const modalButtons = document.getElementById('modal-buttons');
+        if (!modal || !titleEl || !messageEl)
+            return;
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        // Hide new game options and show regular modal buttons
+        if (newGameOptions) {
+            newGameOptions.classList.add('hidden');
         }
+        if (modalButtons) {
+            modalButtons.classList.remove('hidden');
+        }
+        if (showCheckbox && checkboxContainer) {
+            checkboxContainer.classList.remove('hidden');
+        }
+        else if (checkboxContainer) {
+            checkboxContainer.classList.add('hidden');
+        }
+        modal.classList.remove('hidden');
+    }
+    showNewGameModal() {
+        const modal = document.getElementById('modal');
+        const titleEl = document.getElementById('modal-title');
+        const messageEl = document.getElementById('modal-message');
+        const checkboxContainer = document.getElementById('modal-checkbox-container');
+        const newGameOptions = document.getElementById('new-game-options');
+        const modalButtons = document.getElementById('modal-buttons');
+        const samePlayersBtn = document.getElementById('same-players-btn');
+        if (!modal || !titleEl || !messageEl || !samePlayersBtn)
+            return;
+        titleEl.textContent = 'Start New Game';
+        messageEl.textContent = 'Choose how to start your new adventure:';
+        // Hide regular modal elements and show new game options
+        if (checkboxContainer) {
+            checkboxContainer.classList.add('hidden');
+        }
+        if (modalButtons) {
+            modalButtons.classList.add('hidden');
+        }
+        if (newGameOptions) {
+            newGameOptions.classList.remove('hidden');
+        }
+        // Update the "Same Players" button text with current player names
+        const gameState = this.viewModel.getGameState();
+        const playerNames = gameState.players.map(p => p.name).join(', ');
+        samePlayersBtn.textContent = `Same Players (${playerNames})`;
+        modal.classList.remove('hidden');
     }
     hideModal() {
         const modal = document.getElementById('modal');
-        const modalOptions = document.getElementById('modal-options');
-        const modalButtons = document.getElementById('modal-buttons');
-        const confirmBtn = document.getElementById('modal-confirm');
-        const cancelBtn = document.getElementById('modal-cancel');
         modal === null || modal === void 0 ? void 0 : modal.classList.add('hidden');
-        modalOptions === null || modalOptions === void 0 ? void 0 : modalOptions.classList.add('hidden');
-        modalButtons === null || modalButtons === void 0 ? void 0 : modalButtons.classList.remove('hidden');
-        // Restore button states
-        if (confirmBtn && cancelBtn) {
-            confirmBtn.classList.remove('hidden');
-            cancelBtn.textContent = 'Nay';
-        }
-        this.modalConfirmCallback = null;
     }
-    handleModalConfirm() {
-        if (this.modalConfirmCallback) {
-            this.modalConfirmCallback();
-        }
-        this.hideModal();
+    getKeepNamesCheckbox() {
+        const checkbox = document.getElementById('keep-names-checkbox');
+        return (checkbox === null || checkbox === void 0 ? void 0 : checkbox.checked) || false;
     }
-    showNewGameModal(playerNames) {
-        const modal = document.getElementById('modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMessage = document.getElementById('modal-message');
-        const modalOptions = document.getElementById('modal-options');
-        const modalButtons = document.getElementById('modal-buttons');
-        const checkboxContainer = document.getElementById('modal-checkbox-container');
-        if (modal && modalTitle && modalMessage && modalOptions && modalButtons && checkboxContainer) {
-            modalTitle.textContent = 'Start New Game?';
-            // Add warning about losing progress if rounds have been played
-            let message = '';
-            if (this.state.rounds.length > 0) {
-                message = `⚠️ Warning: Starting a new game will erase ${this.state.rounds.length} rounds of progress!\n\n`;
-            }
-            message += 'Choose how to start your new game:';
-            modalMessage.textContent = message;
-            checkboxContainer.classList.add('hidden');
-            modalButtons.classList.add('hidden');
-            modalOptions.classList.remove('hidden');
-            modalOptions.innerHTML = `
-                <button class="btn btn-primary" onclick="game.startNewGameSamePlayers()">
-                    Same players (${playerNames})
-                </button>
-                <button class="btn btn-secondary" onclick="game.startNewGameNewPlayers()">
-                    New set of players
-                </button>
-                <button class="btn btn-secondary" onclick="game.hideModal()">
-                    Cancel
-                </button>
-            `;
-            modal.classList.remove('hidden');
-        }
-    }
-    startNewGameSamePlayers() {
-        this.state.players.forEach(player => player.score = 0);
-        this.state.rounds = [];
-        this.state.currentRound = 1;
-        this.saveState();
-        this.hideModal();
-        this.showGame();
-    }
-    startNewGameNewPlayers() {
-        this.state = {
-            players: [],
-            rounds: [],
-            currentRound: 1
-        };
-        this.saveState();
-        this.hideModal();
-        this.showLanding();
+    showError(message) {
+        alert(message); // Simple error display - could be enhanced
     }
     readScores() {
-        var _a, _b;
         // Check if browser supports speech synthesis
         if (!('speechSynthesis' in window)) {
             alert('Arr! Yer browser doesn\'t support speech. Try a newer vessel!');
@@ -481,328 +665,54 @@ class SkullKingGame {
         }
         // Cancel any ongoing speech
         window.speechSynthesis.cancel();
-        // Sort players by score (highest first)
-        const sortedPlayers = [...this.state.players].sort((a, b) => b.score - a.score);
-        // Build the announcement starting with previous round's commentary
-        let announcement = '';
-        // Add previous round commentary if available
-        if (this.state.rounds.length > 0) {
-            const commentaryText = (_a = document.getElementById('commentary-text')) === null || _a === void 0 ? void 0 : _a.textContent;
-            if (commentaryText) {
-                announcement += `${commentaryText} ... `;
-            }
-        }
-        announcement += `Arrr, gather 'round ye scurvy dogs! Here be the treasure count after round ${this.state.currentRound - 1}! `;
-        sortedPlayers.forEach((player, index) => {
-            if (index === 0) {
-                announcement += `Topping the charts be Captain ${player.name} with ${player.score} pieces of eight! `;
-            }
-            else if (index === sortedPlayers.length - 1) {
-                announcement += `And bringing up the rear be ${player.name} with ${player.score} doubloons! `;
-            }
-            else {
-                announcement += `${player.name} be holdin' ${player.score} pieces of treasure! `;
-            }
-        });
-        // Add flavor based on game state
-        if (this.state.rounds.length === 0) {
-            announcement = "Arrr! No rounds sailed yet, ye landlubbers! Time to start plunderin' and pillagin'!";
-        }
-        else if (sortedPlayers[0].score > sortedPlayers[sortedPlayers.length - 1].score + 50) {
-            announcement += "Batten down the hatches! One scallywag be sailin' away with all the booty!";
-        }
-        else if (sortedPlayers[0].score === ((_b = sortedPlayers[1]) === null || _b === void 0 ? void 0 : _b.score)) {
-            announcement += "Shiver me timbers! We be havin' a dead heat for the captain's chair!";
-        }
-        // Make the announcement more pirate-like by adding pauses and emphasis
-        const pirateAnnouncement = announcement
-            .replace(/\./g, '... ') // Add dramatic pauses
-            .replace(/!/g, '! ... ') // Emphasize exclamations
-            .replace(/\?/g, '? ... ') // Pause after questions
-            .replace(/,/g, ', '); // Slight pause after commas
+        const announcement = this.viewModel.createScoreAnnouncement();
         // Create and configure the utterance for maximum pirate effect
-        const utterance = new SpeechSynthesisUtterance(pirateAnnouncement);
+        const utterance = new SpeechSynthesisUtterance(announcement);
         utterance.rate = 0.7; // Slower and more dramatic
         utterance.pitch = 0.7; // Lower pitch for gruff pirate voice
         utterance.volume = 1;
         // Try to find the most pirate-sounding voice
         const voices = window.speechSynthesis.getVoices();
-        // Prefer male voices with lower pitch for more pirate-like sound
         const pirateVoice = voices.find(voice => voice.lang.startsWith('en') &&
             (voice.name.toLowerCase().includes('male') ||
-                voice.name.toLowerCase().includes('man') ||
-                voice.name.toLowerCase().includes('alex') ||
                 voice.name.toLowerCase().includes('daniel'))) || voices.find(voice => voice.lang.startsWith('en'));
         if (pirateVoice) {
             utterance.voice = pirateVoice;
         }
-        // Track score reading
-        this.trackEvent('read_scores', {
-            round_number: this.state.currentRound - 1,
-            player_count: this.state.players.length,
-            total_rounds_played: this.state.rounds.length
-        });
         // Speak!
         window.speechSynthesis.speak(utterance);
     }
-    showValidationModal(errors) {
-        const modal = document.getElementById('modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMessage = document.getElementById('modal-message');
-        const modalOptions = document.getElementById('modal-options');
-        const modalButtons = document.getElementById('modal-buttons');
-        const checkboxContainer = document.getElementById('modal-checkbox-container');
-        if (modal && modalTitle && modalMessage && modalOptions && modalButtons && checkboxContainer) {
-            modalTitle.textContent = '⚠️ Round Validation Failed';
-            modalMessage.textContent = errors.join('\n\n');
-            checkboxContainer.classList.add('hidden');
-            modalOptions.classList.add('hidden');
-            modalButtons.classList.remove('hidden');
-            // Hide the confirm button, only show cancel
-            const confirmBtn = document.getElementById('modal-confirm');
-            const cancelBtn = document.getElementById('modal-cancel');
-            if (confirmBtn && cancelBtn) {
-                confirmBtn.classList.add('hidden');
-                cancelBtn.textContent = 'Fix Issues';
-            }
-            modal.classList.remove('hidden');
-        }
+    // Public API for HTML event handlers
+    updateTempPlayer(index, value) {
+        this.viewModel.updateTempPlayer(index, value);
     }
-    updateCommentary(roundData) {
-        const commentary = this.generateCommentary(roundData);
-        const commentarySection = document.getElementById('pirate-commentary');
-        const commentaryText = document.getElementById('commentary-text');
-        if (commentarySection && commentaryText && commentary) {
-            commentaryText.textContent = commentary;
-            commentarySection.classList.remove('hidden');
-        }
+    removePlayer(index) {
+        this.viewModel.removeTempPlayer(index);
+        this.updatePlayerInputs();
     }
-    generateCommentary(roundData) {
-        const playerData = roundData.playerData;
-        const roundNumber = roundData.roundNumber;
-        // Analyze round performance
-        const perfectBids = playerData.filter(p => p.bid === p.actual).length;
-        const totalPlayers = playerData.length;
-        const badMisses = playerData.filter(p => Math.abs(p.bid - p.actual) >= 3).length;
-        const bigScorers = playerData.filter(p => p.roundScore >= 40).length;
-        const disasters = playerData.filter(p => p.roundScore <= -30).length;
-        const zeroBidders = playerData.filter(p => p.bid === 0).length;
-        const successfulZeros = playerData.filter(p => p.bid === 0 && p.actual === 0).length;
-        // Current game state analysis
-        const currentScores = this.state.players.map(p => p.score).sort((a, b) => b - a);
-        const leader = this.state.players.find(p => p.score === currentScores[0]);
-        const lastPlace = this.state.players.find(p => p.score === currentScores[currentScores.length - 1]);
-        const spread = currentScores[0] - currentScores[currentScores.length - 1];
-        // Generate commentary based on round events
-        const commentaries = [];
-        // Perfect round commentary
-        if (perfectBids === totalPlayers) {
-            const perfectRoundVariants = [
-                "Blimey! Every scallywag nailed their bid! The sea gods smile upon ye all!",
-                "Incredible! All hands hit their mark perfectly! Even Neptune himself applauds!",
-                "Shiver me timbers! Perfect accuracy from the whole crew! Ye be true sea dogs!",
-                "By Blackbeard's beard! Every pirate called it exactly right! Legendary sailing!",
-                "Astounding! Not a single miscalculation in sight! Ye all deserve treasure chests!"
-            ];
-            commentaries.push(perfectRoundVariants[Math.floor(Math.random() * perfectRoundVariants.length)]);
+    handleUpdateLastRound() {
+        const lastRoundData = this.viewModel.getLastRoundData();
+        if (!lastRoundData) {
+            this.showError('No rounds to update!');
+            return;
         }
-        else if (perfectBids >= totalPlayers * 0.75) {
-            const mostPerfectVariants = [
-                "Arrr! Most of ye landlubbers actually know how to count tricks! Impressive sailing!",
-                "Well, well! The majority of ye scurvy dogs got it right! There's hope for ye yet!",
-                "Huzzah! Most pirates sailed true to their word! The few stragglers need more rum!",
-                "Impressive! The bulk of ye crew knows their business! A few still need navigatin' lessons!",
-                "Magnificent! Most of ye sea wolves predicted perfectly! The rest... well, practice makes perfect!"
-            ];
-            commentaries.push(mostPerfectVariants[Math.floor(Math.random() * mostPerfectVariants.length)]);
+        // Populate the inputs with last round data
+        for (const [playerName, data] of Object.entries(lastRoundData)) {
+            const bidInput = document.getElementById(`bid-${playerName}`);
+            const actualInput = document.getElementById(`actual-${playerName}`);
+            const bonusInput = document.getElementById(`bonus-${playerName}`);
+            if (bidInput)
+                bidInput.value = data.bid.toString();
+            if (actualInput)
+                actualInput.value = data.actual.toString();
+            if (bonusInput)
+                bonusInput.value = data.bonus.toString();
         }
-        else if (perfectBids === 0) {
-            const noPerfectVariants = [
-                "Shiver me timbers! Not a single soul hit their mark! Ye all sail like drunken sailors!",
-                "Pathetic! Every last one of ye missed yer target! I've seen better aim from blind sea turtles!",
-                "Disgraceful! Not one pirate got it right! Ye couldn't hit water if ye fell out of a boat!",
-                "Embarrassing! Complete failure from bow to stern! Time to keelhaul the lot of ye!",
-                "Abysmal! Every prediction was wrong! Ye make landlubbers look like seasoned captains!"
-            ];
-            commentaries.push(noPerfectVariants[Math.floor(Math.random() * noPerfectVariants.length)]);
-        }
-        // Disaster commentary
-        if (disasters >= 2) {
-            const multiDisasterVariants = [
-                "Har har! Some scurvy dogs be walkin' the plank with those scores!",
-                "Catastrophe on the high seas! Multiple pirates be sinkin' to Davy Jones' locker!",
-                "What a shipwreck! Several sea dogs took a mighty tumble this round!",
-                "Disaster strikes! Multiple crew members be needin' rescue boats with those scores!",
-                "By the kraken's tentacles! Several pirates just hit the rocks and sank!"
-            ];
-            commentaries.push(multiDisasterVariants[Math.floor(Math.random() * multiDisasterVariants.length)]);
-        }
-        else if (disasters === 1) {
-            const disaster = playerData.find(p => p.roundScore <= -30);
-            const singleDisasterVariants = [
-                `Avast! ${disaster === null || disaster === void 0 ? void 0 : disaster.playerName} be sinkin' faster than a ship with no hull!`,
-                `Yikes! ${disaster === null || disaster === void 0 ? void 0 : disaster.playerName} just sailed straight into a whirlpool of failure!`,
-                `Mercy! ${disaster === null || disaster === void 0 ? void 0 : disaster.playerName} took a cannonball to the treasure chest this round!`,
-                `Blimey! ${disaster === null || disaster === void 0 ? void 0 : disaster.playerName} be drownin' in their own poor choices!`,
-                `Ouch! ${disaster === null || disaster === void 0 ? void 0 : disaster.playerName} just discovered what it feels like to hit an iceberg!`
-            ];
-            commentaries.push(singleDisasterVariants[Math.floor(Math.random() * singleDisasterVariants.length)]);
-        }
-        // Big scorer commentary
-        if (bigScorers >= 2) {
-            const multiBigScorerVariants = [
-                "Pieces of eight! Multiple pirates be strikin' gold this round!",
-                "Treasure galore! Several sea dogs found the mother lode today!",
-                "Riches beyond measure! Multiple buccaneers struck it rich this round!",
-                "Golden doubloons for all! Several pirates be swimmin' in treasure!",
-                "What a haul! Multiple captains filled their coffers to the brim!"
-            ];
-            commentaries.push(multiBigScorerVariants[Math.floor(Math.random() * multiBigScorerVariants.length)]);
-        }
-        else if (bigScorers === 1) {
-            const bigScorer = playerData.find(p => p.roundScore >= 40);
-            const singleBigScorerVariants = [
-                `${bigScorer === null || bigScorer === void 0 ? void 0 : bigScorer.playerName} be plunderin' like a true pirate king! Magnificent haul!`,
-                `Huzzah! ${bigScorer === null || bigScorer === void 0 ? void 0 : bigScorer.playerName} just struck the richest vein of treasure on the seven seas!`,
-                `Incredible! ${bigScorer === null || bigScorer === void 0 ? void 0 : bigScorer.playerName} sailed away with enough gold to buy their own fleet!`,
-                `Outstanding! ${bigScorer === null || bigScorer === void 0 ? void 0 : bigScorer.playerName} just pulled off the heist of the century!`,
-                `Spectacular! ${bigScorer === null || bigScorer === void 0 ? void 0 : bigScorer.playerName} be rakin' in doubloons like a legendary buccaneer!`
-            ];
-            commentaries.push(singleBigScorerVariants[Math.floor(Math.random() * singleBigScorerVariants.length)]);
-        }
-        // Zero bid commentary
-        if (zeroBidders > 0) {
-            if (successfulZeros === zeroBidders) {
-                const successfulZeroVariants = [
-                    `${zeroBidders === 1 ? 'A crafty' : 'Some crafty'} pirate${zeroBidders > 1 ? 's' : ''} played it safe with zero bids and lived to tell the tale!`,
-                    `${zeroBidders === 1 ? 'A clever' : 'Some clever'} sea dog${zeroBidders > 1 ? 's' : ''} avoided all tricks and kept their treasure safe!`,
-                    `${zeroBidders === 1 ? 'A wise' : 'Some wise'} sailor${zeroBidders > 1 ? 's' : ''} chose the path of caution and sailed home rich!`,
-                    `${zeroBidders === 1 ? 'A shrewd' : 'Some shrewd'} buccaneer${zeroBidders > 1 ? 's' : ''} stayed out of trouble and pocketed the gold!`,
-                    `${zeroBidders === 1 ? 'A cunning' : 'Some cunning'} pirate${zeroBidders > 1 ? 's' : ''} played it smart and avoided the storm entirely!`
-                ];
-                commentaries.push(successfulZeroVariants[Math.floor(Math.random() * successfulZeroVariants.length)]);
-            }
-            else {
-                const failedZeroVariants = [
-                    "Some cowardly sea dogs tried to avoid all tricks but failed! No treasure for the timid!",
-                    "Ha! Some scallywags tried to hide from trouble but got caught anyway! Pathetic!",
-                    "Amusing! Some landlubbers thought they could avoid all action but failed miserably!",
-                    "Pitiful! Some yellow-bellied pirates tried to play it safe but couldn't even do that right!",
-                    "Laughable! Some spineless crew members attempted to dodge danger but got swept up anyway!"
-                ];
-                commentaries.push(failedZeroVariants[Math.floor(Math.random() * failedZeroVariants.length)]);
-            }
-        }
-        // Bad miss commentary
-        if (badMisses >= totalPlayers / 2) {
-            const badMissVariants = [
-                "Most of ye be as accurate as a blind man throwin' daggers! Learn to count, ye scurvy dogs!",
-                "Pathetic aim from the majority! Ye couldn't hit the broad side of a treasure galleon!",
-                "Terrible navigation from most of the crew! Did ye all forget how to count to ten?",
-                "Abysmal predictions! Most of ye missed by leagues! Time for some basic seamanship lessons!",
-                "Dreadful accuracy! The majority sailed way off course! Even a compass wouldn't help ye now!"
-            ];
-            commentaries.push(badMissVariants[Math.floor(Math.random() * badMissVariants.length)]);
-        }
-        // Game state commentary
-        if (roundNumber >= 5) {
-            if (spread > 100) {
-                const dominationVariants = [
-                    `${leader === null || leader === void 0 ? void 0 : leader.name} be dominatin' these waters while ${lastPlace === null || lastPlace === void 0 ? void 0 : lastPlace.name} be drownin' in their own wake!`,
-                    `${leader === null || leader === void 0 ? void 0 : leader.name} be runnin' away with the treasure while ${lastPlace === null || lastPlace === void 0 ? void 0 : lastPlace.name} be sinkin' like a stone!`,
-                    `${leader === null || leader === void 0 ? void 0 : leader.name} be sailin' circles around ${lastPlace === null || lastPlace === void 0 ? void 0 : lastPlace.name}! What a gap in skill!`,
-                    `${leader === null || leader === void 0 ? void 0 : leader.name} be crushin' the competition while ${lastPlace === null || lastPlace === void 0 ? void 0 : lastPlace.name} flounders like a fish!`,
-                    `${leader === null || leader === void 0 ? void 0 : leader.name} be the captain of captains while ${lastPlace === null || lastPlace === void 0 ? void 0 : lastPlace.name} needs a rescue boat!`
-                ];
-                commentaries.push(dominationVariants[Math.floor(Math.random() * dominationVariants.length)]);
-            }
-            else if (spread < 20) {
-                const tightRaceVariants = [
-                    "This be a tight race! Any one of ye bilge rats could claim the crown!",
-                    "Neck and neck like racing dolphins! Anyone could still seize the treasure!",
-                    "Close as thieves! The winner be anyone's guess at this point!",
-                    "Tighter than a ship's rigging! Every pirate still has a fighting chance!",
-                    "What a battle! The scores be closer than barnacles on a hull!"
-                ];
-                commentaries.push(tightRaceVariants[Math.floor(Math.random() * tightRaceVariants.length)]);
-            }
-        }
-        // Late game commentary
-        if (roundNumber >= 8) {
-            if (leader && leader.score > 200) {
-                const legendVariants = [
-                    `${leader.name} be sailin' toward legend! Can anyone stop this pirate?`,
-                    `${leader.name} be writin' their name in pirate history! What a commanding lead!`,
-                    `${leader.name} be on course to legendary status! The crown awaits!`,
-                    `${leader.name} be dominatin' like a true sea emperor! Unstoppable!`,
-                    `${leader.name} be carvin' out a legacy! The stuff of pirate legends!`
-                ];
-                commentaries.push(legendVariants[Math.floor(Math.random() * legendVariants.length)]);
-            }
-            const finalRoundsVariants = [
-                "The final rounds approach! Time to separate the captains from the cabin boys!",
-                "The endgame draws near! Only true pirates will survive these waters!",
-                "The climax approaches! Time to see who has real sea legs!",
-                "The final stretch! Now we'll discover the worthy from the worthless!",
-                "The home stretch beckons! Time to prove yer pirate mettle!"
-            ];
-            commentaries.push(finalRoundsVariants[Math.floor(Math.random() * finalRoundsVariants.length)]);
-        }
-        // Round-specific commentary
-        if (roundNumber === 1) {
-            const firstRoundVariants = [
-                "First blood has been drawn! Let the plunderin' begin!",
-                "The adventure begins! Time to see what ye landlubbers are made of!",
-                "First round in the books! The battle for pirate supremacy starts now!",
-                "The opening salvo! Let's see who's got the courage for this journey!",
-                "Round one complete! The quest for treasure has officially begun!"
-            ];
-            commentaries.push(firstRoundVariants[Math.floor(Math.random() * firstRoundVariants.length)]);
-        }
-        else if (roundNumber === 10) {
-            const finalRoundVariants = [
-                "The final round! Time to see who truly deserves the title of Skull King!",
-                "The ultimate test! Only one can claim the crown of the seven seas!",
-                "The last stand! Time to discover the true Skull King among ye!",
-                "The final battle! The throne of piracy awaits its rightful ruler!",
-                "The concluding chapter! Who will emerge as the ultimate sea lord?"
-            ];
-            commentaries.push(finalRoundVariants[Math.floor(Math.random() * finalRoundVariants.length)]);
-        }
-        // Random snarky commentary if nothing specific happened
-        const randomCommentary = [
-            "Another round of mediocre piracy! I've seen better sailing from landlubbers!",
-            "Ye call that bidding? My grandmother could predict tricks better with her eyes closed!",
-            "Some of ye be playin' like ye've never seen a deck of cards before!",
-            "The sea be full of surprises, unlike yer predictable play!",
-            "Keep this up and ye'll all be swabbin' the deck instead of scorin' points!",
-            "I've seen more excitement watchin' barnacles grow on ship hulls!",
-            "Yer treasure-huntin' skills need work, mateys!",
-            "Ordinary round from ordinary pirates! Where be the spark of adventure?",
-            "Standard sailing from a standard crew! Nothing legendary about this voyage!",
-            "Routine plunderin' from routine buccaneers! Wake me when something interesting happens!",
-            "Average performance across the board! Ye be sailin' in circles like confused seagulls!",
-            "Typical tricks from typical pirates! Even the sea monsters be yawnin'!",
-            "Predictable as the tides! Spice up yer game, ye sleepy sea dogs!",
-            "Mundane as merchant sailing! Where be the daring pirate spirit?",
-            "Safe and boring! Ye play like ye're haulin' cargo instead of huntin' treasure!",
-            "Uninspiring round! Even the ship's cat could bid better than this!",
-            "Lackluster performance! Ye need more fire in yer pirate bellies!",
-            "Dull as dishwater! I've seen more excitement in a monastery!",
-            "Tepid sailing! The wind has more personality than this crew!",
-            "Forgettable round! This tale won't be sung in any tavern!",
-            "Bland as hardtack! Where be the swashbuckling adventure?",
-            "Colorless as fog! Ye need to paint this voyage with bolder strokes!",
-            "Flat as calm seas! Stir up some waves with yer next plays!",
-            "Tame as a parrot! Show some wild pirate cunning!",
-            "Mild as morning mist! Time to unleash the storm within ye!",
-            "Gentle as a summer breeze! Ye need hurricane-force gameplay!",
-            "Quiet as a graveyard! Make some noise with yer next bids!"
-        ];
-        if (commentaries.length === 0) {
-            commentaries.push(randomCommentary[Math.floor(Math.random() * randomCommentary.length)]);
-        }
-        return commentaries[Math.floor(Math.random() * commentaries.length)];
+        this.showModal('Update Last Round', 'Modify the values above and click "Record Round" to update the last round.');
+    }
+    // Public method for testing the scoring logic
+    testCalculateRoundScore(bid, actual, bonus, roundNumber) {
+        return this.viewModel.testCalculateRoundScore(bid, actual, bonus, roundNumber);
     }
 }
 // Initialize game

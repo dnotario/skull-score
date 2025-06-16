@@ -165,6 +165,62 @@ describe('SkullKingGame Scoring Logic', () => {
     });
 });
 
+describe('SkullKingGame Player Limits', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+    });
+    
+    test('should enforce maximum of 8 players', () => {
+        // Setup with exactly 8 players (should work)
+        gameInstance.viewModel.tempPlayers = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry'];
+        
+        const result = gameInstance.viewModel.validateAndStartGame();
+        expect(result).toBeNull(); // Should succeed
+    });
+    
+    test('should reject more than 8 players', () => {
+        // Setup with 9 players (should fail)
+        gameInstance.viewModel.tempPlayers = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy'];
+        
+        const result = gameInstance.viewModel.validateAndStartGame();
+        expect(result).toBe('Too many pirates! Maximum 8 scallywags allowed.');
+    });
+    
+    test('should require minimum of 2 players', () => {
+        // Setup with 1 player (should fail)
+        gameInstance.viewModel.tempPlayers = ['Alice'];
+        
+        const result = gameInstance.viewModel.validateAndStartGame();
+        expect(result).toBe('Ye need at least 2 pirates to sail these waters!');
+    });
+    
+    test('should accept minimum of 2 players', () => {
+        // Setup with exactly 2 players (should work)
+        gameInstance.viewModel.tempPlayers = ['Alice', 'Bob'];
+        
+        const result = gameInstance.viewModel.validateAndStartGame();
+        expect(result).toBeNull(); // Should succeed
+    });
+    
+    test('should reject duplicate player names', () => {
+        // Setup with duplicate names
+        gameInstance.viewModel.tempPlayers = ['Alice', 'Bob', 'alice']; // case-insensitive duplicate
+        
+        const result = gameInstance.viewModel.validateAndStartGame();
+        expect(result).toBe('Each pirate needs a unique name, ye scurvy dogs!');
+    });
+    
+    test('should handle empty and whitespace-only names', () => {
+        // Setup with empty/whitespace names that should be filtered out
+        gameInstance.viewModel.tempPlayers = ['Alice', '', '  ', 'Bob'];
+        
+        const result = gameInstance.viewModel.validateAndStartGame();
+        expect(result).toBeNull(); // Should succeed with 2 valid names
+    });
+});
+
 describe('SkullKingGame Validation', () => {
     test('should validate bid ranges correctly', () => {
         // Assuming round 5 (max 5 tricks)

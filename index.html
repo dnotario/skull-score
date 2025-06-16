@@ -137,9 +137,13 @@
 
             <!-- New Round Input -->
             <div class="new-round parchment">
-                <h3>Round <span id="round-number">1</span></h3>
+                <div class="round-header">
+                    <h3>Round <span id="round-number">1</span></h3>
+                </div>
                 <div id="round-inputs" class="round-inputs"></div>
-                <button id="add-round-btn" class="btn btn-primary">Record Round</button>
+                <div class="record-round-container">
+                    <button id="add-round-btn" class="btn btn-primary">Record Round</button>
+                </div>
             </div>
 
             <!-- Previous Rounds -->
@@ -158,6 +162,11 @@
                     </label>
                 </div>
                 <div id="modal-options" class="modal-options hidden"></div>
+                <div id="new-game-options" class="new-game-options hidden">
+                    <button id="same-players-btn" class="btn btn-primary"></button>
+                    <button id="new-players-btn" class="btn btn-secondary">New Players</button>
+                    <button id="cancel-new-game-btn" class="btn btn-secondary">Cancel</button>
+                </div>
                 <div id="modal-buttons" class="modal-buttons">
                     <button id="modal-confirm" class="btn btn-primary">Aye</button>
                     <button id="modal-cancel" class="btn btn-secondary">Nay</button>
