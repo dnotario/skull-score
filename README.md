@@ -131,6 +131,20 @@ git push origin prod
 - **Custom Domain**: Production automatically includes CNAME for custom domain
 - **Safe Development**: Changes to `main` don't trigger production deployments
 
+### Claude Code Custom Commands
+
+For developers using [Claude Code](https://claude.ai/code), custom deployment commands are available:
+
+```bash
+# Deploy to staging
+/project:push_staging
+
+# Deploy to production  
+/project:push_prod
+```
+
+These commands automatically follow the deployment workflow above and are defined in `.claude/commands/`.
+
 ### Monitoring Deployments
 
 ```bash
