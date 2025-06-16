@@ -22,6 +22,9 @@ interface GameState {
     currentRound: number;
 }
 
+// Google Analytics gtag function declaration
+declare function gtag(...args: any[]): void;
+
 class SkullKingGame {
     private state: GameState;
     private storageKey = 'skullKingGameState';
@@ -239,6 +242,16 @@ class SkullKingGame {
         return score;
     }
 
+    // Google Analytics event tracking
+    private trackEvent(action: string, parameters?: any): void {
+        if (typeof gtag !== 'undefined') {
+            gtag('event', action, {
+                event_category: 'Skull King Game',
+                ...parameters
+            });
+        }
+    }
+
     private calculateRoundScore(bid: number, actual: number, bonus: number): number {
         if (bid === actual) {
             if (bid === 0) {
@@ -288,6 +301,11 @@ class SkullKingGame {
             rounds: [],
             currentRound: 1
         };
+
+        // Track new game start
+        this.trackEvent('new_game', {
+            player_count: players.length
+        });
 
         this.saveState();
         this.showGame();
@@ -371,6 +389,14 @@ class SkullKingGame {
 
         this.state.rounds.push(roundData);
         this.state.currentRound++;
+        
+        // Track round completion
+        this.trackEvent('record_round', {
+            round_number: roundData.roundNumber,
+            player_count: this.state.players.length,
+            total_rounds_completed: this.state.rounds.length
+        });
+        
         this.saveState();
         this.updateCommentary(roundData);
         this.updateUI();
@@ -579,6 +605,13 @@ class SkullKingGame {
         if (englishVoice) {
             utterance.voice = englishVoice;
         }
+
+        // Track score reading
+        this.trackEvent('read_scores', {
+            round_number: this.state.currentRound - 1,
+            player_count: this.state.players.length,
+            total_rounds_played: this.state.rounds.length
+        });
 
         // Speak!
         window.speechSynthesis.speak(utterance);
