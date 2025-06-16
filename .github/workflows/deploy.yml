@@ -60,7 +60,7 @@ jobs:
         
         # Copy new files
         cp ../index.html .
-        cp ../dist/game.js .
+        cp ../game.js .
         cp ../styles.css .
         
         # Add CNAME file for custom domain (production only)

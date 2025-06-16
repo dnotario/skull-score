@@ -6,9 +6,9 @@
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
-    "build": "tsc && cp dist/game.js .",
-    "dev": "npm run build && echo 'Starting dev mode - rebuild after changes' && tsc --watch",
-    "clean": "rm -rf dist && rm -f game.js",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -f game.js",
     "rebuild": "npm run clean && npm run build"
   },
   "devDependencies": {
