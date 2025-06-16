@@ -1,4 +1,3 @@
-"use strict";
 /**
  * GameState - Handles data persistence and storage
  * Pure data layer that only manages localStorage operations
@@ -399,6 +398,13 @@ class SkullKingGame {
         modalConfirm === null || modalConfirm === void 0 ? void 0 : modalConfirm.addEventListener('click', () => this.handleModalConfirm());
         const modalCancel = document.getElementById('modal-cancel');
         modalCancel === null || modalCancel === void 0 ? void 0 : modalCancel.addEventListener('click', () => this.hideModal());
+        // New Game Modal Options
+        const samePlayersBtn = document.getElementById('same-players-btn');
+        samePlayersBtn === null || samePlayersBtn === void 0 ? void 0 : samePlayersBtn.addEventListener('click', () => this.handleSamePlayersNewGame());
+        const newPlayersBtn = document.getElementById('new-players-btn');
+        newPlayersBtn === null || newPlayersBtn === void 0 ? void 0 : newPlayersBtn.addEventListener('click', () => this.handleNewPlayersNewGame());
+        const cancelNewGameBtn = document.getElementById('cancel-new-game-btn');
+        cancelNewGameBtn === null || cancelNewGameBtn === void 0 ? void 0 : cancelNewGameBtn.addEventListener('click', () => this.hideModal());
     }
     // Event Handlers
     handleNewGame() {
@@ -442,6 +448,16 @@ class SkullKingGame {
         this.viewModel.executeModalConfirm();
         this.hideModal();
     }
+    handleSamePlayersNewGame() {
+        this.viewModel.startNewGame(true); // Keep names
+        this.hideModal();
+        this.startPlayerSetup();
+    }
+    handleNewPlayersNewGame() {
+        this.viewModel.startNewGame(false); // Don't keep names
+        this.hideModal();
+        this.startPlayerSetup();
+    }
     // Helper Methods
     startPlayerSetup() {
         this.viewModel.initializeTempPlayers();
@@ -449,12 +465,9 @@ class SkullKingGame {
         this.updatePlayerInputs();
     }
     confirmNewGame() {
-        this.showModal('Start New Game', 'Are ye sure ye want to start a new adventure? This will clear the current game.', true);
-        this.viewModel.setModalConfirmCallback(() => {
-            const keepNames = this.getKeepNamesCheckbox();
-            this.viewModel.startNewGame(keepNames);
-            this.startPlayerSetup();
-        });
+        const gameState = this.viewModel.getGameState();
+        const playerNames = gameState.players.map(p => p.name).join(', ');
+        this.showNewGameModal('Start New Game', 'Choose how ye want to start yer new adventure:', playerNames);
     }
     // View Methods
     updateUI() {
@@ -612,6 +625,31 @@ class SkullKingGame {
             textEl.textContent = commentary;
             commentaryEl.classList.remove('hidden');
         }
+    }
+    showNewGameModal(title, message, playerNames) {
+        const modal = document.getElementById('modal');
+        const titleEl = document.getElementById('modal-title');
+        const messageEl = document.getElementById('modal-message');
+        const checkboxContainer = document.getElementById('modal-checkbox-container');
+        const modalButtons = document.getElementById('modal-buttons');
+        const modalOptions = document.getElementById('modal-options');
+        const newGameOptions = document.getElementById('new-game-options');
+        const samePlayersBtn = document.getElementById('same-players-btn');
+        if (!modal || !titleEl || !messageEl)
+            return;
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        // Hide standard options
+        checkboxContainer === null || checkboxContainer === void 0 ? void 0 : checkboxContainer.classList.add('hidden');
+        modalOptions === null || modalOptions === void 0 ? void 0 : modalOptions.classList.add('hidden');
+        modalButtons === null || modalButtons === void 0 ? void 0 : modalButtons.classList.add('hidden');
+        // Show new game options
+        newGameOptions === null || newGameOptions === void 0 ? void 0 : newGameOptions.classList.remove('hidden');
+        // Update same players button text
+        if (samePlayersBtn) {
+            samePlayersBtn.textContent = `Same Players (${playerNames})`;
+        }
+        modal.classList.remove('hidden');
     }
     showModal(title, message, showCheckbox = false) {
         const modal = document.getElementById('modal');

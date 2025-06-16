@@ -524,6 +524,16 @@ class SkullKingGame {
 
         const modalCancel = document.getElementById('modal-cancel');
         modalCancel?.addEventListener('click', () => this.hideModal());
+
+        // New Game Modal Options
+        const samePlayersBtn = document.getElementById('same-players-btn');
+        samePlayersBtn?.addEventListener('click', () => this.handleSamePlayersNewGame());
+
+        const newPlayersBtn = document.getElementById('new-players-btn');
+        newPlayersBtn?.addEventListener('click', () => this.handleNewPlayersNewGame());
+
+        const cancelNewGameBtn = document.getElementById('cancel-new-game-btn');
+        cancelNewGameBtn?.addEventListener('click', () => this.hideModal());
     }
 
     // Event Handlers
@@ -574,6 +584,18 @@ class SkullKingGame {
         this.hideModal();
     }
 
+    private handleSamePlayersNewGame(): void {
+        this.viewModel.startNewGame(true);  // Keep names
+        this.hideModal();
+        this.startPlayerSetup();
+    }
+
+    private handleNewPlayersNewGame(): void {
+        this.viewModel.startNewGame(false); // Don't keep names
+        this.hideModal();
+        this.startPlayerSetup();
+    }
+
     // Helper Methods
     private startPlayerSetup(): void {
         this.viewModel.initializeTempPlayers();
@@ -582,17 +604,14 @@ class SkullKingGame {
     }
 
     private confirmNewGame(): void {
-        this.showModal(
+        const gameState = this.viewModel.getGameState();
+        const playerNames = gameState.players.map(p => p.name).join(', ');
+        
+        this.showNewGameModal(
             'Start New Game',
-            'Are ye sure ye want to start a new adventure? This will clear the current game.',
-            true
+            'Choose how ye want to start yer new adventure:',
+            playerNames
         );
-
-        this.viewModel.setModalConfirmCallback(() => {
-            const keepNames = this.getKeepNamesCheckbox();
-            this.viewModel.startNewGame(keepNames);
-            this.startPlayerSetup();
-        });
     }
 
     // View Methods
@@ -766,6 +785,37 @@ class SkullKingGame {
             textEl.textContent = commentary;
             commentaryEl.classList.remove('hidden');
         }
+    }
+
+    private showNewGameModal(title: string, message: string, playerNames: string): void {
+        const modal = document.getElementById('modal');
+        const titleEl = document.getElementById('modal-title');
+        const messageEl = document.getElementById('modal-message');
+        const checkboxContainer = document.getElementById('modal-checkbox-container');
+        const modalButtons = document.getElementById('modal-buttons');
+        const modalOptions = document.getElementById('modal-options');
+        const newGameOptions = document.getElementById('new-game-options');
+        const samePlayersBtn = document.getElementById('same-players-btn');
+
+        if (!modal || !titleEl || !messageEl) return;
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+
+        // Hide standard options
+        checkboxContainer?.classList.add('hidden');
+        modalOptions?.classList.add('hidden');
+        modalButtons?.classList.add('hidden');
+        
+        // Show new game options
+        newGameOptions?.classList.remove('hidden');
+        
+        // Update same players button text
+        if (samePlayersBtn) {
+            samePlayersBtn.textContent = `Same Players (${playerNames})`;
+        }
+
+        modal.classList.remove('hidden');
     }
 
     private showModal(title: string, message: string, showCheckbox: boolean = false): void {
