@@ -3,7 +3,7 @@
     "target": "ES2017",
     "module": "CommonJS",
     "lib": ["DOM", "ES2017"],
-    "outDir": "./dist",
+    "outDir": "./",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
