@@ -203,6 +203,51 @@ describe('SkullKingGame Validation', () => {
         expect(minBonus).toBeGreaterThanOrEqual(minBonus);
         expect(maxBonus).toBeLessThanOrEqual(maxBonus);
     });
+    
+    test('should not allow bonus points for incorrect predictions', () => {
+        const gameInstance = new window.SkullKingGame();
+        
+        // Test failed bid with bonus points should not add bonus to score
+        const bid = 3;
+        const actual = 1; // Incorrect prediction
+        const bonus = 20; // Bonus should be ignored
+        const round = 5;
+        
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+        const expectedScore = -10 * Math.abs(bid - actual); // -20, bonus ignored
+        
+        expect(actualScore).toBe(expectedScore);
+    });
+    
+    test('should allow bonus points only for correct predictions', () => {
+        const gameInstance = new window.SkullKingGame();
+        
+        // Test correct bid with bonus points
+        const bid = 2;
+        const actual = 2; // Correct prediction
+        const bonus = 15;
+        const round = 3;
+        
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+        const expectedScore = 20 * actual + bonus; // 40 + 15 = 55
+        
+        expect(actualScore).toBe(expectedScore);
+    });
+    
+    test('should allow bonus points for successful zero bids', () => {
+        const gameInstance = new window.SkullKingGame();
+        
+        // Test successful zero bid with bonus points
+        const bid = 0;
+        const actual = 0; // Correct zero prediction
+        const bonus = 10;
+        const round = 7;
+        
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+        const expectedScore = 10 * round + bonus; // 70 + 10 = 80
+        
+        expect(actualScore).toBe(expectedScore);
+    });
 });
 
 describe('SkullKingGame Round Management', () => {
@@ -244,5 +289,158 @@ describe('SkullKingGame Data Persistence', () => {
             localStorage.getItem('skullKingGame');
             localStorage.removeItem('skullKingGame');
         }).not.toThrow();
+    });
+});
+
+describe('SkullKingGame Update Last Round', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+        
+        // Mock the DOM elements needed for update functionality
+        document.body.innerHTML += `
+            <div id="modal"></div>
+            <div id="modal-title"></div>
+            <div id="modal-message"></div>
+            <div id="modal-options"></div>
+            <div id="modal-buttons"></div>
+            <div id="modal-checkbox-container"></div>
+            <button id="modal-confirm"></button>
+            <button id="modal-cancel"></button>
+            <input id="bid-Alice" />
+            <input id="actual-Alice" />
+            <input id="bonus-Alice" />
+            <input id="bid-Bob" />
+            <input id="actual-Bob" />
+            <input id="bonus-Bob" />
+        `;
+    });
+    
+    test('should not allow update when no rounds exist', () => {
+        // Setup game with no rounds
+        gameInstance.state = {
+            players: [{ name: 'Alice', score: 0 }, { name: 'Bob', score: 0 }],
+            rounds: [],
+            currentRound: 1
+        };
+        
+        // Mock alert to capture the message
+        const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+        
+        // Try to update last round
+        gameInstance.handleUpdateLastRound();
+        
+        // Should show error message
+        expect(alertSpy).toHaveBeenCalledWith('No rounds to update!');
+        
+        alertSpy.mockRestore();
+    });
+    
+    test('should properly undo last round and populate form fields', () => {
+        // Setup game with completed rounds
+        const testRoundData = {
+            roundNumber: 2,
+            playerData: [
+                { playerName: 'Alice', bid: 2, actual: 2, bonus: 5, roundScore: 45 },
+                { playerName: 'Bob', bid: 1, actual: 0, bonus: 0, roundScore: -10 }
+            ]
+        };
+        
+        gameInstance.state = {
+            players: [
+                { name: 'Alice', score: 55 }, // 10 from round 1 + 45 from round 2
+                { name: 'Bob', score: 10 }     // 20 from round 1 - 10 from round 2
+            ],
+            rounds: [
+                {
+                    roundNumber: 1,
+                    playerData: [
+                        { playerName: 'Alice', bid: 1, actual: 1, bonus: 0, roundScore: 20 },
+                        { playerName: 'Bob', bid: 1, actual: 1, bonus: 0, roundScore: 20 }
+                    ]
+                },
+                testRoundData
+            ],
+            currentRound: 3
+        };
+        
+        // Mock populateRoundInputs method to verify it's called with correct data
+        const populateSpy = jest.spyOn(gameInstance, 'populateRoundInputs');
+        
+        // Trigger the update (simulate modal confirmation)
+        gameInstance.handleUpdateLastRound();
+        
+        // Simulate clicking confirm in the modal
+        if (gameInstance.modalConfirmCallback) {
+            gameInstance.modalConfirmCallback();
+        }
+        
+        // Verify the last round was removed
+        expect(gameInstance.state.rounds.length).toBe(1);
+        expect(gameInstance.state.currentRound).toBe(2);
+        
+        // Verify scores were recalculated (only round 1 scores)
+        expect(gameInstance.state.players[0].score).toBe(20); // Alice: only round 1
+        expect(gameInstance.state.players[1].score).toBe(20); // Bob: only round 1
+        
+        // Verify populateRoundInputs was called with the removed round data
+        expect(populateSpy).toHaveBeenCalledWith(testRoundData);
+        
+        populateSpy.mockRestore();
+    });
+    
+    test('should populate form fields with correct values', (done) => {
+        const testRoundData = {
+            roundNumber: 1,
+            playerData: [
+                { playerName: 'Alice', bid: 3, actual: 2, bonus: 10, roundScore: 30 },
+                { playerName: 'Bob', bid: 0, actual: 0, bonus: 0, roundScore: 10 }
+            ]
+        };
+        
+        // Call populateRoundInputs
+        gameInstance.populateRoundInputs(testRoundData);
+        
+        // Wait for setTimeout to complete
+        setTimeout(() => {
+            // Check that form fields were populated correctly
+            const aliceBid = document.getElementById('bid-Alice') as HTMLInputElement;
+            const aliceActual = document.getElementById('actual-Alice') as HTMLInputElement;
+            const aliceBonus = document.getElementById('bonus-Alice') as HTMLInputElement;
+            const bobBid = document.getElementById('bid-Bob') as HTMLInputElement;
+            const bobActual = document.getElementById('actual-Bob') as HTMLInputElement;
+            const bobBonus = document.getElementById('bonus-Bob') as HTMLInputElement;
+            
+            expect(aliceBid.value).toBe('3');
+            expect(aliceActual.value).toBe('2');
+            expect(aliceBonus.value).toBe('10');
+            expect(bobBid.value).toBe('0');
+            expect(bobActual.value).toBe('0');
+            expect(bobBonus.value).toBe('0');
+            
+            done();
+        }, 150);
+    });
+    
+    test('should update round state correctly after edit', () => {
+        // Setup game with a round
+        gameInstance.state = {
+            players: [{ name: 'Alice', score: 20 }],
+            rounds: [{ roundNumber: 1, playerData: [{ playerName: 'Alice', bid: 1, actual: 1, bonus: 0, roundScore: 20 }] }],
+            currentRound: 2
+        };
+        
+        gameInstance.handleUpdateLastRound();
+        
+        // Simulate modal confirmation
+        if (gameInstance.modalConfirmCallback) {
+            gameInstance.modalConfirmCallback();
+        }
+        
+        // Verify game is ready for editing the previous round
+        expect(gameInstance.state.rounds.length).toBe(0); // Round removed
+        expect(gameInstance.state.currentRound).toBe(1); // Back to round 1
+        expect(gameInstance.state.players[0].score).toBe(0); // Score reset
     });
 });

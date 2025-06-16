@@ -166,7 +166,7 @@ class SkullKingGame {
                 <div class="round-display parchment">
                     <div class="round-header">
                         <h3>Round ${round.roundNumber}</h3>
-                        ${index === 0 ? '<button class="btn btn-danger" onclick="game.confirmDeleteRound()">Delete Round</button>' : ''}
+                        ${index === 0 ? '<button class="btn btn-secondary" onclick="game.handleUpdateLastRound()">Edit Round</button>' : ''}
                     </div>
                     <div class="round-data">
                         ${round.playerData.map(data => `
@@ -208,6 +208,7 @@ class SkullKingGame {
             }
         }
         else {
+            // Failed bid: no bonus points allowed
             if (bid === 0) {
                 // Failed zero bid: lose 10 points per card dealt (round number)
                 return -10 * this.state.currentRound;
@@ -282,10 +283,13 @@ class SkullKingGame {
         if (totalWins !== this.state.currentRound) {
             errors.push(`Total wins (${totalWins}) must equal the round number (${this.state.currentRound})!`);
         }
-        // Check bonus only allowed if wins > 0
+        // Check bonus only allowed if wins > 0 and bid is correct
         for (const data of tempPlayerData) {
             if (data.actual === 0 && data.bonus > 0) {
                 errors.push(`${data.playerName} cannot have bonus points with 0 wins!`);
+            }
+            if (data.bid !== data.actual && data.bonus > 0) {
+                errors.push(`${data.playerName} cannot have bonus points without correctly predicting tricks (bid: ${data.bid}, actual: ${data.actual})!`);
             }
         }
         if (errors.length > 0) {
@@ -331,29 +335,51 @@ class SkullKingGame {
         const playerNames = this.state.players.map(p => p.name).join(', ');
         this.showNewGameModal(playerNames);
     }
-    confirmDeleteRound() {
-        this.showModal('Delete Last Round?', 'This will remove the last round and recalculate scores. Are you sure?', false, () => {
-            if (this.state.rounds.length > 0) {
-                const lastRound = this.state.rounds.pop();
-                if (lastRound) {
-                    // Recalculate scores
-                    this.state.players.forEach(player => {
-                        player.score = 0;
-                    });
-                    this.state.rounds.forEach(round => {
-                        round.playerData.forEach(data => {
-                            const player = this.state.players.find(p => p.name === data.playerName);
-                            if (player) {
-                                player.score += data.roundScore;
-                            }
-                        });
-                    });
-                    this.state.currentRound--;
-                    this.saveState();
-                    this.updateUI();
-                }
-            }
+    handleUpdateLastRound() {
+        if (this.state.rounds.length === 0) {
+            alert('No rounds to update!');
+            return;
+        }
+        this.showModal('Update Last Round?', 'This will undo the last round and let you edit the values. Continue?', false, () => {
+            // Get the last round data before removing it
+            const lastRound = this.state.rounds[this.state.rounds.length - 1];
+            // Remove the last round (same logic as delete)
+            this.state.rounds.pop();
+            // Recalculate scores without the last round
+            this.state.players.forEach(player => {
+                player.score = 0;
+            });
+            this.state.rounds.forEach(round => {
+                round.playerData.forEach(data => {
+                    const player = this.state.players.find(p => p.name === data.playerName);
+                    if (player) {
+                        player.score += data.roundScore;
+                    }
+                });
+            });
+            // Go back to the previous round for input
+            this.state.currentRound--;
+            // Populate the form fields with the last round's data
+            this.populateRoundInputs(lastRound);
+            this.saveState();
+            this.updateUI();
         });
+    }
+    populateRoundInputs(roundData) {
+        // Wait for UI to update, then populate the inputs
+        setTimeout(() => {
+            roundData.playerData.forEach(data => {
+                const bidInput = document.getElementById(`bid-${data.playerName}`);
+                const actualInput = document.getElementById(`actual-${data.playerName}`);
+                const bonusInput = document.getElementById(`bonus-${data.playerName}`);
+                if (bidInput)
+                    bidInput.value = data.bid.toString();
+                if (actualInput)
+                    actualInput.value = data.actual.toString();
+                if (bonusInput)
+                    bonusInput.value = data.bonus.toString();
+            });
+        }, 100);
     }
     showModal(title, message, showCheckbox, onConfirm) {
         const modal = document.getElementById('modal');
@@ -466,38 +492,49 @@ class SkullKingGame {
                 announcement += `${commentaryText} ... `;
             }
         }
-        announcement += `Ahoy mateys! Here be the current standings after round ${this.state.currentRound - 1}. `;
+        announcement += `Arrr, gather 'round ye scurvy dogs! Here be the treasure count after round ${this.state.currentRound - 1}! `;
         sortedPlayers.forEach((player, index) => {
             if (index === 0) {
-                announcement += `Leading the crew be ${player.name} with ${player.score} pieces of eight! `;
+                announcement += `Topping the charts be Captain ${player.name} with ${player.score} pieces of eight! `;
             }
             else if (index === sortedPlayers.length - 1) {
-                announcement += `And ${player.name} be at ${player.score}. `;
+                announcement += `And bringing up the rear be ${player.name} with ${player.score} doubloons! `;
             }
             else {
-                announcement += `${player.name} has ${player.score}. `;
+                announcement += `${player.name} be holdin' ${player.score} pieces of treasure! `;
             }
         });
         // Add flavor based on game state
         if (this.state.rounds.length === 0) {
-            announcement = "Ahoy! No rounds played yet. Time to start plunderin'!";
+            announcement = "Arrr! No rounds sailed yet, ye landlubbers! Time to start plunderin' and pillagin'!";
         }
         else if (sortedPlayers[0].score > sortedPlayers[sortedPlayers.length - 1].score + 50) {
-            announcement += "Shiver me timbers! Someone be runnin' away with the treasure!";
+            announcement += "Batten down the hatches! One scallywag be sailin' away with all the booty!";
         }
         else if (sortedPlayers[0].score === ((_b = sortedPlayers[1]) === null || _b === void 0 ? void 0 : _b.score)) {
-            announcement += "Blimey! We have a tie for the lead!";
+            announcement += "Shiver me timbers! We be havin' a dead heat for the captain's chair!";
         }
-        // Create and configure the utterance
-        const utterance = new SpeechSynthesisUtterance(announcement);
-        utterance.rate = 0.9; // Slightly slower for clarity
-        utterance.pitch = 0.9; // Slightly lower for pirate voice
+        // Make the announcement more pirate-like by adding pauses and emphasis
+        const pirateAnnouncement = announcement
+            .replace(/\./g, '... ') // Add dramatic pauses
+            .replace(/!/g, '! ... ') // Emphasize exclamations
+            .replace(/\?/g, '? ... ') // Pause after questions
+            .replace(/,/g, ', '); // Slight pause after commas
+        // Create and configure the utterance for maximum pirate effect
+        const utterance = new SpeechSynthesisUtterance(pirateAnnouncement);
+        utterance.rate = 0.7; // Slower and more dramatic
+        utterance.pitch = 0.7; // Lower pitch for gruff pirate voice
         utterance.volume = 1;
-        // Try to use an English voice
+        // Try to find the most pirate-sounding voice
         const voices = window.speechSynthesis.getVoices();
-        const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
-        if (englishVoice) {
-            utterance.voice = englishVoice;
+        // Prefer male voices with lower pitch for more pirate-like sound
+        const pirateVoice = voices.find(voice => voice.lang.startsWith('en') &&
+            (voice.name.toLowerCase().includes('male') ||
+                voice.name.toLowerCase().includes('man') ||
+                voice.name.toLowerCase().includes('alex') ||
+                voice.name.toLowerCase().includes('daniel'))) || voices.find(voice => voice.lang.startsWith('en'));
+        if (pirateVoice) {
+            utterance.voice = pirateVoice;
         }
         // Track score reading
         this.trackEvent('read_scores', {

@@ -340,6 +340,7 @@ input[type="text"]:focus {
     gap: 1.5rem;
 }
 
+
 .player-round-input {
     background: rgba(139, 69, 19, 0.05);
     border: 1px solid #d4af37;
@@ -592,6 +593,7 @@ input[type="text"]:focus {
     input[type="text"] {
         font-size: 16px; /* Prevents zoom on iOS */
     }
+    
 }
 
 /* SEO Content Styling */
