@@ -1133,29 +1133,19 @@ class SkullKingGame {
     }
 
     private setupInstallButtons(): void {
-        // Add event listeners to the mobile install buttons
-        const installBtn = document.getElementById('install-app-btn');
-        const installBtnLanding = document.getElementById('install-app-btn-landing');
+        // Add event listener to the header install button
+        const installBtnHeader = document.getElementById('install-app-btn-header');
         
-        if (installBtn) {
-            installBtn.addEventListener('click', () => this.showInstallInstructions());
-        }
-        
-        if (installBtnLanding) {
-            installBtnLanding.addEventListener('click', () => this.showInstallInstructions());
+        if (installBtnHeader) {
+            installBtnHeader.addEventListener('click', () => this.showInstallInstructions());
         }
     }
 
     private hideInstallButtons(): void {
-        const installBtn = document.getElementById('install-app-btn');
-        const installBtnLanding = document.getElementById('install-app-btn-landing');
+        const installBtnHeader = document.getElementById('install-app-btn-header');
         
-        if (installBtn) {
-            installBtn.style.display = 'none';
-        }
-        
-        if (installBtnLanding) {
-            installBtnLanding.style.display = 'none';
+        if (installBtnHeader) {
+            installBtnHeader.style.display = 'none';
         }
     }
 
