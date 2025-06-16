@@ -186,6 +186,20 @@ class GameViewModel {
     
     // Card distribution logic for Skull King (70 card deck)
     getCardsPerRound(roundNumber: number, playerCount: number): number {
+        // Skull King is a 10-round game - rounds beyond 10 are invalid
+        if (roundNumber > 10) {
+            throw new Error(`Invalid round number: ${roundNumber}. Skull King only has 10 rounds.`);
+        }
+        
+        // Basic validation
+        if (roundNumber < 1) {
+            throw new Error(`Invalid round number: ${roundNumber}. Round number must be 1 or greater.`);
+        }
+        
+        if (playerCount < 1) {
+            throw new Error(`Invalid player count: ${playerCount}. Must have at least 1 player.`);
+        }
+        
         const totalCards = 70;
         const idealCards = roundNumber;
         const cardsNeeded = idealCards * playerCount;
@@ -204,7 +218,9 @@ class GameViewModel {
         return this.getCardsPerRound(this.state.currentRound, this.state.players.length);
     }
 
-    validateRoundData(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }): string | null {
+    validateRoundData(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, roundNumber?: number): string | null {
+        const targetRound = roundNumber || this.state.currentRound;
+        
         for (const [playerName, playerData] of Object.entries(data)) {
             const { bid, actual, bonus } = playerData;
 
@@ -224,12 +240,12 @@ class GameViewModel {
             }
 
             // Round-specific validation: bids and actual tricks can't exceed available cards
-            const maxTricks = this.getMaxTricksForCurrentRound();
+            const maxTricks = this.getCardsPerRound(targetRound, this.state.players.length);
             if (bid > maxTricks) {
-                return `${playerName}'s bid (${bid}) can't exceed ${maxTricks} tricks in round ${this.state.currentRound} with ${this.state.players.length} players.`;
+                return `${playerName}'s bid (${bid}) can't exceed ${maxTricks} tricks in round ${targetRound} with ${this.state.players.length} players.`;
             }
             if (actual > maxTricks) {
-                return `${playerName} can't win more than ${maxTricks} tricks in round ${this.state.currentRound} with ${this.state.players.length} players. Actual: ${actual}`;
+                return `${playerName} can't win more than ${maxTricks} tricks in round ${targetRound} with ${this.state.players.length} players. Actual: ${actual}`;
             }
 
             // Bonus point validation - only applies when correctly predicting tricks
@@ -241,6 +257,14 @@ class GameViewModel {
             if (Math.abs(bonus) > 100) {
                 return `${playerName}'s bonus points seem unreasonable (${bonus}). Please check your entry.`;
             }
+        }
+
+        // Validate that total actual wins equals the number of tricks available
+        const maxTricks = this.getCardsPerRound(targetRound, this.state.players.length);
+        const totalActualWins = Object.values(data).reduce((sum, playerData) => sum + playerData.actual, 0);
+        
+        if (totalActualWins !== maxTricks) {
+            return `Total tricks won (${totalActualWins}) must equal the number of tricks available (${maxTricks}) in round ${targetRound} with ${this.state.players.length} players.`;
         }
 
         return null; // Valid
@@ -300,12 +324,11 @@ class GameViewModel {
             return 'No rounds to update!';
         }
 
-        const validationError = this.validateRoundData(data);
+        const lastRound = this.state.rounds[this.state.rounds.length - 1];
+        const validationError = this.validateRoundData(data, lastRound.roundNumber);
         if (validationError) {
             return validationError;
         }
-
-        const lastRound = this.state.rounds[this.state.rounds.length - 1];
 
         // Revert old scores
         for (const oldPlayerData of lastRound.playerData) {

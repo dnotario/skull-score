@@ -582,10 +582,10 @@ describe('SkullKingGame Update Last Round', () => {
         expect(gameState.players[0].score).toBe(20); // Alice: 20 points for correct bid
         expect(gameState.players[1].score).toBe(10); // Bob: 10 points for successful zero bid (round 1)
         
-        // Update the last round
+        // Update the last round - must maintain total wins = 1 (since round 1 with 2 players = 1 trick total)
         const updatedRoundData = {
             'Alice': { bid: 1, actual: 0, bonus: 0 }, // Changed actual from 1 to 0
-            'Bob': { bid: 0, actual: 1, bonus: 0 }    // Changed actual from 0 to 1 (failed zero bid)
+            'Bob': { bid: 0, actual: 1, bonus: 0 }    // Changed actual from 0 to 1 (total still = 1)
         };
         const updateResult = gameInstance.viewModel.updateLastRound(updatedRoundData);
         expect(updateResult).toBeNull(); // Should succeed
@@ -723,6 +723,329 @@ describe('SkullKingGame Score Announcement', () => {
         const announcement = freshInstance.viewModel.createScoreAnnouncement();
         
         expect(announcement).toBe('No active game to announce, ye landlubber!');
+    });
+});
+
+describe('SkullKingGame Total Wins Validation', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+        // Setup a standard game for testing
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'Dave']);
+        gameInstance.viewModel.validateAndStartGame();
+    });
+
+    describe('Early Rounds (2-4 players)', () => {
+        test('should accept valid wins total in round 1', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toBeNull(); // Should succeed
+        });
+
+        test('should reject too many wins in round 1', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total, but 2 wins reported
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 1, bonus: 0 }, // Invalid: total wins = 2, but only 1 trick available
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toContain('Total tricks won (2) must equal the number of tricks available (1)');
+        });
+
+        test('should reject too few wins in round 1', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total, but 0 wins reported
+            const roundData = {
+                'Alice': { bid: 1, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toContain('Total tricks won (0) must equal the number of tricks available (1)');
+        });
+
+        test('should accept valid wins total in round 3', () => {
+            // Add rounds to get to round 3
+            gameInstance.viewModel.addRound({
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            });
+            gameInstance.viewModel.addRound({
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 1, actual: 1, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            });
+            
+            // Round 3: 4 players, 3 cards each = 3 tricks total
+            const roundData = {
+                'Alice': { bid: 2, actual: 2, bonus: 0 },
+                'Bob': { bid: 1, actual: 1, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toBeNull(); // Should succeed
+        });
+    });
+
+    describe('Latter Rounds with Many Players', () => {
+        test('should handle 8 players in round 8 correctly', () => {
+            // Setup 8 player game
+            const eightPlayerGame = new window.SkullKingGame();
+            eightPlayerGame.viewModel.startNewGame(false);
+            eightPlayerGame.viewModel.setTempPlayers(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
+            eightPlayerGame.viewModel.validateAndStartGame();
+            
+            // Add rounds to get to round 8
+            for (let round = 1; round <= 7; round++) {
+                const roundData: any = {};
+                ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach((player, index) => {
+                    roundData[player] = { 
+                        bid: index === 0 ? round : 0, 
+                        actual: index === 0 ? round : 0, 
+                        bonus: 0 
+                    };
+                });
+                eightPlayerGame.viewModel.addRound(roundData);
+            }
+            
+            // Round 8: 8 players, 8 cards each = 8 tricks total
+            const roundData = {
+                'A': { bid: 3, actual: 3, bonus: 0 },
+                'B': { bid: 2, actual: 2, bonus: 0 },
+                'C': { bid: 1, actual: 1, bonus: 0 },
+                'D': { bid: 1, actual: 1, bonus: 0 },
+                'E': { bid: 1, actual: 1, bonus: 0 },
+                'F': { bid: 0, actual: 0, bonus: 0 },
+                'G': { bid: 0, actual: 0, bonus: 0 },
+                'H': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = eightPlayerGame.viewModel.addRound(roundData);
+            expect(result).toBeNull(); // Should succeed
+        });
+
+        test('should reject invalid total in 8 players round 9 (card limitation)', () => {
+            // Setup 8 player game
+            const eightPlayerGame = new window.SkullKingGame();
+            eightPlayerGame.viewModel.startNewGame(false);
+            eightPlayerGame.viewModel.setTempPlayers(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
+            eightPlayerGame.viewModel.validateAndStartGame();
+            
+            // Add rounds to get to round 9
+            for (let round = 1; round <= 8; round++) {
+                const roundData: any = {};
+                ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach((player, index) => {
+                    const cardsThisRound = eightPlayerGame.viewModel.getCardsPerRound(round, 8);
+                    roundData[player] = { 
+                        bid: index === 0 ? cardsThisRound : 0, 
+                        actual: index === 0 ? cardsThisRound : 0, 
+                        bonus: 0 
+                    };
+                });
+                eightPlayerGame.viewModel.addRound(roundData);
+            }
+            
+            // Round 9: 8 players, but only 8 cards each (not 9) due to 70 card limit
+            // So we have 8 tricks total, but trying to report 9
+            const roundData = {
+                'A': { bid: 8, actual: 8, bonus: 0 },
+                'B': { bid: 1, actual: 1, bonus: 0 }, // This makes 9 total - invalid!
+                'C': { bid: 0, actual: 0, bonus: 0 },
+                'D': { bid: 0, actual: 0, bonus: 0 },
+                'E': { bid: 0, actual: 0, bonus: 0 },
+                'F': { bid: 0, actual: 0, bonus: 0 },
+                'G': { bid: 0, actual: 0, bonus: 0 },
+                'H': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = eightPlayerGame.viewModel.addRound(roundData);
+            expect(result).toContain('Total tricks won (9) must equal the number of tricks available (8)');
+        });
+
+        test('should handle 6 players in round 10 correctly', () => {
+            // Setup 6 player game
+            const sixPlayerGame = new window.SkullKingGame();
+            sixPlayerGame.viewModel.startNewGame(false);
+            sixPlayerGame.viewModel.setTempPlayers(['A', 'B', 'C', 'D', 'E', 'F']);
+            sixPlayerGame.viewModel.validateAndStartGame();
+            
+            // Add rounds to get to round 10
+            for (let round = 1; round <= 9; round++) {
+                const roundData: any = {};
+                ['A', 'B', 'C', 'D', 'E', 'F'].forEach((player, index) => {
+                    roundData[player] = { 
+                        bid: index === 0 ? round : 0, 
+                        actual: index === 0 ? round : 0, 
+                        bonus: 0 
+                    };
+                });
+                sixPlayerGame.viewModel.addRound(roundData);
+            }
+            
+            // Round 10: 6 players, 10 cards each = 10 tricks total
+            const roundData = {
+                'A': { bid: 4, actual: 4, bonus: 0 },
+                'B': { bid: 3, actual: 3, bonus: 0 },
+                'C': { bid: 2, actual: 2, bonus: 0 },
+                'D': { bid: 1, actual: 1, bonus: 0 },
+                'E': { bid: 0, actual: 0, bonus: 0 },
+                'F': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = sixPlayerGame.viewModel.addRound(roundData);
+            expect(result).toBeNull(); // Should succeed
+        });
+
+        test('should handle extreme case: 7 players in round 10 with card limitation', () => {
+            // Setup 7 player game
+            const sevenPlayerGame = new window.SkullKingGame();
+            sevenPlayerGame.viewModel.startNewGame(false);
+            sevenPlayerGame.viewModel.setTempPlayers(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
+            sevenPlayerGame.viewModel.validateAndStartGame();
+            
+            // Add rounds to get to round 10
+            for (let round = 1; round <= 9; round++) {
+                const roundData: any = {};
+                ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((player, index) => {
+                    roundData[player] = { 
+                        bid: index === 0 ? round : 0, 
+                        actual: index === 0 ? round : 0, 
+                        bonus: 0 
+                    };
+                });
+                sevenPlayerGame.viewModel.addRound(roundData);
+            }
+            
+            // Round 10: 7 players, should have 10 cards each = 10 tricks total
+            const maxTricks = sevenPlayerGame.viewModel.getMaxTricksForCurrentRound();
+            expect(maxTricks).toBe(10); // Verify the calculation
+            
+            // Create valid data with exactly 10 total wins
+            const roundData = {
+                'A': { bid: 3, actual: 3, bonus: 0 },
+                'B': { bid: 2, actual: 2, bonus: 0 },
+                'C': { bid: 2, actual: 2, bonus: 0 },
+                'D': { bid: 2, actual: 2, bonus: 0 },
+                'E': { bid: 1, actual: 1, bonus: 0 },
+                'F': { bid: 0, actual: 0, bonus: 0 },
+                'G': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = sevenPlayerGame.viewModel.addRound(roundData);
+            expect(result).toBeNull(); // Should succeed
+        });
+    });
+
+    describe('Edge Cases', () => {
+        test('should handle zero total wins correctly', () => {
+            // All players bid and got 0 - invalid unless it's a 0-card round (which doesn't exist)
+            const roundData = {
+                'Alice': { bid: 0, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toContain('Total tricks won (0) must equal the number of tricks available (1)');
+        });
+
+        test('should handle maximum wins distribution', () => {
+            // Setup to get to a round where one player could win all tricks
+            gameInstance.viewModel.addRound({
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            });
+            
+            // Round 2: 4 players, 2 cards each = 2 tricks total
+            const roundData = {
+                'Alice': { bid: 2, actual: 2, bonus: 0 }, // One player wins all tricks
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toBeNull(); // Should succeed
+        });
+
+        test('should validate update last round with correct total wins', () => {
+            // Add initial round with valid total (1 trick for round 1 with 4 players)
+            gameInstance.viewModel.addRound({
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            });
+            
+            // Try to update with invalid total (0 wins when 1 is required)
+            const invalidUpdate = {
+                'Alice': { bid: 1, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.updateLastRound(invalidUpdate);
+            expect(result).toContain('Total tricks won (0) must equal the number of tricks available (1)');
+        });
+    });
+});
+
+describe('SkullKingGame Card Distribution Edge Cases', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+    });
+
+    test('should calculate correct cards per round for 8 players in later rounds', () => {
+        expect(gameInstance.viewModel.getCardsPerRound(9, 8)).toBe(8); // 72 cards needed, only 70 available
+        expect(gameInstance.viewModel.getCardsPerRound(10, 8)).toBe(8); // 80 cards needed, only 70 available
+    });
+
+    test('should calculate correct cards per round for 7 players in round 10', () => {
+        expect(gameInstance.viewModel.getCardsPerRound(10, 7)).toBe(10); // 70 cards needed, exactly 70 available
+    });
+
+    test('should calculate correct cards per round for 6 players', () => {
+        expect(gameInstance.viewModel.getCardsPerRound(10, 6)).toBe(10); // 60 cards needed, 70 available
+    });
+
+    test('should throw error for rounds beyond 10', () => {
+        expect(() => gameInstance.viewModel.getCardsPerRound(11, 6)).toThrow('Invalid round number: 11. Skull King only has 10 rounds.');
+        expect(() => gameInstance.viewModel.getCardsPerRound(12, 6)).toThrow('Invalid round number: 12. Skull King only has 10 rounds.');
+        expect(() => gameInstance.viewModel.getCardsPerRound(15, 4)).toThrow('Invalid round number: 15. Skull King only has 10 rounds.');
+    });
+
+    test('should throw error for invalid round numbers', () => {
+        expect(() => gameInstance.viewModel.getCardsPerRound(0, 6)).toThrow('Invalid round number: 0. Round number must be 1 or greater.');
+        expect(() => gameInstance.viewModel.getCardsPerRound(-1, 6)).toThrow('Invalid round number: -1. Round number must be 1 or greater.');
+    });
+
+    test('should throw error for invalid player counts', () => {
+        expect(() => gameInstance.viewModel.getCardsPerRound(5, 0)).toThrow('Invalid player count: 0. Must have at least 1 player.');
+        expect(() => gameInstance.viewModel.getCardsPerRound(5, -1)).toThrow('Invalid player count: -1. Must have at least 1 player.');
     });
 });
 
