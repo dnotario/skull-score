@@ -665,6 +665,12 @@ class SkullKingGame {
         this.updateUI();
         this.clearRoundInputs();
         this.showCommentary();
+        
+        // Scroll to the scores section after recording round
+        const scoresSection = document.querySelector('.current-scores');
+        if (scoresSection) {
+            scoresSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 
     private handleModalConfirm(): void {
