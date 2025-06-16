@@ -513,12 +513,12 @@ describe('SkullKingGame Update Last Round', () => {
         gameInstance.handleUpdateLastRound();
         
         // Should show error message via modal
-        expect(showErrorSpy).toHaveBeenCalledWith('No rounds to update!');
+        expect(showErrorSpy).toHaveBeenCalledWith('No rounds to edit!');
         
         showErrorSpy.mockRestore();
     });
     
-    test('should properly get last round data for editing', () => {
+    test('should properly remove last round and get data for editing', () => {
         // Setup game with players
         gameInstance.viewModel.startNewGame(false);
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
@@ -531,14 +531,18 @@ describe('SkullKingGame Update Last Round', () => {
         };
         gameInstance.viewModel.addRound(roundData);
         
-        // Get last round data
-        const lastRoundData = gameInstance.viewModel.getLastRoundData();
+        // Remove last round and get its data
+        const removedRoundData = gameInstance.viewModel.removeLastRound();
         
         // Verify the data is correct
-        expect(lastRoundData).toEqual(roundData);
+        expect(removedRoundData).toEqual(roundData);
+        
+        // Verify the round was actually removed
+        const gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(0);
     });
     
-    test('should handle update last round functionality', () => {
+    test('should handle remove last round functionality', () => {
         // Setup game with players
         gameInstance.viewModel.startNewGame(false);
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
@@ -552,15 +556,75 @@ describe('SkullKingGame Update Last Round', () => {
         gameInstance.viewModel.addRound(roundData);
         
         // Verify the round was added
-        const gameState = gameInstance.viewModel.getGameState();
+        let gameState = gameInstance.viewModel.getGameState();
         expect(gameState.rounds.length).toBe(1);
         
-        // Get last round data for editing
-        const lastRoundData = gameInstance.viewModel.getLastRoundData();
-        expect(lastRoundData).toEqual(roundData);
+        // Remove last round and get its data
+        const removedRoundData = gameInstance.viewModel.removeLastRound();
+        expect(removedRoundData).toEqual(roundData);
+        
+        // Verify the round was removed
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(0);
+    });
+
+    test('should allow editing round 10 when game is complete', () => {
+        // Setup game with players
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Add rounds 1-10 to complete the game
+        for (let round = 1; round <= 10; round++) {
+            const cardsThisRound = gameInstance.viewModel.getCardsPerRound(round, 2);
+            const roundData = {
+                'Alice': { bid: cardsThisRound, actual: cardsThisRound, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            gameInstance.viewModel.addRound(roundData);
+        }
+        
+        // Verify game is complete
+        expect(gameInstance.viewModel.isGameComplete()).toBe(true);
+        expect(gameInstance.viewModel.state.rounds.length).toBe(10);
+        
+        // Should be able to remove last round for editing even when game is complete
+        const originalScores = {
+            alice: gameInstance.viewModel.state.players[0].score,
+            bob: gameInstance.viewModel.state.players[1].score
+        };
+        
+        const removedRoundData = gameInstance.viewModel.removeLastRound();
+        expect(removedRoundData).toBeDefined();
+        expect(removedRoundData!['Alice'].bid).toBe(10); // Round 10 should have 10 cards
+        expect(removedRoundData!['Alice'].actual).toBe(10);
+        expect(removedRoundData!['Bob'].bid).toBe(0);
+        expect(removedRoundData!['Bob'].actual).toBe(0);
+        
+        // Verify the round was removed and scores reverted
+        expect(gameInstance.viewModel.state.rounds.length).toBe(9);
+        expect(gameInstance.viewModel.isGameComplete()).toBe(false);
+        expect(gameInstance.viewModel.state.currentRound).toBe(10);
+        
+        // Now we can add a new round 10 with different data (this simulates editing)
+        const newRoundData = {
+            'Alice': { bid: 5, actual: 5, bonus: 0 },
+            'Bob': { bid: 5, actual: 5, bonus: 0 }
+        };
+        const addResult = gameInstance.viewModel.addRound(newRoundData);
+        expect(addResult).toBeNull(); // Should succeed
+        
+        // Verify the new round was added
+        const finalGameState = gameInstance.viewModel.getGameState();
+        expect(finalGameState.rounds.length).toBe(10);
+        const lastRound = finalGameState.rounds[finalGameState.rounds.length - 1];
+        expect(lastRound.playerData[0].bid).toBe(5);
+        expect(lastRound.playerData[0].actual).toBe(5);
+        expect(lastRound.playerData[1].bid).toBe(5);
+        expect(lastRound.playerData[1].actual).toBe(5);
     });
     
-    test('should update last round correctly', () => {
+    test('should edit last round correctly using remove and re-add', () => {
         // Setup game with players (need at least 2)
         gameInstance.viewModel.startNewGame(false);
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
@@ -582,17 +646,32 @@ describe('SkullKingGame Update Last Round', () => {
         expect(gameState.players[0].score).toBe(20); // Alice: 20 points for correct bid
         expect(gameState.players[1].score).toBe(10); // Bob: 10 points for successful zero bid (round 1)
         
-        // Update the last round - must maintain total wins = 1 (since round 1 with 2 players = 1 trick total)
+        // Remove the last round for editing
+        const removedRoundData = gameInstance.viewModel.removeLastRound();
+        expect(removedRoundData).toBeDefined();
+        expect(removedRoundData!['Alice'].bid).toBe(1);
+        expect(removedRoundData!['Alice'].actual).toBe(1);
+        expect(removedRoundData!['Bob'].bid).toBe(0);
+        expect(removedRoundData!['Bob'].actual).toBe(0);
+        
+        // Verify scores were reverted and round was removed
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(0);
+        expect(gameState.players[0].score).toBe(0); // Alice: score reverted
+        expect(gameState.players[1].score).toBe(0); // Bob: score reverted
+        expect(gameState.currentRound).toBe(1); // Current round reset
+        
+        // Add updated round - must maintain total wins = 1 (since round 1 with 2 players = 1 trick total)
         const updatedRoundData = {
             'Alice': { bid: 1, actual: 0, bonus: 0 }, // Changed actual from 1 to 0
             'Bob': { bid: 0, actual: 1, bonus: 0 }    // Changed actual from 0 to 1 (total still = 1)
         };
-        const updateResult = gameInstance.viewModel.updateLastRound(updatedRoundData);
+        const updateResult = gameInstance.viewModel.addRound(updatedRoundData);
         expect(updateResult).toBeNull(); // Should succeed
         
         // Verify updated state
         gameState = gameInstance.viewModel.getGameState();
-        expect(gameState.rounds.length).toBe(1); // Still 1 round
+        expect(gameState.rounds.length).toBe(1); // Back to 1 round
         expect(gameState.players[0].score).toBe(-10); // Alice: -10 points for failed bid
         expect(gameState.players[1].score).toBe(-10); // Bob: -10 points for failed zero bid (round 1)
     });
@@ -989,7 +1068,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             expect(result).toBeNull(); // Should succeed
         });
 
-        test('should validate update last round with correct total wins', () => {
+        test('should validate edit last round with correct total wins', () => {
             // Add initial round with valid total (1 trick for round 1 with 4 players)
             gameInstance.viewModel.addRound({
                 'Alice': { bid: 1, actual: 1, bonus: 0 },
@@ -998,7 +1077,11 @@ describe('SkullKingGame Total Wins Validation', () => {
                 'Dave': { bid: 0, actual: 0, bonus: 0 }
             });
             
-            // Try to update with invalid total (0 wins when 1 is required)
+            // Remove the last round for editing
+            const removedRoundData = gameInstance.viewModel.removeLastRound();
+            expect(removedRoundData).toBeDefined();
+            
+            // Try to add back with invalid total (0 wins when 1 is required)
             const invalidUpdate = {
                 'Alice': { bid: 1, actual: 0, bonus: 0 },
                 'Bob': { bid: 0, actual: 0, bonus: 0 },
@@ -1006,7 +1089,7 @@ describe('SkullKingGame Total Wins Validation', () => {
                 'Dave': { bid: 0, actual: 0, bonus: 0 }
             };
             
-            const result = gameInstance.viewModel.updateLastRound(invalidUpdate);
+            const result = gameInstance.viewModel.addRound(invalidUpdate);
             expect(result).toContain('Total tricks won (0) must equal the number of tricks available (1)');
         });
     });

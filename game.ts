@@ -319,68 +319,35 @@ class GameViewModel {
         return null; // Success
     }
 
-    updateLastRound(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }): string | null {
-        if (this.state.rounds.length === 0) {
-            return 'No rounds to update!';
-        }
-
-        const lastRound = this.state.rounds[this.state.rounds.length - 1];
-        const validationError = this.validateRoundData(data, lastRound.roundNumber);
-        if (validationError) {
-            return validationError;
-        }
-
-        // Revert old scores
-        for (const oldPlayerData of lastRound.playerData) {
-            const player = this.state.players.find(p => p.name === oldPlayerData.playerName);
-            if (player) {
-                player.score -= oldPlayerData.roundScore;
-            }
-        }
-
-        // Apply new scores
-        lastRound.playerData = [];
-        for (const player of this.state.players) {
-            const playerRoundData = data[player.name];
-            const roundScore = this.calculateRoundScore(
-                playerRoundData.bid,
-                playerRoundData.actual,
-                playerRoundData.bonus,
-                lastRound.roundNumber
-            );
-
-            lastRound.playerData.push({
-                playerName: player.name,
-                bid: playerRoundData.bid,
-                actual: playerRoundData.actual,
-                bonus: playerRoundData.bonus,
-                roundScore
-            });
-
-            player.score += roundScore;
-        }
-
-        this.saveState();
-
-        // Track analytics
-        this.trackEvent('round_updated', {
-            event_category: 'gameplay',
-            event_label: 'round_edited',
-            round_number: lastRound.roundNumber,
-            value: lastRound.roundNumber
-        });
-
-        return null; // Success
-    }
-
-    getLastRoundData(): { [playerName: string]: { bid: number; actual: number; bonus: number } } | null {
+    removeLastRound(): { [playerName: string]: { bid: number; actual: number; bonus: number } } | null {
         if (this.state.rounds.length === 0) {
             return null;
         }
 
-        const lastRound = this.state.rounds[this.state.rounds.length - 1];
-        const result: { [playerName: string]: { bid: number; actual: number; bonus: number } } = {};
+        const lastRound = this.state.rounds.pop()!;
+        
+        // Revert scores from the removed round
+        for (const playerData of lastRound.playerData) {
+            const player = this.state.players.find(p => p.name === playerData.playerName);
+            if (player) {
+                player.score -= playerData.roundScore;
+            }
+        }
 
+        // Decrease current round number
+        this.state.currentRound = Math.max(1, this.state.currentRound - 1);
+        this.saveState();
+
+        // Track analytics
+        this.trackEvent('round_removed', {
+            event_category: 'gameplay',
+            event_label: 'round_deleted',
+            round_number: lastRound.roundNumber,
+            value: lastRound.roundNumber
+        });
+
+        // Return the round data for pre-filling inputs
+        const result: { [playerName: string]: { bid: number; actual: number; bonus: number } } = {};
         for (const playerData of lastRound.playerData) {
             result[playerData.playerName] = {
                 bid: playerData.bid,
@@ -391,6 +358,7 @@ class GameViewModel {
 
         return result;
     }
+
 
     // Modal Management
     setModalConfirmCallback(callback: (() => void) | null): void {
@@ -680,6 +648,7 @@ class SkullKingGame {
         const roundData = this.collectRoundData(gameState.players);
         
         const error = this.viewModel.addRound(roundData);
+        
         if (error) {
             this.showError(error);
             return;
@@ -1114,13 +1083,20 @@ class SkullKingGame {
     }
 
     public handleUpdateLastRound(): void {
-        const lastRoundData = this.viewModel.getLastRoundData();
+        // Remove the last round and get its data for pre-filling
+        const lastRoundData = this.viewModel.removeLastRound();
         if (!lastRoundData) {
-            this.showError('No rounds to update!');
+            this.showError('No rounds to edit!');
             return;
         }
 
-        // Populate the inputs with last round data
+        // Ensure the round inputs are visible for editing, even if game was complete
+        this.showNewRoundInputs();
+        
+        // Update UI to reflect the new game state (with last round removed)
+        this.updateUI();
+
+        // Populate the inputs with the removed round's data for editing
         for (const [playerName, data] of Object.entries(lastRoundData)) {
             const bidInput = document.getElementById(`bid-${playerName}`) as HTMLInputElement;
             const actualInput = document.getElementById(`actual-${playerName}`) as HTMLInputElement;
@@ -1130,11 +1106,6 @@ class SkullKingGame {
             if (actualInput) actualInput.value = data.actual.toString();
             if (bonusInput) bonusInput.value = data.bonus.toString();
         }
-
-        this.showModal(
-            'Update Last Round',
-            'Modify the values above and click "Record Round" to update the last round.'
-        );
     }
 
     // Public method for testing the scoring logic
