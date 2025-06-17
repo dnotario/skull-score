@@ -220,6 +220,41 @@ describe('SkullKingGame Player Limits', () => {
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBeNull(); // Should succeed with 2 valid names
     });
+
+    test('should handle malicious player names safely in DOM IDs', () => {
+        // Test with potentially dangerous player names that could cause XSS
+        const maliciousNames = [
+            '"; alert("XSS"); "',
+            '<script>alert("XSS")</script>'
+        ];
+        
+        // Setup DOM elements needed for the game
+        document.body.innerHTML += `
+            <div id="round-inputs"></div>
+            <div id="round-number"></div>
+        `;
+        
+        gameInstance.viewModel.setTempPlayers(maliciousNames);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Trigger the round inputs rendering through normal game flow
+        gameInstance.updateUI();
+        
+        // Check that IDs are generated safely with indices, not names
+        const bidInput1 = document.getElementById('bid-player-0');
+        const bidInput2 = document.getElementById('bid-player-1');
+        
+        expect(bidInput1).toBeTruthy();
+        expect(bidInput2).toBeTruthy();
+        
+        // Verify that the dangerous names don't appear in ID attributes
+        expect(bidInput1?.id).toBe('bid-player-0');
+        expect(bidInput2?.id).toBe('bid-player-1');
+        
+        // Verify that no elements exist with the dangerous names as IDs
+        expect(document.getElementById('bid-"; alert("XSS"); "')).toBeNull();
+        expect(document.getElementById('bid-<script>alert("XSS")</script>')).toBeNull();
+    });
 });
 
 describe('SkullKingGame Validation', () => {
@@ -1587,9 +1622,9 @@ describe('SkullKingGame Real-time Score Calculation', () => {
         
         // Both players should have their scores initialized
         // Since we can't easily test the initialization directly,
-        // we'll verify the HTML structure was created correctly
-        expect(roundInputs.innerHTML).toContain('score-Alice');
-        expect(roundInputs.innerHTML).toContain('score-Bob');
+        // we'll verify the HTML structure was created correctly with index-based IDs
+        expect(roundInputs.innerHTML).toContain('score-player-0');
+        expect(roundInputs.innerHTML).toContain('score-player-1');
         expect(roundInputs.innerHTML).toContain('computed-score');
     });
     
