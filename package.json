@@ -33,8 +33,5 @@
       "!**/*.d.ts",
       "!**/node_modules/**"
     ]
-  },
-  "dependencies": {
-    "puppeteer": "^24.10.1"
   }
 }
