@@ -59,10 +59,11 @@ beforeEach(() => {
 // Import the class after DOM setup
 import '../game';
 
-// Declare the SkullKingGame class
+// Declare the SkullKingGame class and i18n
 declare global {
     interface Window {
         SkullKingGame: any;
+        i18n: any;
     }
 }
 
@@ -1521,5 +1522,241 @@ describe('SkullKingGame Real-time Score Calculation', () => {
         gameInstance.updateRoundScore('Bob & Alice');
         const scoreBobAlice = document.getElementById('score-Bob & Alice') as HTMLElement;
         expect(scoreBobAlice.textContent).toBe('+10'); // Successful zero bid in round 1
+    });
+});
+
+describe('SkullKingGame Translation System', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        // Set up DOM for translation tests
+        document.body.innerHTML = `
+            <div id="landing-section"></div>
+            <div id="player-names-section"></div>
+            <div id="game-section"></div>
+            <div id="previous-rounds"></div>
+            <select id="language-selector">
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+                <option value="es">Español</option>
+            </select>
+        `;
+        
+        gameInstance = new window.SkullKingGame();
+    });
+
+    test('should have access to global translation system', () => {
+        expect(typeof i18n).toBe('object');
+        expect(typeof (global as any).i18n.translate).toBe('function');
+        expect(typeof i18n.setLanguage).toBe('function');
+        expect(typeof i18n.getCurrentLanguage).toBe('function');
+    });
+
+    test('should default to English language', () => {
+        expect((global as any).i18n.getCurrentLanguage()).toBe('en');
+    });
+
+    test('should translate basic strings in English', () => {
+(global as any).i18n.setLanguage('en');
+        
+        expect((global as any).i18n.translate('min_players_error')).toBe('Ye need at least 2 pirates to sail these waters!');
+        expect((global as any).i18n.translate('max_players_error')).toBe('Too many pirates! Maximum 8 scallywags allowed.');
+        expect((global as any).i18n.translate('round_label')).toBe('Round');
+    });
+
+    test('should translate strings with parameters', () => {
+(global as any).i18n.setLanguage('en');
+        
+        const translated = (global as any).i18n.translate('bid_exceeds_tricks_error', {
+            playerName: 'Alice',
+            bid: '3',
+            maxTricks: '2',
+            round: '3',
+            playerCount: '4'
+        });
+        
+        expect(translated).toBe("Alice's bid (3) can't exceed 2 tricks in round 3 with 4 players.");
+    });
+
+    test('should translate round display properly', () => {
+        (global as any).i18n.setLanguage('en');
+        expect((global as any).i18n.translate('round_display', { round: '5' })).toBe('Round 5');
+        
+        (global as any).i18n.setLanguage('de');
+        expect((global as any).i18n.translate('round_display', { round: '5' })).toBe('Runde 5');
+        
+        (global as any).i18n.setLanguage('es');
+        expect((global as any).i18n.translate('round_display', { round: '5' })).toBe('Ronda 5');
+    });
+
+    test('should switch languages correctly', () => {
+        // Start with English (reset to ensure clean state)
+        (global as any).i18n.setLanguage('en');
+        expect((global as any).i18n.getCurrentLanguage()).toBe('en');
+        expect((global as any).i18n.translate('round_label')).toBe('Round');
+        
+        // Switch to German
+        (global as any).i18n.setLanguage('de');
+        expect((global as any).i18n.getCurrentLanguage()).toBe('de');
+        expect((global as any).i18n.translate('round_label')).toBe('Runde');
+        
+        // Switch to Spanish
+        (global as any).i18n.setLanguage('es');
+        expect((global as any).i18n.getCurrentLanguage()).toBe('es');
+        expect((global as any).i18n.translate('round_label')).toBe('Ronda');
+        
+        // Back to English
+        (global as any).i18n.setLanguage('en');
+        expect((global as any).i18n.getCurrentLanguage()).toBe('en');
+        expect((global as any).i18n.translate('round_label')).toBe('Round');
+    });
+
+    test('should translate game error messages in all languages', () => {
+        // English
+(global as any).i18n.setLanguage('en');
+        expect((global as any).i18n.translate('duplicate_names_error')).toBe('Each pirate needs a unique name, ye scurvy dogs!');
+        
+        // German
+        (global as any).i18n.setLanguage('de');
+        expect((global as any).i18n.translate('duplicate_names_error')).toBe('Jeder Pirat braucht einen einzigartigen Namen, ihr Seehunde!');
+        
+        // Spanish
+        (global as any).i18n.setLanguage('es');
+        expect((global as any).i18n.translate('duplicate_names_error')).toBe('¡Cada pirata necesita un nombre único, perros del mar!');
+    });
+
+    test('should translate commentary in all languages', () => {
+        // Perfect round commentary
+(global as any).i18n.setLanguage('en');
+        expect((global as any).i18n.translate('perfect_round_1')).toContain('Every scallywag nailed their bid');
+        
+(global as any).i18n.setLanguage('de');
+        expect((global as any).i18n.translate('perfect_round_1')).toContain('Jeder Schuft hat sein Gebot getroffen');
+        
+(global as any).i18n.setLanguage('es');
+        expect((global as any).i18n.translate('perfect_round_1')).toContain('¡Cada granuja acertó su apuesta!');
+    });
+
+    test('should translate disaster commentary with player names', () => {
+        const playerName = 'Blackbeard';
+        
+(global as any).i18n.setLanguage('en');
+        const enDisaster = (global as any).i18n.translate('disaster_1', { playerName });
+        expect(enDisaster).toBe(`Avast! ${playerName} be sinkin' faster than a ship with no hull!`);
+        
+(global as any).i18n.setLanguage('de');
+        const deDisaster = (global as any).i18n.translate('disaster_1', { playerName });
+        expect(deDisaster).toBe(`Avast! ${playerName} sinkt schneller als ein Schiff ohne Rumpf!`);
+        
+(global as any).i18n.setLanguage('es');
+        const esDisaster = (global as any).i18n.translate('disaster_1', { playerName });
+        expect(esDisaster).toBe(`¡Alto ahí! ¡${playerName} se hunde más rápido que un barco sin casco!`);
+    });
+
+    test('should handle missing translation keys gracefully', () => {
+(global as any).i18n.setLanguage('en');
+        
+        // Should return the key itself if translation not found
+        // Test with any as we're testing error handling
+        expect(((global as any).i18n.translate as any)('non_existent_key')).toBe('non_existent_key');
+    });
+
+    test('should handle missing parameters gracefully', () => {
+(global as any).i18n.setLanguage('en');
+        
+        // Should still work even if parameters are missing
+        const result = (global as any).i18n.translate('bid_exceeds_tricks_error', { playerName: 'Alice' });
+        expect(result).toContain('Alice');
+        expect(result).toContain('{bid}'); // Unreplaced parameters should remain
+    });
+
+    test('should emit language change events', () => {
+        let eventFired = false;
+        let eventLanguage = '';
+        
+        window.addEventListener('languageChanged', ((event: CustomEvent) => {
+            eventFired = true;
+            eventLanguage = event.detail;
+        }) as EventListener);
+        
+(global as any).i18n.setLanguage('de');
+        
+        expect(eventFired).toBe(true);
+        expect(eventLanguage).toBe('de');
+    });
+
+    test('should integrate with game validation system', () => {
+        gameInstance.viewModel.startNewGame();
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Test validation error in different languages
+(global as any).i18n.setLanguage('en');
+        let error = gameInstance.viewModel.validateSinglePlayerInput(-1, 0, 0, 'Alice');
+        expect(error).toContain('non-negative');
+        
+(global as any).i18n.setLanguage('de');
+        error = gameInstance.viewModel.validateSinglePlayerInput(-1, 0, 0, 'Alice');
+        expect(error).toContain('nicht-negativ');
+        
+(global as any).i18n.setLanguage('es');
+        error = gameInstance.viewModel.validateSinglePlayerInput(-1, 0, 0, 'Alice');
+        expect(error).toContain('no-negativos');
+    });
+
+    test('should translate round headers in previous rounds display', () => {
+        // Setup a game with some rounds
+        gameInstance.viewModel.startNewGame();
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Add a round
+        gameInstance.viewModel.addRound({
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        });
+        
+        // Mock the previous rounds container
+        const previousRounds = document.getElementById('previous-rounds') as HTMLElement;
+        
+        // Test English
+(global as any).i18n.setLanguage('en');
+        gameInstance.updatePreviousRounds(gameInstance.viewModel.getGameState().rounds);
+        expect(previousRounds.innerHTML).toContain('Round 1');
+        
+        // Test German
+(global as any).i18n.setLanguage('de');
+        gameInstance.updatePreviousRounds(gameInstance.viewModel.getGameState().rounds);
+        expect(previousRounds.innerHTML).toContain('Runde 1');
+        
+        // Test Spanish
+(global as any).i18n.setLanguage('es');
+        gameInstance.updatePreviousRounds(gameInstance.viewModel.getGameState().rounds);
+        expect(previousRounds.innerHTML).toContain('Ronda 1');
+    });
+
+    test('should maintain translation consistency across game state changes', () => {
+        // Start a game
+        gameInstance.viewModel.startNewGame();
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Add some rounds
+        gameInstance.viewModel.addRound({
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        });
+        
+        // Switch language
+        (global as any).i18n.setLanguage('de');
+        
+        // Verify commentary gets updated
+        const commentary = gameInstance.viewModel.getCurrentCommentary();
+        expect(commentary).not.toContain('Every scallywag'); // Should not be English
+        
+        // Switch back to English
+        (global as any).i18n.setLanguage('en');
+        const englishCommentary = gameInstance.viewModel.getCurrentCommentary();
+        expect(englishCommentary).toBeDefined();
     });
 });
