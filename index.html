@@ -82,13 +82,22 @@
     <header class="pirate-header">
         <div class="header-content">
             <h1>⚓ Skull King Score Keeper ☠️</h1>
-            <p class="tagline">Track Yer Plunder, Ye Scurvy Dogs!</p>
-            <button id="install-app-btn-header" class="install-app-btn-header">📱</button>
+            <p class="tagline">Track Yer Plunder, Ye Scurvy Dogs! (Preact Edition)</p>
+            <!-- Install button might be re-added later if PWA functionality is ported -->
         </div>
     </header>
 
     <main class="container">
-        <!-- New Game Button - Above all sections -->
+        <div id="app">
+            <!-- Preact app will render here -->
+        </div>
+
+        <!--
+            The following sections are commented out as their functionality
+            will be progressively migrated into the Preact application.
+        -->
+
+        <!--
         <div id="new-game-section" class="new-game-section hidden">
             <div class="parchment">
                 <div class="global-actions">
@@ -97,7 +106,6 @@
             </div>
         </div>
 
-        <!-- Landing/Setup Section -->
         <section id="landing-section" class="landing-section">
             <div class="parchment">
                 <h2>Free Skull King Score Keeper & Digital Scorecard</h2>
@@ -123,7 +131,6 @@
             </div>
         </section>
 
-        <!-- Player Names Section -->
         <section id="player-names-section" class="player-names-section hidden">
             <div class="parchment">
                 <h2>Name Yer Crew</h2>
@@ -134,9 +141,7 @@
             </div>
         </section>
 
-        <!-- Game Section -->
         <section id="game-section" class="game-section hidden">
-            <!-- Current Scores -->
             <div class="current-scores parchment">
                 <div class="score-header">
                     <h2>Current Bounty</h2>
@@ -144,7 +149,6 @@
                 </div>
                 <div id="score-display" class="score-grid"></div>
                 
-                <!-- Pirate Commentary -->
                 <div id="pirate-commentary" class="pirate-commentary hidden">
                     <div class="commentary-content">
                         <span class="commentary-icon">🦜</span>
@@ -153,7 +157,6 @@
                 </div>
             </div>
 
-            <!-- Winner Announcement (shown when game is complete) -->
             <div id="winner-announcement" class="winner-announcement parchment hidden">
                 <div class="winner-header">
                     <h2>🏴‍☠️ Game Complete! 🏴‍☠️</h2>
@@ -161,7 +164,6 @@
                 <div id="winner-text" class="winner-text"></div>
             </div>
 
-            <!-- New Round Input -->
             <div id="new-round" class="new-round parchment">
                 <div class="round-header">
                     <h3>Round <span id="round-number">1</span></h3>
@@ -172,11 +174,9 @@
                 </div>
             </div>
 
-            <!-- Previous Rounds -->
             <div id="previous-rounds" class="previous-rounds"></div>
         </section>
 
-        <!-- Confirmation Modal -->
         <div id="modal" class="modal hidden">
             <div class="modal-content parchment">
                 <h3 id="modal-title">Confirm Action</h3>
@@ -199,6 +199,7 @@
                 </div>
             </div>
         </div>
+        -->
     </main>
 
     <!-- Footer Disclaimer -->
@@ -212,6 +213,6 @@
         </div>
     </footer>
 
-    <script src="game.js"></script>
+    <script type="module" src="src/index.tsx"></script>
 </body>
 </html>
