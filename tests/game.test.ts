@@ -166,6 +166,135 @@ describe('SkullKingGame Scoring Logic', () => {
     });
 });
 
+describe('SkullKingGame Rascal Scoring', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        // Create a fresh game instance for each test
+        gameInstance = new window.SkullKingGame();
+        // Set scoring mode to rascal
+        gameInstance.viewModel.setScoringMode('rascal');
+    });
+    
+    test('should calculate direct hit (exact bid) for rascal scoring', () => {
+        const testCases = [
+            { bid: 0, actual: 0, round: 1, expectedBase: 10 },
+            { bid: 2, actual: 2, round: 3, expectedBase: 30 },
+            { bid: 5, actual: 5, round: 5, expectedBase: 50 },
+            { bid: 7, actual: 7, round: 8, expectedBase: 80 },
+            { bid: 10, actual: 10, round: 10, expectedBase: 100 }
+        ];
+        
+        testCases.forEach(({ bid, actual, round, expectedBase }) => {
+            const bonus = 20;
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+            const expectedScore = expectedBase + bonus; // Full points + full bonus
+            expect(actualScore).toBe(expectedScore);
+        });
+    });
+    
+    test('should calculate glancing blow (off by 1) for rascal scoring', () => {
+        const testCases = [
+            { bid: 0, actual: 1, round: 2, expectedBase: 10 }, // Half of 20
+            { bid: 3, actual: 2, round: 4, expectedBase: 20 }, // Half of 40
+            { bid: 4, actual: 5, round: 6, expectedBase: 30 }, // Half of 60
+            { bid: 8, actual: 7, round: 10, expectedBase: 50 } // Half of 100
+        ];
+        
+        testCases.forEach(({ bid, actual, round, expectedBase }) => {
+            const bonus = 30;
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+            const expectedScore = expectedBase + 15; // Half points + half bonus (15)
+            expect(actualScore).toBe(expectedScore);
+        });
+    });
+    
+    test('should calculate complete miss (off by 2+) for rascal scoring', () => {
+        const testCases = [
+            { bid: 0, actual: 2, round: 3 },
+            { bid: 5, actual: 2, round: 5 },
+            { bid: 3, actual: 7, round: 8 },
+            { bid: 10, actual: 0, round: 10 }
+        ];
+        
+        testCases.forEach(({ bid, actual, round }) => {
+            const bonus = 50; // Should be ignored
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+            expect(actualScore).toBe(0); // Complete miss = 0 points
+        });
+    });
+    
+    test('should handle rascal scoring with no bonus', () => {
+        const bid = 3;
+        const actual = 3;
+        const bonus = 0;
+        const round = 5;
+        
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+        const expectedScore = 50; // 10 * 5 rounds
+        expect(actualScore).toBe(expectedScore);
+    });
+    
+    test('should properly round half values for glancing blows', () => {
+        // Test odd potential points to ensure proper rounding
+        const bid = 2;
+        const actual = 3; // Off by 1
+        const bonus = 15; // Odd bonus
+        const round = 3; // 30 potential points
+        
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round);
+        const expectedScore = 15 + 7; // Floor(30/2) + Floor(15/2) = 15 + 7 = 22
+        expect(actualScore).toBe(expectedScore);
+    });
+});
+
+describe('SkullKingGame Scoring Mode Persistence', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        // Clear localStorage before each test
+        localStorage.clear();
+        gameInstance = new window.SkullKingGame();
+    });
+    
+    test('should default to normal scoring mode', () => {
+        const mode = gameInstance.viewModel.getScoringMode();
+        expect(mode).toBe('normal');
+    });
+    
+    test('should save and retrieve scoring mode preference', () => {
+        gameInstance.viewModel.setScoringMode('rascal');
+        expect(localStorage.setItem).toHaveBeenCalledWith('skull-king-scoring-mode', 'rascal');
+        
+        // Simulate retrieving from localStorage
+        (localStorage.getItem as jest.Mock).mockReturnValue('rascal');
+        const mode = gameInstance.viewModel.getScoringMode();
+        expect(mode).toBe('rascal');
+    });
+    
+    test('should preserve scoring mode when starting new game with same players', () => {
+        // Set up initial game with rascal scoring
+        gameInstance.viewModel.setScoringMode('rascal');
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Start new game keeping names
+        (localStorage.getItem as jest.Mock).mockReturnValue('rascal');
+        gameInstance.viewModel.startNewGame(true);
+        
+        const mode = gameInstance.viewModel.getScoringMode();
+        expect(mode).toBe('rascal');
+    });
+    
+    test('should handle invalid scoring mode in localStorage', () => {
+        // Simulate invalid value in localStorage
+        (localStorage.getItem as jest.Mock).mockReturnValue('invalid-mode');
+        
+        const mode = gameInstance.viewModel.getScoringMode();
+        expect(mode).toBe('normal'); // Should fallback to default
+    });
+});
+
 describe('SkullKingGame Player Limits', () => {
     let gameInstance: any;
     

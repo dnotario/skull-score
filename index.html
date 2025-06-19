@@ -129,6 +129,28 @@
                 <h2 id="name-crew-title">Name Yer Crew</h2>
                 <div id="player-names-inputs"></div>
                 <button id="add-player-btn" class="btn btn-secondary">Add Pirate</button>
+                
+                <!-- Scoring Mode Selection -->
+                <div class="scoring-mode-section">
+                    <h3 id="scoring-mode-label">Scoring Rules</h3>
+                    <div class="scoring-mode-options">
+                        <label class="scoring-mode-option">
+                            <input type="radio" name="scoring-mode" value="normal" id="scoring-normal" checked>
+                            <div class="scoring-mode-content">
+                                <strong id="scoring-mode-normal">Normal Scoring</strong>
+                                <p id="scoring-mode-normal-desc">Traditional Skull King: Zero bid = 10×round, correct bid = 20×tricks + bonus</p>
+                            </div>
+                        </label>
+                        <label class="scoring-mode-option">
+                            <input type="radio" name="scoring-mode" value="rascal" id="scoring-rascal">
+                            <div class="scoring-mode-content">
+                                <strong id="scoring-mode-rascal">Rascal's Scoring</strong>
+                                <p id="scoring-mode-rascal-desc">Even-keeled scoring: 10 pts × cards dealt. Direct hit = full, off by 1 = half, off by 2+ = none</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
                 <button id="start-game-btn" class="btn btn-primary">Set Sail!</button>
                 <button id="cancel-setup-btn" class="btn btn-secondary">Back to Port</button>
             </div>
