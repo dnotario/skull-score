@@ -8,7 +8,7 @@ node_modules/
 # DO NOT commit game.js - it's automatically generated from game.ts
 # Edit game.ts (TypeScript source) and run 'npm run build' to update game.js
 # This prevents conflicts and ensures game.ts is the single source of truth
-game.js
+# game.js - Commented out for staging branch to allow GitHub Pages deployment
 
 # IDE
 .idea/
