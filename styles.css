@@ -309,10 +309,10 @@ input[type="text"]:focus {
 
 .scoring-mode-section h3 {
     font-size: 1.3rem;
-    color: #d4af37;
+    color: #2c1810;
     margin-bottom: 1rem;
     text-align: center;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    text-shadow: 1px 1px 2px rgba(212, 175, 55, 0.3);
 }
 
 .scoring-mode-options {
