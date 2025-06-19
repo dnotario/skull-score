@@ -126,9 +126,15 @@
         <!-- Player Names Section -->
         <section id="player-names-section" class="player-names-section hidden">
             <div class="parchment">
+                <button id="close-setup-btn" class="close-button" aria-label="Close">×</button>
                 <h2 id="name-crew-title">Name Yer Crew</h2>
                 <div id="player-names-inputs"></div>
-                <button id="add-player-btn" class="btn btn-secondary">Add Pirate</button>
+                
+                <!-- All buttons grouped together for better mobile visibility -->
+                <div class="all-player-buttons">
+                    <button id="add-player-btn" class="btn btn-secondary">Add Pirate</button>
+                    <button id="start-game-btn" class="btn btn-primary">Set Sail!</button>
+                </div>
                 
                 <!-- Scoring Mode Selection -->
                 <div class="scoring-mode-section">
@@ -150,9 +156,6 @@
                         </label>
                     </div>
                 </div>
-                
-                <button id="start-game-btn" class="btn btn-primary">Set Sail!</button>
-                <button id="cancel-setup-btn" class="btn btn-secondary">Back to Port</button>
             </div>
         </section>
 
@@ -203,18 +206,6 @@
             <div class="modal-content parchment">
                 <h3 id="modal-title">Confirm Action</h3>
                 <p id="modal-message"></p>
-                <div id="modal-checkbox-container" class="hidden">
-                    <label>
-                        <input type="checkbox" id="keep-names-checkbox" checked>
-                        <span id="keep-names-label">Keep player names</span>
-                    </label>
-                </div>
-                <div id="modal-options" class="modal-options hidden"></div>
-                <div id="new-game-options" class="new-game-options hidden">
-                    <button id="same-players-btn" class="btn btn-primary"></button>
-                    <button id="new-players-btn" class="btn btn-secondary">New Players</button>
-                    <button id="cancel-new-game-btn" class="btn btn-secondary">Cancel</button>
-                </div>
                 <div id="modal-buttons" class="modal-buttons">
                     <button id="modal-confirm" class="btn btn-primary">Aye</button>
                     <button id="modal-cancel" class="btn btn-secondary">Nay</button>

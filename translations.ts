@@ -34,6 +34,7 @@ interface Translation {
     // Player setup
     name_crew_title: string;
     add_pirate_button: string;
+    clear_all_button: string;
     set_sail_button: string;
     back_to_port_button: string;
     player_placeholder: string;
@@ -197,6 +198,7 @@ const enTranslation: Translation = {
     // Player setup
     name_crew_title: "Name Yer Crew",
     add_pirate_button: "Add Pirate",
+    clear_all_button: "Clear All",
     set_sail_button: "Set Sail!",
     back_to_port_button: "Back to Port",
     player_placeholder: "Pirate",
@@ -360,6 +362,7 @@ const deTranslation: Translation = {
     // Player setup
     name_crew_title: "Benennt Eure Crew",
     add_pirate_button: "Pirat Hinzufügen",
+    clear_all_button: "Alle Löschen",
     set_sail_button: "Segel Setzen!",
     back_to_port_button: "Zurück zum Hafen",
     player_placeholder: "Pirat",
@@ -523,6 +526,7 @@ const esTranslation: Translation = {
     // Player setup
     name_crew_title: "Nombrad a Vuestra Tripulación",
     add_pirate_button: "Añadir Pirata",
+    clear_all_button: "Borrar Todo",
     set_sail_button: "¡Zarpar!",
     back_to_port_button: "Volver al Puerto",
     player_placeholder: "Pirata",

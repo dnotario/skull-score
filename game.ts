@@ -862,8 +862,8 @@ class SkullKingGame {
         const startGameBtn = document.getElementById('start-game-btn');
         startGameBtn?.addEventListener('click', () => this.handleStartGame());
 
-        const cancelSetupBtn = document.getElementById('cancel-setup-btn');
-        cancelSetupBtn?.addEventListener('click', () => this.showLanding());
+        const closeSetupBtn = document.getElementById('close-setup-btn');
+        closeSetupBtn?.addEventListener('click', () => this.showLanding());
 
         // In-game
         const newGameIngameBtn = document.getElementById('new-game-ingame-btn');
@@ -881,16 +881,6 @@ class SkullKingGame {
 
         const modalCancel = document.getElementById('modal-cancel');
         modalCancel?.addEventListener('click', () => this.hideModal());
-
-        // New Game Modal Options
-        const samePlayersBtn = document.getElementById('same-players-btn');
-        samePlayersBtn?.addEventListener('click', () => this.handleSamePlayersNewGame());
-
-        const newPlayersBtn = document.getElementById('new-players-btn');
-        newPlayersBtn?.addEventListener('click', () => this.handleNewPlayersNewGame());
-
-        const cancelNewGameBtn = document.getElementById('cancel-new-game-btn');
-        cancelNewGameBtn?.addEventListener('click', () => this.hideModal());
 
         // Language selector
         const languageSelector = document.getElementById('language-selector') as HTMLSelectElement;
@@ -915,6 +905,7 @@ class SkullKingGame {
         this.viewModel.addTempPlayer();
         this.updatePlayerInputs();
     }
+
 
     private handleStartGame(): void {
         // Get selected scoring mode
@@ -958,31 +949,6 @@ class SkullKingGame {
         this.hideModal();
     }
 
-    private handleSamePlayersNewGame(): void {
-        this.viewModel.startNewGame(true); // Keep names
-        this.hideModal();
-        
-        // If we have valid players from keeping names, start the game immediately
-        const tempPlayers = this.viewModel.getTempPlayers();
-        const validNames = tempPlayers.filter(name => name.trim() !== '');
-        if (validNames.length >= 2) {
-            const error = this.viewModel.validateAndStartGame();
-            if (!error) {
-                this.updateUI();
-                return;
-            }
-        }
-        
-        // Otherwise, go to player setup
-        this.startPlayerSetup();
-    }
-
-    private handleNewPlayersNewGame(): void {
-        this.viewModel.startNewGame(false); // Don't keep names
-        this.hideModal();
-        this.startPlayerSetup();
-    }
-
     // Helper Methods
     private startPlayerSetup(): void {
         this.viewModel.initializeTempPlayers();
@@ -998,14 +964,25 @@ class SkullKingGame {
     }
 
     private confirmNewGame(): void {
-        const gameState = this.viewModel.getGameState();
-        const playerNames = gameState.players.map(p => p.name).join(', ');
-        
-        this.showNewGameModal(
+        this.showModal(
             this.t('new_game_modal_title'),
-            this.t('new_game_modal_message'),
-            playerNames
+            this.t('new_game_modal_message')
         );
+        
+        this.viewModel.setModalConfirmCallback(() => {
+            // Always keep names when user confirms new game
+            this.viewModel.startNewGame(true);
+            // Names are already preserved in startNewGame, no need to initialize
+            this.showPlayerSetup();
+            this.updatePlayerInputs();
+            
+            // Restore scoring mode selection
+            const scoringMode = this.viewModel.getScoringMode();
+            const scoringModeInput = document.getElementById(`scoring-${scoringMode}`) as HTMLInputElement;
+            if (scoringModeInput) {
+                scoringModeInput.checked = true;
+            }
+        });
     }
 
     // View Methods
@@ -1257,62 +1234,20 @@ class SkullKingGame {
         }
     }
 
-    private showNewGameModal(title: string, message: string, playerNames: string): void {
+
+    private showModal(title: string, message: string): void {
         const modal = document.getElementById('modal');
         const titleEl = document.getElementById('modal-title');
         const messageEl = document.getElementById('modal-message');
-        const checkboxContainer = document.getElementById('modal-checkbox-container');
         const modalButtons = document.getElementById('modal-buttons');
-        const modalOptions = document.getElementById('modal-options');
-        const newGameOptions = document.getElementById('new-game-options');
-        const samePlayersBtn = document.getElementById('same-players-btn');
 
         if (!modal || !titleEl || !messageEl) return;
 
         titleEl.textContent = title;
         messageEl.textContent = message;
-
-        // Hide standard options
-        checkboxContainer?.classList.add('hidden');
-        modalOptions?.classList.add('hidden');
-        modalButtons?.classList.add('hidden');
-        
-        // Show new game options
-        newGameOptions?.classList.remove('hidden');
-        
-        // Update same players button text
-        if (samePlayersBtn) {
-            samePlayersBtn.textContent = `${this.t('same_players_prefix')} (${playerNames})`;
-        }
-
-        modal.classList.remove('hidden');
-    }
-
-    private showModal(title: string, message: string, showCheckbox: boolean = false): void {
-        const modal = document.getElementById('modal');
-        const titleEl = document.getElementById('modal-title');
-        const messageEl = document.getElementById('modal-message');
-        const checkboxContainer = document.getElementById('modal-checkbox-container');
-        const modalButtons = document.getElementById('modal-buttons');
-        const modalOptions = document.getElementById('modal-options');
-        const newGameOptions = document.getElementById('new-game-options');
-
-        if (!modal || !titleEl || !messageEl) return;
-
-        titleEl.textContent = title;
-        messageEl.textContent = message;
-
-        // Hide all optional sections by default
-        checkboxContainer?.classList.add('hidden');
-        modalOptions?.classList.add('hidden');
-        newGameOptions?.classList.add('hidden');
         
         // Show standard buttons
         modalButtons?.classList.remove('hidden');
-
-        if (showCheckbox && checkboxContainer) {
-            checkboxContainer.classList.remove('hidden');
-        }
 
         modal.classList.remove('hidden');
     }
@@ -1321,10 +1256,7 @@ class SkullKingGame {
         const modal = document.getElementById('modal');
         const titleEl = document.getElementById('modal-title');
         const messageEl = document.getElementById('modal-message');
-        const checkboxContainer = document.getElementById('modal-checkbox-container');
         const modalButtons = document.getElementById('modal-buttons');
-        const modalOptions = document.getElementById('modal-options');
-        const newGameOptions = document.getElementById('new-game-options');
         const modalConfirm = document.getElementById('modal-confirm');
         const modalCancel = document.getElementById('modal-cancel');
 
@@ -1333,10 +1265,6 @@ class SkullKingGame {
         titleEl.textContent = this.t('input_error_title');
         messageEl.textContent = message;
 
-        // Hide all optional sections
-        checkboxContainer?.classList.add('hidden');
-        modalOptions?.classList.add('hidden');
-        newGameOptions?.classList.add('hidden');
         modalButtons?.classList.remove('hidden');
 
         // Show only the confirm button (OK)
@@ -1359,10 +1287,6 @@ class SkullKingGame {
         modal?.classList.add('hidden');
     }
 
-    private getKeepNamesCheckbox(): boolean {
-        const checkbox = document.getElementById('keep-names-checkbox') as HTMLInputElement;
-        return checkbox?.checked || false;
-    }
 
     private showError(message: string): void {
         this.showErrorModal(message);
@@ -1787,9 +1711,6 @@ class SkullKingGame {
 
         const startGameBtn = document.getElementById('start-game-btn');
         if (startGameBtn) startGameBtn.textContent = this.t('set_sail_button');
-
-        const cancelSetupBtn = document.getElementById('cancel-setup-btn');
-        if (cancelSetupBtn) cancelSetupBtn.textContent = this.t('back_to_port_button');
 
         // Scoring mode translations
         const scoringModeLabel = document.getElementById('scoring-mode-label');
