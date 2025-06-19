@@ -204,12 +204,10 @@ interface Translation {
     
     // Scoring mode
     scoring_mode_label: string;
-    scoring_mode_standard: string;
-    scoring_mode_standard_desc: string;
-    scoring_mode_classic: string;
-    scoring_mode_classic_desc: string;
-    scoring_mode_custom: string;
-    scoring_mode_custom_desc: string;
+    scoring_mode_normal: string;
+    scoring_mode_normal_desc: string;
+    scoring_mode_rascal: string;
+    scoring_mode_rascal_desc: string;
 }
 
 // PWA Install Prompt Interface
@@ -375,12 +373,10 @@ const enTranslation: Translation = {
     
     // Scoring mode
     scoring_mode_label: "Scoring Rules",
-    scoring_mode_standard: "Standard Scoring",
-    scoring_mode_standard_desc: "Original Skull King scoring: Zero bid = 10×round, correct bid = 20×tricks + bonus",
-    scoring_mode_classic: "Classic Scoring",
-    scoring_mode_classic_desc: "Simplified scoring: Zero bid = 10 points, correct bid = 10 points + tricks",
-    scoring_mode_custom: "Custom Scoring",
-    scoring_mode_custom_desc: "House rules: Define your own scoring system"
+    scoring_mode_normal: "Normal Scoring",
+    scoring_mode_normal_desc: "Traditional Skull King: Zero bid = 10×round, correct bid = 20×tricks + bonus",
+    scoring_mode_rascal: "Rascal's Scoring",
+    scoring_mode_rascal_desc: "Even-keeled scoring: 10 pts × cards dealt. Direct hit = full, off by 1 = half, off by 2+ = none"
 };
 
 // German translations
@@ -540,12 +536,10 @@ const deTranslation: Translation = {
     
     // Scoring mode
     scoring_mode_label: "Punkteregeln",
-    scoring_mode_standard: "Standard-Wertung",
-    scoring_mode_standard_desc: "Original Skull King Wertung: Null-Gebot = 10×Runde, korrektes Gebot = 20×Stiche + Bonus",
-    scoring_mode_classic: "Klassische Wertung",
-    scoring_mode_classic_desc: "Vereinfachte Wertung: Null-Gebot = 10 Punkte, korrektes Gebot = 10 Punkte + Stiche",
-    scoring_mode_custom: "Eigene Regeln",
-    scoring_mode_custom_desc: "Hausregeln: Definiere dein eigenes Punktesystem"
+    scoring_mode_normal: "Normale Wertung",
+    scoring_mode_normal_desc: "Traditionelle Skull King: Null-Gebot = 10×Runde, korrektes Gebot = 20×Stiche + Bonus",
+    scoring_mode_rascal: "Schurken-Wertung",
+    scoring_mode_rascal_desc: "Ausgeglichene Wertung: 10 Pkt × ausgeteilte Karten. Direkttreffer = voll, um 1 daneben = halb, um 2+ daneben = null"
 };
 
 // Spanish translations
@@ -705,12 +699,10 @@ const esTranslation: Translation = {
     
     // Scoring mode
     scoring_mode_label: "Reglas de Puntuación",
-    scoring_mode_standard: "Puntuación Estándar",
-    scoring_mode_standard_desc: "Puntuación original de Skull King: Apuesta cero = 10×ronda, apuesta correcta = 20×bazas + bonus",
-    scoring_mode_classic: "Puntuación Clásica",
-    scoring_mode_classic_desc: "Puntuación simplificada: Apuesta cero = 10 puntos, apuesta correcta = 10 puntos + bazas",
-    scoring_mode_custom: "Puntuación Personalizada",
-    scoring_mode_custom_desc: "Reglas de la casa: Define tu propio sistema de puntuación"
+    scoring_mode_normal: "Puntuación Normal",
+    scoring_mode_normal_desc: "Skull King tradicional: Apuesta cero = 10×ronda, apuesta correcta = 20×bazas + bonus",
+    scoring_mode_rascal: "Puntuación Pícaro",
+    scoring_mode_rascal_desc: "Puntuación equilibrada: 10 pts × cartas repartidas. Acierto = completo, fallo por 1 = mitad, fallo por 2+ = cero"
 };
 
 // Translation system class
@@ -929,50 +921,36 @@ class GameViewModel {
     private calculateRoundScore(bid: number, actual: number, bonus: number, roundNumber: number): number {
         const scoringMode = this.getScoringMode();
         
-        switch (scoringMode) {
-            case 'normal':
-                // Traditional Skull King scoring
-                if (bid === 0) {
-                    // Zero bid scoring
-                    return actual === 0 ? 10 * roundNumber + bonus : -10 * roundNumber;
+        if (scoringMode === 'rascal') {
+            // Rascal's scoring: potential points = 10 × cards dealt (roundNumber)
+            const potentialPoints = 10 * roundNumber;
+            const difference = Math.abs(bid - actual);
+            
+            if (difference === 0) {
+                // Direct hit: full points + bonus
+                return potentialPoints + bonus;
+            } else if (difference === 1) {
+                // Glancing blow: half points + half bonus
+                return Math.floor(potentialPoints / 2) + Math.floor(bonus / 2);
+            } else {
+                // Complete miss: no points
+                return 0;
+            }
+        } else {
+            // Normal/Traditional Skull King scoring
+            if (bid === 0) {
+                // Zero bid scoring
+                return actual === 0 ? 10 * roundNumber + bonus : -10 * roundNumber;
+            } else {
+                // Non-zero bid scoring
+                if (bid === actual) {
+                    // Correct prediction: 20 points per trick + bonus
+                    return 20 * actual + bonus;
                 } else {
-                    // Non-zero bid scoring
-                    if (bid === actual) {
-                        // Correct prediction: 20 points per trick + bonus
-                        return 20 * actual + bonus;
-                    } else {
-                        // Incorrect prediction: -10 points per difference (no bonus)
-                        return -10 * Math.abs(bid - actual);
-                    }
+                    // Incorrect prediction: -10 points per difference (no bonus)
+                    return -10 * Math.abs(bid - actual);
                 }
-                
-            case 'rascal':
-                // Rascal's scoring: potential points = 10 × cards dealt (roundNumber)
-                const potentialPoints = 10 * roundNumber;
-                const difference = Math.abs(bid - actual);
-                
-                if (difference === 0) {
-                    // Direct hit: full points + bonus
-                    return potentialPoints + bonus;
-                } else if (difference === 1) {
-                    // Glancing blow: half points + half bonus
-                    return Math.floor(potentialPoints / 2) + Math.floor(bonus / 2);
-                } else {
-                    // Complete miss: no points
-                    return 0;
-                }
-                
-            default:
-                // Fallback to normal scoring
-                if (bid === 0) {
-                    return actual === 0 ? 10 * roundNumber + bonus : -10 * roundNumber;
-                } else {
-                    if (bid === actual) {
-                        return 20 * actual + bonus;
-                    } else {
-                        return -10 * Math.abs(bid - actual);
-                    }
-                }
+            }
         }
     }
 
@@ -1722,6 +1700,9 @@ class SkullKingGame {
         document.getElementById('player-names-section')?.classList.remove('hidden');
         document.getElementById('game-section')?.classList.add('hidden');
         document.getElementById('new-game-section')?.classList.add('hidden');
+        
+        // Ensure scoring mode translations are applied
+        this.updateAllTranslations();
     }
 
     private showGame(): void {
@@ -2464,23 +2445,17 @@ class SkullKingGame {
         const scoringModeLabel = document.getElementById('scoring-mode-label');
         if (scoringModeLabel) scoringModeLabel.textContent = this.t('scoring_mode_label');
 
-        const scoringModeStandard = document.getElementById('scoring-mode-standard');
-        if (scoringModeStandard) scoringModeStandard.textContent = this.t('scoring_mode_standard');
+        const scoringModeNormal = document.getElementById('scoring-mode-normal');
+        if (scoringModeNormal) scoringModeNormal.textContent = this.t('scoring_mode_normal');
 
-        const scoringModeStandardDesc = document.getElementById('scoring-mode-standard-desc');
-        if (scoringModeStandardDesc) scoringModeStandardDesc.textContent = this.t('scoring_mode_standard_desc');
+        const scoringModeNormalDesc = document.getElementById('scoring-mode-normal-desc');
+        if (scoringModeNormalDesc) scoringModeNormalDesc.textContent = this.t('scoring_mode_normal_desc');
 
-        const scoringModeClassic = document.getElementById('scoring-mode-classic');
-        if (scoringModeClassic) scoringModeClassic.textContent = this.t('scoring_mode_classic');
+        const scoringModeRascal = document.getElementById('scoring-mode-rascal');
+        if (scoringModeRascal) scoringModeRascal.textContent = this.t('scoring_mode_rascal');
 
-        const scoringModeClassicDesc = document.getElementById('scoring-mode-classic-desc');
-        if (scoringModeClassicDesc) scoringModeClassicDesc.textContent = this.t('scoring_mode_classic_desc');
-
-        const scoringModeCustom = document.getElementById('scoring-mode-custom');
-        if (scoringModeCustom) scoringModeCustom.textContent = this.t('scoring_mode_custom');
-
-        const scoringModeCustomDesc = document.getElementById('scoring-mode-custom-desc');
-        if (scoringModeCustomDesc) scoringModeCustomDesc.textContent = this.t('scoring_mode_custom_desc');
+        const scoringModeRascalDesc = document.getElementById('scoring-mode-rascal-desc');
+        if (scoringModeRascalDesc) scoringModeRascalDesc.textContent = this.t('scoring_mode_rascal_desc');
 
         const newGameIngameBtn = document.getElementById('new-game-ingame-btn');
         if (newGameIngameBtn) newGameIngameBtn.textContent = this.t('new_game_button');
