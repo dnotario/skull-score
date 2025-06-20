@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- SEO Meta Tags -->
-    <title>Skull King Score Keeper - Free Digital Scorecard & Score Tracker</title>
-    <meta name="description" content="Free Skull King score keeper and digital scorecard. Track scores, calculate points, and enjoy pirate commentary for the Skull King card game. Mobile-friendly score tracker with automatic scoring.">
-    <meta name="keywords" content="Skull King, score keeper, scorecard, score tracker, Skull King scoring, card game scorer, trick taking game, pirate game, score calculator, digital scorecard">
+    <title id="page-title" data-i18n="page_title">Skull King Score Keeper - Free Digital Scorecard & Score Tracker</title>
+    <meta name="description" content="Free Skull King score keeper and digital scorecard. Track scores, calculate points, and enjoy pirate commentary for the Skull King card game. Mobile-friendly score tracker with automatic scoring." data-i18n-content="page_description">
+    <meta name="keywords" content="Skull King, score keeper, scorecard, score tracker, Skull King scoring, card game scorer, trick taking game, pirate game, score calculator, digital scorecard" data-i18n-content="page_keywords">
     <meta name="author" content="Skull King Score Keeper">
     <meta name="robots" content="index, follow">
     
     <!-- Open Graph Meta Tags for Social Media -->
-    <meta property="og:title" content="Skull King Score Keeper - Free Digital Scorecard">
-    <meta property="og:description" content="Free digital score keeper for Skull King card game. Track scores with pirate commentary and automatic calculations.">
+    <meta property="og:title" content="Skull King Score Keeper - Free Digital Scorecard" data-i18n-content="og_title">
+    <meta property="og:description" content="Free digital score keeper for Skull King card game. Track scores with pirate commentary and automatic calculations." data-i18n-content="og_description">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.skullkingscorekeeper.com">
     <meta property="og:image" content="https://www.skullkingscorekeeper.com/og-image.png">
@@ -21,8 +21,8 @@
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Skull King Score Keeper - Free Digital Scorecard">
-    <meta name="twitter:description" content="Free digital score keeper for Skull King card game with automatic scoring and pirate commentary.">
+    <meta name="twitter:title" content="Skull King Score Keeper - Free Digital Scorecard" data-i18n-content="og_title">
+    <meta name="twitter:description" content="Free digital score keeper for Skull King card game with automatic scoring and pirate commentary." data-i18n-content="twitter_description">
     <meta name="twitter:image" content="https://www.skullkingscorekeeper.com/twitter-image.png">
     
     <!-- PWA and App Installation Meta Tags -->
@@ -30,14 +30,20 @@
     <meta name="msapplication-TileColor" content="#2c1810">
     <link rel="canonical" href="https://www.skullkingscorekeeper.com">
     
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="icon-16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    
     <!-- Web App Manifest -->
     <link rel="manifest" href="manifest.json">
     
     <!-- iOS Home Screen Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Skull King">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23f4e4c1'/><rect x='0' y='0' width='192' height='192' stroke='%232c1810' stroke-width='4' fill='none'/><circle cx='96' cy='86' r='48' fill='%23e6dcc6'/><circle cx='76' cy='76' r='8' fill='%232c1810'/><circle cx='116' cy='76' r='8' fill='%232c1810'/><polygon points='96,86 91,94 101,94' fill='%232c1810'/><path d='M38 38 Q96 8 154 38' fill='%238B4513'/><rect x='38' y='33' width='116' height='6' fill='%23d4af37'/><text x='96' y='150' text-anchor='middle' font-family='Georgia,serif' font-size='16' font-weight='bold' fill='%232c1810'>SKULL</text><text x='96' y='170' text-anchor='middle' font-family='Georgia,serif' font-size='16' font-weight='bold' fill='%232c1810'>KING</text></svg>">
+    <meta name="apple-mobile-web-app-title" content="Skull King" data-i18n-content="app_title">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="apple-touch-startup-image" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'><rect width='512' height='512' fill='%23f4e4c1'/><rect x='0' y='0' width='512' height='512' stroke='%232c1810' stroke-width='10' fill='none'/><circle cx='256' cy='230' r='128' fill='%23e6dcc6'/><circle cx='206' cy='200' r='20' fill='%232c1810'/><circle cx='306' cy='200' r='20' fill='%232c1810'/><polygon points='256,230 241,250 271,250' fill='%232c1810'/><path d='M102 102 Q256 20 410 102' fill='%238B4513'/><rect x='102' y='87' width='308' height='15' fill='%23d4af37'/><text x='256' y='400' text-anchor='middle' font-family='Georgia,serif' font-size='42' font-weight='bold' fill='%232c1810'>SKULL</text><text x='256' y='450' text-anchor='middle' font-family='Georgia,serif' font-size='42' font-weight='bold' fill='%232c1810'>KING</text></svg>">
     
     <!-- Structured Data for Rich Snippets -->
@@ -81,8 +87,8 @@
 <body>
     <header class="pirate-header">
         <div class="header-content">
-            <h1 id="header-title">⚓ Skull King Score Keeper ☠️</h1>
-            <p class="tagline" id="header-tagline">Track Yer Plunder, Ye Scurvy Dogs!</p>
+            <h1 id="header-title" data-i18n="header_title">⚓ Skull King Score Keeper ☠️</h1>
+            <p class="tagline" id="header-tagline" data-i18n="header_tagline">Track Yer Plunder, Ye Scurvy Dogs!</p>
             <button id="install-app-btn-header" class="install-app-btn-header">📱</button>
         </div>
     </header>
@@ -92,7 +98,7 @@
         <div id="new-game-section" class="new-game-section hidden">
             <div class="parchment">
                 <div class="global-actions">
-                    <button id="new-game-ingame-btn" class="btn btn-secondary">New Game</button>
+                    <button id="new-game-ingame-btn" class="btn btn-secondary" data-i18n="new_game_button">New Game</button>
                 </div>
             </div>
         </div>
@@ -100,25 +106,25 @@
         <!-- Landing/Setup Section -->
         <section id="landing-section" class="landing-section">
             <div class="parchment">
-                <h2 id="landing-title">Free Skull King Score Keeper & Digital Scorecard</h2>
-                <p id="landing-description">The ultimate Skull King score tracker with automatic calculations, pirate commentary, and mobile-friendly design. Keep track of your Skull King card game scores like a true pirate captain!</p>
+                <h2 id="landing-title" data-i18n="landing_title">Free Skull King Score Keeper & Digital Scorecard</h2>
+                <p id="landing-description" data-i18n="landing_description">The ultimate Skull King score tracker with automatic calculations, pirate commentary, and mobile-friendly design. Keep track of your Skull King card game scores like a true pirate captain!</p>
                 
-                <h3 id="landing-subtitle">Perfect Skull King Scoring Solution</h3>
+                <h3 id="landing-subtitle" data-i18n="landing_subtitle">Perfect Skull King Scoring Solution</h3>
                 <ul class="feature-list">
-                    <li id="feature-mobile">📱 <strong>Mobile Skull King Scorecard</strong> - Works on phones, tablets, and computers</li>
-                    <li id="feature-calculator">🧮 <strong>Automatic Score Calculator</strong> - No more manual Skull King scoring errors</li>
-                    <li id="feature-commentary">🦜 <strong>Pirate Commentary</strong> - Entertaining feedback on your Skull King gameplay</li>
-                    <li id="feature-audio">🔊 <strong>Audio Score Reader</strong> - Hear your Skull King scores announced</li>
-                    <li id="feature-saving">💾 <strong>Game State Saving</strong> - Never lose your Skull King scoring progress</li>
+                    <li id="feature-mobile" data-i18n="feature_mobile">📱 <strong>Mobile Skull King Scorecard</strong> - Works on phones, tablets, and computers</li>
+                    <li id="feature-calculator" data-i18n="feature_calculator">🧮 <strong>Automatic Score Calculator</strong> - No more manual Skull King scoring errors</li>
+                    <li id="feature-commentary" data-i18n="feature_commentary">🦜 <strong>Pirate Commentary</strong> - Entertaining feedback on your Skull King gameplay</li>
+                    <li id="feature-audio" data-i18n="feature_audio">🔊 <strong>Audio Score Reader</strong> - Hear your Skull King scores announced</li>
+                    <li id="feature-saving" data-i18n="feature_saving">💾 <strong>Game State Saving</strong> - Never lose your Skull King scoring progress</li>
                 </ul>
                 
                 <div class="player-setup">
-                    <button id="new-game-btn" class="btn btn-primary">Start Your Skull King Score Tracking</button>
+                    <button id="new-game-btn" class="btn btn-primary" data-i18n="start_button">Start Your Skull King Score Tracking</button>
                 </div>
                 
                 <div class="seo-content">
-                    <h4 id="why-choose-title">Why Choose Our Skull King Score Keeper?</h4>
-                    <p id="why-choose-description">Whether you're playing Skull King at home, at a game night, or in a tournament, our digital scorecard makes Skull King scoring effortless. Track bids, actual tricks, bonus points, and watch your Skull King scores calculate automatically. Perfect for Skull King enthusiasts who want accurate, fast scoring.</p>
+                    <h4 id="why-choose-title" data-i18n="why_choose_title">Why Choose Our Skull King Score Keeper?</h4>
+                    <p id="why-choose-description" data-i18n="why_choose_description">Whether you're playing Skull King at home, at a game night, or in a tournament, our digital scorecard makes Skull King scoring effortless. Track bids, actual tricks, bonus points, and watch your Skull King scores calculate automatically. Perfect for Skull King enthusiasts who want accurate, fast scoring.</p>
                 </div>
             </div>
         </section>
@@ -127,31 +133,31 @@
         <section id="player-names-section" class="player-names-section hidden">
             <div class="parchment">
                 <button id="close-setup-btn" class="close-button" aria-label="Close">×</button>
-                <h2 id="name-crew-title">Name Yer Crew</h2>
+                <h2 id="name-crew-title" data-i18n="name_crew_title">Name Yer Crew</h2>
                 <div id="player-names-inputs"></div>
                 
                 <!-- All buttons grouped together for better mobile visibility -->
                 <div class="all-player-buttons">
-                    <button id="add-player-btn" class="btn btn-secondary">Add Pirate</button>
-                    <button id="start-game-btn" class="btn btn-primary">Set Sail!</button>
+                    <button id="add-player-btn" class="btn btn-secondary" data-i18n="add_pirate_button">Add Pirate</button>
+                    <button id="start-game-btn" class="btn btn-primary" data-i18n="set_sail_button">Set Sail!</button>
                 </div>
                 
                 <!-- Scoring Mode Selection -->
                 <div class="scoring-mode-section">
-                    <h3 id="scoring-mode-label">Scoring Rules</h3>
+                    <h3 id="scoring-mode-label" data-i18n="scoring_mode_label">Scoring Rules</h3>
                     <div class="scoring-mode-options">
                         <label class="scoring-mode-option">
                             <input type="radio" name="scoring-mode" value="normal" id="scoring-normal" checked>
                             <div class="scoring-mode-content">
-                                <strong id="scoring-mode-normal">Normal Scoring</strong>
-                                <p id="scoring-mode-normal-desc">Traditional Skull King: Zero bid = 10×round, correct bid = 20×tricks + bonus</p>
+                                <strong id="scoring-mode-normal" data-i18n="scoring_mode_normal">Normal Scoring</strong>
+                                <p id="scoring-mode-normal-desc" data-i18n="scoring_mode_normal_desc">Traditional Skull King: Zero bid = 10×round, correct bid = 20×tricks + bonus</p>
                             </div>
                         </label>
                         <label class="scoring-mode-option">
                             <input type="radio" name="scoring-mode" value="rascal" id="scoring-rascal">
                             <div class="scoring-mode-content">
-                                <strong id="scoring-mode-rascal">Rascal's Scoring</strong>
-                                <p id="scoring-mode-rascal-desc">Even-keeled scoring: 10 pts × cards dealt. Direct hit = full, off by 1 = half, off by 2+ = none</p>
+                                <strong id="scoring-mode-rascal" data-i18n="scoring_mode_rascal">Rascal's Scoring</strong>
+                                <p id="scoring-mode-rascal-desc" data-i18n="scoring_mode_rascal_desc">Even-keeled scoring: 10 pts × cards dealt. Direct hit = full, off by 1 = half, off by 2+ = none</p>
                             </div>
                         </label>
                     </div>
@@ -164,8 +170,8 @@
             <!-- Current Scores -->
             <div class="current-scores parchment">
                 <div class="score-header">
-                    <h2 id="current-bounty-title">Current Bounty</h2>
-                    <button id="read-scores-btn" class="btn btn-primary">🔊 Read Scores</button>
+                    <h2 id="current-bounty-title" data-i18n="current_bounty_title">Current Bounty</h2>
+                    <button id="read-scores-btn" class="btn btn-primary" data-i18n="read_scores_button">🔊 Read Scores</button>
                 </div>
                 <div id="score-display" class="score-grid"></div>
                 
@@ -181,7 +187,7 @@
             <!-- Winner Announcement (shown when game is complete) -->
             <div id="winner-announcement" class="winner-announcement parchment hidden">
                 <div class="winner-header">
-                    <h2 id="game-complete-title">🏴‍☠️ Game Complete! 🏴‍☠️</h2>
+                    <h2 id="game-complete-title" data-i18n="game_complete_title">🏴‍☠️ Game Complete! 🏴‍☠️</h2>
                 </div>
                 <div id="winner-text" class="winner-text"></div>
             </div>
@@ -189,11 +195,11 @@
             <!-- New Round Input -->
             <div id="new-round" class="new-round parchment">
                 <div class="round-header">
-                    <h3><span id="round-label">Round</span> <span id="round-number">1</span></h3>
+                    <h3><span id="round-label" data-i18n="round_label">Round</span> <span id="round-number">1</span></h3>
                 </div>
                 <div id="round-inputs" class="round-inputs"></div>
                 <div class="record-round-container">
-                    <button id="add-round-btn" class="btn btn-primary">Record Round</button>
+                    <button id="add-round-btn" class="btn btn-primary" data-i18n="record_round_button">Record Round</button>
                 </div>
             </div>
 
@@ -204,11 +210,11 @@
         <!-- Confirmation Modal -->
         <div id="modal" class="modal hidden">
             <div class="modal-content parchment">
-                <h3 id="modal-title">Confirm Action</h3>
+                <h3 id="modal-title" data-i18n="confirm_action_title">Confirm Action</h3>
                 <p id="modal-message"></p>
                 <div id="modal-buttons" class="modal-buttons">
-                    <button id="modal-confirm" class="btn btn-primary">Aye</button>
-                    <button id="modal-cancel" class="btn btn-secondary">Nay</button>
+                    <button id="modal-confirm" class="btn btn-primary" data-i18n="aye_button">Aye</button>
+                    <button id="modal-cancel" class="btn btn-secondary" data-i18n="nay_button">Nay</button>
                 </div>
             </div>
         </div>
@@ -218,9 +224,9 @@
     <footer class="disclaimer-footer">
         <div class="container">
             <div class="disclaimer-content">
-                <p><strong id="disclaimer-title">Disclaimer:</strong> <span id="disclaimer-text-1">This website is an independent fan-created score keeper for the Skull King card game. It is not affiliated with, endorsed by, or connected to Grandpa Beck's Games, the official publisher of Skull King. Skull King is a trademark of Grandpa Beck's Games.</span></p>
-                <p id="disclaimer-text-2">This tool is provided for educational and entertainment purposes to help players track their game scores.</p>
-                <p><span id="feedback-text">For feedback, suggestions, or bug reports, contact: </span><a href="mailto:captain@skullkingscorekeeper.com" class="feedback-link">captain@skullkingscorekeeper.com</a></p>
+                <p><strong id="disclaimer-title" data-i18n="disclaimer_title">Disclaimer:</strong> <span id="disclaimer-text-1" data-i18n="disclaimer_text_1">This website is an independent fan-created score keeper for the Skull King card game. It is not affiliated with, endorsed by, or connected to Grandpa Beck's Games, the official publisher of Skull King. Skull King is a trademark of Grandpa Beck's Games.</span></p>
+                <p id="disclaimer-text-2" data-i18n="disclaimer_text_2">This tool is provided for educational and entertainment purposes to help players track their game scores.</p>
+                <p><span id="feedback-text" data-i18n="feedback_text">For feedback, suggestions, or bug reports, contact: </span><a href="mailto:captain@skullkingscorekeeper.com" class="feedback-link">captain@skullkingscorekeeper.com</a></p>
                 
                 <div class="language-selector-container">
                     <select id="language-selector" class="language-selector">

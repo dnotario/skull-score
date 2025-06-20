@@ -10,21 +10,21 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3e%3crect width='192' height='192' fill='%23f4e4c1'/%3e%3crect x='0' y='0' width='192' height='192' stroke='%232c1810' stroke-width='4' fill='none'/%3e%3ccircle cx='96' cy='86' r='48' fill='%23e6dcc6'/%3e%3ccircle cx='76' cy='76' r='8' fill='%232c1810'/%3e%3ccircle cx='116' cy='76' r='8' fill='%232c1810'/%3e%3cpolygon points='96,86 91,94 101,94' fill='%232c1810'/%3e%3cpath d='M38 38 Q96 8 154 38' fill='%238B4513'/%3e%3crect x='38' y='33' width='116' height='6' fill='%23d4af37'/%3e%3ctext x='96' y='150' text-anchor='middle' font-family='Georgia,serif' font-size='16' font-weight='bold' fill='%232c1810'%3eSKULL%3c/text%3e%3ctext x='96' y='170' text-anchor='middle' font-family='Georgia,serif' font-size='16' font-weight='bold' fill='%232c1810'%3eKING%3c/text%3e%3c/svg%3e",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3e%3crect width='192' height='192' fill='%23f4e4c1'/%3e%3crect x='0' y='0' width='192' height='192' stroke='%232c1810' stroke-width='4' fill='none'/%3e%3ccircle cx='96' cy='86' r='48' fill='%23e6dcc6'/%3e%3ccircle cx='76' cy='76' r='8' fill='%232c1810'/%3e%3ccircle cx='116' cy='76' r='8' fill='%232c1810'/%3e%3cpolygon points='96,86 91,94 101,94' fill='%232c1810'/%3e%3cpath d='M38 38 Q96 8 154 38' fill='%238B4513'/%3e%3crect x='38' y='33' width='116' height='6' fill='%23d4af37'/%3e%3ctext x='96' y='150' text-anchor='middle' font-family='Georgia,serif' font-size='16' font-weight='bold' fill='%232c1810'%3eSKULL%3c/text%3e%3ctext x='96' y='170' text-anchor='middle' font-family='Georgia,serif' font-size='16' font-weight='bold' fill='%232c1810'%3eKING%3c/text%3e%3c/svg%3e",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3e%3crect width='512' height='512' fill='%23f4e4c1'/%3e%3crect x='0' y='0' width='512' height='512' stroke='%232c1810' stroke-width='10' fill='none'/%3e%3ccircle cx='256' cy='230' r='128' fill='%23e6dcc6'/%3e%3ccircle cx='206' cy='200' r='20' fill='%232c1810'/%3e%3ccircle cx='306' cy='200' r='20' fill='%232c1810'/%3e%3cpolygon points='256,230 241,250 271,250' fill='%232c1810'/%3e%3cpath d='M102 102 Q256 20 410 102' fill='%238B4513'/%3e%3crect x='102' y='87' width='308' height='15' fill='%23d4af37'/%3e%3ctext x='256' y='400' text-anchor='middle' font-family='Georgia,serif' font-size='42' font-weight='bold' fill='%232c1810'%3eSKULL%3c/text%3e%3ctext x='256' y='450' text-anchor='middle' font-family='Georgia,serif' font-size='42' font-weight='bold' fill='%232c1810'%3eKING%3c/text%3e%3c/svg%3e",
+      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     }
   ],

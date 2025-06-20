@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#f4e4c1"/>
+  
+  <!-- Border -->
+  <rect x="10" y="10" width="492" height="492" stroke="#2c1810" stroke-width="12" fill="none"/>
+  
+  <!-- Skull -->
+  <circle cx="256" cy="230" r="128" fill="#e6dcc6"/>
+  
+  <!-- Eye sockets -->
+  <circle cx="206" cy="200" r="20" fill="#2c1810"/>
+  <circle cx="306" cy="200" r="20" fill="#2c1810"/>
+  
+  <!-- Nose -->
+  <polygon points="256,230 241,250 271,250" fill="#2c1810"/>
+  
+  <!-- Pirate hat -->
+  <path d="M102 102 Q256 20 410 102" fill="#8B4513"/>
+  <rect x="102" y="87" width="308" height="15" fill="#d4af37"/>
+  
+  <!-- Text -->
+  <text x="256" y="400" text-anchor="middle" font-family="Georgia,serif" font-size="42" font-weight="bold" fill="#2c1810">SKULL</text>
+  <text x="256" y="450" text-anchor="middle" font-family="Georgia,serif" font-size="42" font-weight="bold" fill="#2c1810">KING</text>
+</svg>
