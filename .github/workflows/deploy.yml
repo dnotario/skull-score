@@ -62,6 +62,18 @@ jobs:
         cp ../index.html .
         cp ../game.js .
         cp ../styles.css .
+        cp ../manifest.json .
+        cp ../translations.js .
+        
+        # Copy icon files
+        cp ../favicon.ico . 2>/dev/null || true
+        cp ../icon-16.png . 2>/dev/null || true
+        cp ../icon-32.png . 2>/dev/null || true
+        cp ../icon-192.png . 2>/dev/null || true
+        cp ../icon-512.png . 2>/dev/null || true
+        cp ../apple-touch-icon.png . 2>/dev/null || true
+        cp ../icon.svg . 2>/dev/null || true
+        cp ../skull_logo.png . 2>/dev/null || true
         
         # Add CNAME file for custom domain (production only)
         if [ "$ENVIRONMENT" = "production" ]; then
