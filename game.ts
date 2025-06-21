@@ -481,6 +481,21 @@ class GameViewModel {
             value: roundData.roundNumber
         });
 
+        // Check if game is complete and track it
+        if (this.isGameComplete()) {
+            const sortedPlayers = this.getPlayersSortedByScore();
+            const winner = sortedPlayers[0];
+            
+            this.trackEvent('game_completed', {
+                event_category: 'gameplay',
+                event_label: 'game_finished',
+                winning_score: winner.score,
+                scoring_mode: this.getScoringMode(),
+                language: translationSystem.getCurrentLanguage(),
+                value: this.state.players.length
+            });
+        }
+
         return null; // Success
     }
 

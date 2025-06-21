@@ -712,6 +712,47 @@ describe('SkullKingGame Update Last Round', () => {
         expect(gameState.rounds.length).toBe(0);
     });
 
+    test('should mark game as complete after round 10', () => {
+        // Setup game with players
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Add rounds 1-9
+        for (let round = 1; round <= 9; round++) {
+            // Total tricks must equal the round number
+            const roundData = {
+                'Alice': { bid: round, actual: round, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            const error = gameInstance.viewModel.addRound(roundData);
+            expect(error).toBeNull();
+            expect(gameInstance.viewModel.state.currentRound).toBe(round + 1);
+            expect(gameInstance.viewModel.state.rounds.length).toBe(round);
+        }
+        
+        // Verify game is not complete yet
+        expect(gameInstance.viewModel.isGameComplete()).toBe(false);
+        expect(gameInstance.viewModel.state.currentRound).toBe(10);
+        
+        // Add round 10 - total tricks must equal 10
+        const round10Data = {
+            'Alice': { bid: 5, actual: 5, bonus: 10 },
+            'Bob': { bid: 5, actual: 5, bonus: 0 }
+        };
+        gameInstance.viewModel.addRound(round10Data);
+        
+        // Verify game is now complete
+        expect(gameInstance.viewModel.isGameComplete()).toBe(true);
+        expect(gameInstance.viewModel.state.rounds.length).toBe(10);
+        expect(gameInstance.viewModel.state.currentRound).toBe(11);
+        
+        // Verify winner and final scores
+        const sortedPlayers = gameInstance.viewModel.getPlayersSortedByScore();
+        expect(sortedPlayers[0].name).toBe('Alice');
+        expect(sortedPlayers[0].score).toBeGreaterThan(sortedPlayers[1].score);
+    });
+
     test('should allow editing round 10 when game is complete', () => {
         // Setup game with players
         gameInstance.viewModel.startNewGame(false);
