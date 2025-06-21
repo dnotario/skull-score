@@ -63,7 +63,6 @@ jobs:
         cp ../game.js .
         cp ../styles.css .
         cp ../manifest.json .
-        cp ../translations.js .
         
         # Copy icon files
         cp ../favicon.ico . 2>/dev/null || true
