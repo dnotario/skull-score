@@ -1942,6 +1942,18 @@ class SkullKingGame {
         // Guard for test environment
         if (typeof document === 'undefined')
             return;
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                    console.log('Service Worker registered:', registration);
+                })
+                    .catch(error => {
+                    console.log('Service Worker registration failed:', error);
+                });
+            });
+        }
         // Don't show install buttons if already in standalone mode (installed)
         if ((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
             window.navigator.standalone) {
