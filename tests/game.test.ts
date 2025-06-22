@@ -81,10 +81,10 @@ describe('SkullKingGame Scoring Logic', () => {
         const bonus = 0;
         const round = 5;
         
-        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
-        const expectedScore = 20 * round + bonus; // 20 * 5 = 100
-        
-        expect(actualScore).toBe(expectedScore);
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
+        // Round 5 with 4 players = 5 cards dealt
+        // Exact bid: 20 points per card dealt = 20 * 5 = 100
+        expect(actualScore).toBe(100);
     });
     
     test('should calculate correct scores for failed bid', () => {
@@ -93,10 +93,9 @@ describe('SkullKingGame Scoring Logic', () => {
         const bonus = 0;
         const round = 5;
         
-        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
-        const expectedScore = -10 * Math.abs(bid - actual); // -10 * 2 = -20
-        
-        expect(actualScore).toBe(expectedScore);
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
+        // Failed bid: -10 per difference = -10 * |3-1| = -20
+        expect(actualScore).toBe(-20);
     });
     
     test('should calculate correct scores with bonus points', () => {
@@ -105,10 +104,10 @@ describe('SkullKingGame Scoring Logic', () => {
         const bonus = 15;
         const round = 3;
         
-        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
-        const expectedScore = 20 * round + bonus; // 20 * 3 + 15 = 75
-        
-        expect(actualScore).toBe(expectedScore);
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
+        // Round 3 with 4 players = 3 cards dealt
+        // Exact bid: 20 * 3 = 60, plus bonus 15 = 75
+        expect(actualScore).toBe(75);
     });
     
     test('should handle successful zero bid correctly', () => {
@@ -117,10 +116,10 @@ describe('SkullKingGame Scoring Logic', () => {
         const bonus = 5;
         const round = 7;
         
-        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
-        const expectedScore = 10 * round + bonus; // 10 * 7 + 5 = 75
-        
-        expect(actualScore).toBe(expectedScore);
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
+        // Round 7 with 4 players = 7 cards dealt
+        // Successful zero bid: 10 * 7 = 70, plus bonus 5 = 75
+        expect(actualScore).toBe(75);
     });
     
     test('should handle failed zero bid correctly', () => {
@@ -128,26 +127,26 @@ describe('SkullKingGame Scoring Logic', () => {
         const actual = 2; // took 2 tricks when bid 0
         const round = 5;
         
-        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, 0, round, 4); // Assume 4 players
-        const expectedScore = -10 * round; // -10 * 5 = -50
-        
-        expect(actualScore).toBe(expectedScore);
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, 0, round, 4); // 4 players
+        // Round 5 with 4 players = 5 cards dealt
+        // Failed zero bid: -10 * 5 = -50
+        expect(actualScore).toBe(-50);
     });
     
     test('should handle failed zero bid in different rounds', () => {
-        // Test failed zero bid penalty scales with round number
+        // Test failed zero bid penalty scales with cards dealt
         const testCases = [
-            { round: 1, expectedPenalty: -10 },
-            { round: 3, expectedPenalty: -30 },
-            { round: 7, expectedPenalty: -70 },
-            { round: 10, expectedPenalty: -100 }
+            { round: 1, expectedPenalty: -10 },   // 1 card dealt
+            { round: 3, expectedPenalty: -30 },   // 3 cards dealt
+            { round: 7, expectedPenalty: -70 },   // 7 cards dealt
+            { round: 10, expectedPenalty: -100 }  // 10 cards dealt
         ];
         
         testCases.forEach(({ round, expectedPenalty }) => {
             const bid = 0;
             const actual = 1; // took at least 1 trick
             
-            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, 0, round, 4); // Assume 4 players
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, 0, round, 4); // 4 players
             expect(actualScore).toBe(expectedPenalty);
         });
     });
@@ -159,10 +158,10 @@ describe('SkullKingGame Scoring Logic', () => {
         const bonus = 20; // Should be ignored for failed zero bid
         const round = 6;
         
-        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
-        const expectedScore = -10 * round; // -60, bonus ignored
-        
-        expect(actualScore).toBe(expectedScore);
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
+        // Round 6 with 4 players = 6 cards dealt
+        // Failed zero bid: -10 * 6 = -60 (bonus ignored)
+        expect(actualScore).toBe(-60);
     });
 });
 
@@ -178,48 +177,44 @@ describe('SkullKingGame Rascal Scoring', () => {
     
     test('should calculate direct hit (exact bid) for rascal scoring', () => {
         const testCases = [
-            { bid: 0, actual: 0, round: 1, expectedBase: 10 },
-            { bid: 2, actual: 2, round: 3, expectedBase: 30 },
-            { bid: 5, actual: 5, round: 5, expectedBase: 50 },
-            { bid: 7, actual: 7, round: 8, expectedBase: 80 },
-            { bid: 10, actual: 10, round: 10, expectedBase: 100 }
+            { bid: 0, actual: 0, round: 1, bonus: 20, expected: 30 },    // 10*1 + 20 = 30
+            { bid: 2, actual: 2, round: 3, bonus: 20, expected: 50 },    // 10*3 + 20 = 50
+            { bid: 5, actual: 5, round: 5, bonus: 20, expected: 70 },    // 10*5 + 20 = 70
+            { bid: 7, actual: 7, round: 8, bonus: 20, expected: 100 },   // 10*8 + 20 = 100
+            { bid: 10, actual: 10, round: 10, bonus: 20, expected: 120 } // 10*10 + 20 = 120
         ];
         
-        testCases.forEach(({ bid, actual, round, expectedBase }) => {
-            const bonus = 20;
-            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
-            const expectedScore = expectedBase + bonus; // Full points + full bonus
-            expect(actualScore).toBe(expectedScore);
+        testCases.forEach(({ bid, actual, round, bonus, expected }) => {
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
+            expect(actualScore).toBe(expected);
         });
     });
     
     test('should calculate glancing blow (off by 1) for rascal scoring', () => {
         const testCases = [
-            { bid: 0, actual: 1, round: 2, expectedBase: 10 }, // Half of 20
-            { bid: 3, actual: 2, round: 4, expectedBase: 20 }, // Half of 40
-            { bid: 4, actual: 5, round: 6, expectedBase: 30 }, // Half of 60
-            { bid: 8, actual: 7, round: 10, expectedBase: 50 } // Half of 100
+            { bid: 0, actual: 1, round: 2, bonus: 30, expected: 25 },    // 10 + 15 = 25
+            { bid: 3, actual: 2, round: 4, bonus: 30, expected: 35 },    // 20 + 15 = 35
+            { bid: 4, actual: 5, round: 6, bonus: 30, expected: 45 },    // 30 + 15 = 45
+            { bid: 8, actual: 7, round: 10, bonus: 30, expected: 65 }    // 50 + 15 = 65
         ];
         
-        testCases.forEach(({ bid, actual, round, expectedBase }) => {
-            const bonus = 30;
-            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
-            const expectedScore = expectedBase + 15; // Half points + half bonus (15)
-            expect(actualScore).toBe(expectedScore);
+        testCases.forEach(({ bid, actual, round, bonus, expected }) => {
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
+            expect(actualScore).toBe(expected);
         });
     });
     
     test('should calculate complete miss (off by 2+) for rascal scoring', () => {
         const testCases = [
-            { bid: 0, actual: 2, round: 3 },
-            { bid: 5, actual: 2, round: 5 },
-            { bid: 3, actual: 7, round: 8 },
-            { bid: 10, actual: 0, round: 10 }
+            { bid: 0, actual: 2, round: 3 },     // Off by 2
+            { bid: 5, actual: 2, round: 5 },     // Off by 3
+            { bid: 3, actual: 7, round: 8 },     // Off by 4
+            { bid: 10, actual: 0, round: 10 }    // Off by 10
         ];
         
         testCases.forEach(({ bid, actual, round }) => {
             const bonus = 50; // Should be ignored
-            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
             expect(actualScore).toBe(0); // Complete miss = 0 points
         });
     });
@@ -230,9 +225,10 @@ describe('SkullKingGame Rascal Scoring', () => {
         const bonus = 0;
         const round = 5;
         
-        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
-        const expectedScore = 50; // 10 * 5 rounds
-        expect(actualScore).toBe(expectedScore);
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
+        // Round 5 with 4 players = 5 cards dealt
+        // Direct hit: 10 * 5 = 50, no bonus
+        expect(actualScore).toBe(50);
     });
     
     test('should properly round half values for glancing blows', () => {
@@ -240,11 +236,11 @@ describe('SkullKingGame Rascal Scoring', () => {
         const bid = 2;
         const actual = 3; // Off by 1
         const bonus = 15; // Odd bonus
-        const round = 3; // 30 potential points
+        const round = 3; // 3 cards dealt = 30 potential points
         
-        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
-        const expectedScore = 15 + 7; // Floor(30/2) + Floor(15/2) = 15 + 7 = 22
-        expect(actualScore).toBe(expectedScore);
+        const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
+        // Glancing blow: Floor(30/2) + Floor(15/2) = 15 + 7 = 22
+        expect(actualScore).toBe(22);
     });
 });
 
@@ -539,10 +535,9 @@ describe('SkullKingGame Validation', () => {
             const bonus = 20; // Bonus should be ignored
             const round = 5;
             
-            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
-            const expectedScore = -10 * Math.abs(bid - actual); // -20, bonus ignored
-            
-            expect(actualScore).toBe(expectedScore);
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
+            // Failed bid: -10 * |3-1| = -20 (bonus ignored)
+            expect(actualScore).toBe(-20);
         });
         
         test('should allow bonus points only for correct predictions', () => {
@@ -554,10 +549,10 @@ describe('SkullKingGame Validation', () => {
             const bonus = 15;
             const round = 3;
             
-            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
-            const expectedScore = 20 * round + bonus; // 20 * 3 + 15 = 75
-            
-            expect(actualScore).toBe(expectedScore);
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
+            // Round 3 with 4 players = 3 cards dealt
+            // Exact bid: 20 * 3 = 60, plus bonus 15 = 75
+            expect(actualScore).toBe(75);
         });
         
         test('should allow bonus points for successful zero bids', () => {
@@ -569,10 +564,10 @@ describe('SkullKingGame Validation', () => {
             const bonus = 10;
             const round = 7;
             
-            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // Assume 4 players
-            const expectedScore = 10 * round + bonus; // 70 + 10 = 80
-            
-            expect(actualScore).toBe(expectedScore);
+            const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
+            // Round 7 with 4 players = 7 cards dealt
+            // Successful zero bid: 10 * 7 = 70, plus bonus 10 = 80
+            expect(actualScore).toBe(80);
         });
     });
 });
@@ -1293,25 +1288,25 @@ describe('SkullKingGame Score Sorting', () => {
 
     test('should sort players by score in descending order', () => {
         // Add rounds with different scores
-        // Round 1: 1 card each for 3 players (total tricks = 1)
+        // Round 1: 1 card each for 3 players
         gameInstance.viewModel.addRound({
-            'Alice': { bid: 1, actual: 1, bonus: 0 },    // 20 points
-            'Bob': { bid: 0, actual: 0, bonus: 0 },      // 10 points (zero bid success)
-            'Charlie': { bid: 0, actual: 0, bonus: 0 }   // 10 points (zero bid success)
+            'Alice': { bid: 1, actual: 1, bonus: 0 },    // Score: 20
+            'Bob': { bid: 0, actual: 0, bonus: 0 },      // Score: 10
+            'Charlie': { bid: 0, actual: 0, bonus: 0 }   // Score: 10
         });
 
-        // Round 2: 2 cards each for 3 players (total tricks must = 2)
+        // Round 2: 2 cards each for 3 players
         gameInstance.viewModel.addRound({
-            'Alice': { bid: 1, actual: 1, bonus: 0 },    // 40 points (20*2 for round 2, total: 60)
-            'Bob': { bid: 0, actual: 1, bonus: 0 },      // -20 points (total: -10)
-            'Charlie': { bid: 1, actual: 0, bonus: 0 }   // -10 points (total: 0)
+            'Alice': { bid: 1, actual: 1, bonus: 0 },    // Score: 40, Total: 60
+            'Bob': { bid: 0, actual: 1, bonus: 0 },      // Score: -20, Total: -10
+            'Charlie': { bid: 1, actual: 0, bonus: 0 }   // Score: -10, Total: 0
         });
         
-        // Round 3: 3 cards each for 3 players (total tricks must = 3)
+        // Round 3: 3 cards each for 3 players
         gameInstance.viewModel.addRound({
-            'Alice': { bid: 1, actual: 1, bonus: 0 },    // 60 points (20*3 for round 3, total: 120)
-            'Bob': { bid: 1, actual: 1, bonus: 0 },      // 60 points (20*3 for round 3, total: 50)
-            'Charlie': { bid: 1, actual: 1, bonus: 80 }  // 140 points (20*3+80 for round 3, total: 140)
+            'Alice': { bid: 1, actual: 1, bonus: 0 },    // Score: 60, Total: 120
+            'Bob': { bid: 1, actual: 1, bonus: 0 },      // Score: 60, Total: 50
+            'Charlie': { bid: 1, actual: 1, bonus: 80 }  // Score: 140, Total: 140
         });
 
         // Check the sorted players from view model
@@ -1346,9 +1341,9 @@ describe('SkullKingGame Score Sorting', () => {
     test('should update sorting after each round', () => {
         // Round 1: Bob leads with bonus
         gameInstance.viewModel.addRound({
-            'Alice': { bid: 0, actual: 0, bonus: 0 },    // 10 points (zero bid success in round 1)
-            'Bob': { bid: 1, actual: 1, bonus: 10 },     // 30 points (20 + 10 bonus)
-            'Charlie': { bid: 0, actual: 0, bonus: 0 }   // 10 points (zero bid success in round 1)
+            'Alice': { bid: 0, actual: 0, bonus: 0 },    // Score: 10
+            'Bob': { bid: 1, actual: 1, bonus: 10 },     // Score: 30
+            'Charlie': { bid: 0, actual: 0, bonus: 0 }   // Score: 10
         });
 
         let sortedPlayers = gameInstance.viewModel.getPlayersSortedByScore();
@@ -1357,11 +1352,11 @@ describe('SkullKingGame Score Sorting', () => {
         expect(sortedPlayers[1].name).toBe('Alice');
         expect(sortedPlayers[2].name).toBe('Charlie');
 
-        // Round 2: Alice gets both tricks, Charlie gets zero bid bonus (total tricks = 2)
+        // Round 2: Charlie takes the lead
         const round2Result = gameInstance.viewModel.addRound({
-            'Alice': { bid: 1, actual: 2, bonus: 0 },    // -10 points (total: 0)
-            'Bob': { bid: 1, actual: 0, bonus: 0 },      // -10 points (total: 20)
-            'Charlie': { bid: 0, actual: 0, bonus: 10 }  // 30 points (10*2 + 10 bonus, total: 40)
+            'Alice': { bid: 1, actual: 2, bonus: 0 },    // Score: -10, Total: 0
+            'Bob': { bid: 1, actual: 0, bonus: 0 },      // Score: -10, Total: 20
+            'Charlie': { bid: 0, actual: 0, bonus: 10 }  // Score: 30, Total: 40
         });
         
         sortedPlayers = gameInstance.viewModel.getPlayersSortedByScore();
@@ -1371,20 +1366,21 @@ describe('SkullKingGame Score Sorting', () => {
         expect(sortedPlayers[1].name).toBe('Bob'); 
         expect(sortedPlayers[2].name).toBe('Alice');
         
-        // Round 3: Charlie takes clear lead (total tricks must = 3)
+        // Round 3: Charlie extends lead
         gameInstance.viewModel.addRound({
-            'Alice': { bid: 0, actual: 1, bonus: 0 },    // -10 points (total: 50)
-            'Bob': { bid: 0, actual: 1, bonus: 0 },      // -10 points (total: 30)
-            'Charlie': { bid: 1, actual: 1, bonus: 30 }  // 50 points (total: 90)
+            'Alice': { bid: 0, actual: 1, bonus: 0 },    // Score: -30, Total: -30
+            'Bob': { bid: 0, actual: 1, bonus: 0 },      // Score: -30, Total: -10
+            'Charlie': { bid: 1, actual: 1, bonus: 30 }  // Score: 90, Total: 130
         });
 
         sortedPlayers = gameInstance.viewModel.getPlayersSortedByScore();
         
         expect(sortedPlayers[0].name).toBe('Charlie');
+        expect(sortedPlayers[0].score).toBe(130);
         expect(sortedPlayers[1].name).toBe('Bob'); 
+        expect(sortedPlayers[1].score).toBe(-10);
         expect(sortedPlayers[2].name).toBe('Alice');
-        
-        // Final scores should be: Charlie: 90, Bob: -10, Alice: -30
+        expect(sortedPlayers[2].score).toBe(-30);
     });
 });
 
