@@ -503,6 +503,44 @@ describe('SkullKingGame Validation', () => {
             result = gameInstance.testValidateSinglePlayerInput(1, 1, -10, 'Alice');
             expect(result).toBe("Alice can't use negative numbers, ye scallywag!");
         });
+        
+        test('should reject round with bonus points when bid does not equal actual', () => {
+            // Try to add a round where Alice has bonus points but didn't make her bid
+            const invalidRoundData = {
+                'Alice': { bid: 1, actual: 0, bonus: 20 }, // Wrong: bonus with incorrect bid
+                'Bob': { bid: 0, actual: 1, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(invalidRoundData);
+            expect(result).toBe("Alice can't earn bonus points without bidding correctly (bid: 1, actual: 0)!");
+            
+            // Verify the round was NOT added
+            const gameState = gameInstance.viewModel.getGameState();
+            expect(gameState.rounds.length).toBe(0);
+            expect(gameState.currentRound).toBe(1);
+        });
+        
+        test('should accept round with bonus points when bid equals actual', () => {
+            // Valid round where Alice has bonus points and made her bid
+            const validRoundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 20 }, // Correct: bonus with exact bid
+                'Bob': { bid: 0, actual: 0, bonus: 10 }    // Also correct: zero bid success with bonus
+            };
+            
+            const result = gameInstance.viewModel.addRound(validRoundData);
+            expect(result).toBeNull(); // Should succeed
+            
+            // Verify the round was added
+            const gameState = gameInstance.viewModel.getGameState();
+            expect(gameState.rounds.length).toBe(1);
+            expect(gameState.currentRound).toBe(2);
+            
+            // Verify scores include bonuses
+            const aliceScore = gameState.players.find((p: any) => p.name === 'Alice')?.score;
+            const bobScore = gameState.players.find((p: any) => p.name === 'Bob')?.score;
+            expect(aliceScore).toBe(40); // 20 * 1 + 20 bonus = 40
+            expect(bobScore).toBe(20);   // 10 * 1 (cards) + 10 bonus = 20
+        });
 
         test('should reject NaN values', () => {
             const result = gameInstance.testValidateSinglePlayerInput(NaN, 1, 0, 'Alice');
