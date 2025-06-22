@@ -1,12 +1,10 @@
 Push the current staging branch changes to the production environment following the deployment workflow described in the README. This will:
 
-1. Build the project to ensure latest game.js is generated
-2. Switch to the prod branch
-3. Merge staging into prod
-4. Copy the freshly built game.js to ensure production has latest code
-5. Commit the updated game.js if it has changed
-6. Push to origin prod (which triggers automatic deployment)
-7. Switch back to main branch
+1. Switch to the prod branch
+2. Sync to head and merge staging into prod
+3. Build the project to generate fresh game.js file
+4. Push to origin prod (which triggers automatic deployment)
+5. Switch back to main branch
 
 The production site will be available at: https://www.skullkingscorekeeper.com
 
