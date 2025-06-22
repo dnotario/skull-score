@@ -23,7 +23,7 @@ const localStorageMock = (() => {
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 // Import after mocking
-import '../game.js';
+import '../build/runFiles/game.js';
 
 describe('New Game Flow', () => {
     let game: any;

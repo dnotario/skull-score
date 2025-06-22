@@ -4,6 +4,7 @@ node_modules/
 # Build files
 *.js.map
 dist/
+build/
 # DO NOT commit generated JavaScript files - edit game.ts instead!
 game.js
 

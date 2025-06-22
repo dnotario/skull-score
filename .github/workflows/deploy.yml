@@ -58,22 +58,8 @@ jobs:
         # Clear old files
         find . -maxdepth 1 -type f ! -name '.git*' ! -name 'README.md' -delete
         
-        # Copy new files
-        cp ../index.html .
-        cp ../game.js .
-        cp ../styles.css .
-        cp ../manifest.json .
-        cp ../sw.js .
-        
-        # Copy icon files
-        cp ../favicon.ico . 2>/dev/null || true
-        cp ../icon-16.png . 2>/dev/null || true
-        cp ../icon-32.png . 2>/dev/null || true
-        cp ../icon-192.png . 2>/dev/null || true
-        cp ../icon-512.png . 2>/dev/null || true
-        cp ../apple-touch-icon.png . 2>/dev/null || true
-        cp ../icon.svg . 2>/dev/null || true
-        cp ../skull_logo.png . 2>/dev/null || true
+        # Copy all files from build directory
+        cp -r ../build/runFiles/* .
         
         # Add CNAME file for custom domain (production only)
         if [ "$ENVIRONMENT" = "production" ]; then

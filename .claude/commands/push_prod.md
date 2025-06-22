@@ -2,7 +2,7 @@ Push the current staging branch changes to the production environment following 
 
 1. Switch to the prod branch
 2. Sync to head and merge staging into prod
-3. Build the project to generate fresh game.js file
+3. Build the project to generate fresh build/runFiles directory
 4. Push to origin prod (which triggers automatic deployment)
 5. Switch back to main branch
 
