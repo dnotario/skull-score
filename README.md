@@ -7,7 +7,8 @@ A pirate-themed web application for tracking scores in the Skull King card game,
 ### Core Functionality
 - **Score Tracking**: Keep track of player scores across all 10 rounds
 - **Round Management**: Input bids, actual tricks won, and bonus points for each player
-- **Score Calculation**: Automatic scoring based on Skull King rules
+- **Scoring Modes**: Both Traditional (Classic) and Rascal scoring systems
+- **Score Calculation**: Automatic scoring based on official Skull King rules
 - **Data Persistence**: Game state saved to local storage
 - **Mobile Responsive**: Optimized for both desktop and mobile play
 
@@ -48,13 +49,13 @@ npm install
 # Run tests
 npm test
 
-# Build TypeScript
+# Build TypeScript (outputs to build/runFiles/)
 npm run build
 
-# Serve locally (any static server)
-python -m http.server 8000
+# Serve locally from build directory
+cd build/runFiles && python -m http.server 8000
 # or
-npx serve .
+npx serve build/runFiles
 ```
 
 ## 🚀 Deployment Workflow
@@ -161,16 +162,21 @@ gh repo view dnotario/skull-score-staging
 Skull King is a trick-taking game where players bid on how many tricks they'll win each round.
 
 ### Basic Rules
-1. **Rounds**: 10 rounds, with tricks increasing from 1 to 10
+1. **Rounds**: 10 rounds, with cards dealt increasing from 1 to 10
 2. **Bidding**: Players predict how many tricks they'll win
-3. **Scoring**: 
-   - Exact bid (1+): 20 × tricks taken
-   - Failed bid: -10 × tricks you were off by
-   - Zero bid successful: 10 × round number points
-   - Zero bid failed: -10 × round number points
-4. **Bonus Points**: Earned for special cards and achievements
-   - **Important**: Bonus points only apply when you correctly predict your tricks
-   - No bonus points for failed bids, regardless of achievements
+3. **Scoring Modes**:
+   - **Traditional (Classic)**:
+     - Exact bid: 20 × tricks taken
+     - Failed bid: -10 × difference
+     - Zero bid successful: 10 × cards dealt
+     - Zero bid failed: -10 × cards dealt
+   - **Rascal Scoring**:
+     - Direct hit (exact): 100% of potential points (10 × cards dealt)
+     - Glancing blow (off by 1): 50% of potential points
+     - Complete miss (off by 2+): 0 points
+4. **Bonus Points**: Manually enter points for special cards (14s, Mermaids, Pirates, Skull King)
+   - **Important**: Bonus points only count when bid = actual
+   - The app validates this rule and prevents saving rounds with invalid bonuses
 
 ## 🏴‍☠️ Commentary & Audio Features
 
@@ -206,9 +212,10 @@ The game features a sophisticated commentary system that provides contextual pir
 - **Frontend**: HTML5, CSS3, TypeScript
 - **Styling**: Custom CSS with pirate theme and animations
 - **Storage**: Local Storage for game persistence
-- **Testing**: Jest with comprehensive unit tests
-- **Build**: TypeScript compiler with automated builds
+- **Testing**: Jest with comprehensive unit tests (110+ tests)
+- **Build**: TypeScript compiler with automated builds to `build/runFiles/`
 - **Analytics**: Google Analytics 4 integration
+- **Architecture**: Pure function scoring logic for testability
 
 ### Code Quality
 - **Pre-commit Hooks**: Automated testing before every commit
@@ -229,6 +236,27 @@ Optimized for mobile gameplay:
 - Readable fonts and proper spacing
 - Swipe-friendly navigation
 - Portrait and landscape support
+
+## 📝 Scope & Limitations
+
+This app is a **score keeper**, not a full digital implementation of Skull King:
+
+### What's Included
+- Complete scoring calculation for both Traditional and Rascal modes
+- Manual bonus point entry with validation
+- Full round and game state management
+- Input validation ensuring game rules are followed
+
+### What's NOT Included
+- Card tracking or automatic bonus calculation
+- Expansion content (Kraken, White Whale, Loot cards, pirate abilities)
+- Game variants (two-player mode, alternative round structures)
+- Automatic special card bonus calculation
+
+Players must manually calculate bonus points for:
+- Number 14 cards (+10 for standard suits, +20 for black)
+- Mermaid captures (+20 for Pirates, +40 for Skull King)
+- Skull King captures (+30 for Pirates)
 
 ## 🎨 Design Philosophy
 

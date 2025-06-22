@@ -82,9 +82,8 @@ describe('SkullKingGame Scoring Logic', () => {
         const round = 5;
         
         const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
-        // Round 5 with 4 players = 5 cards dealt
-        // Exact bid: 20 points per card dealt = 20 * 5 = 100
-        expect(actualScore).toBe(100);
+        // Exact bid: 20 points per trick taken = 20 * 3 = 60
+        expect(actualScore).toBe(60);
     });
     
     test('should calculate correct scores for failed bid', () => {
@@ -105,9 +104,8 @@ describe('SkullKingGame Scoring Logic', () => {
         const round = 3;
         
         const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
-        // Round 3 with 4 players = 3 cards dealt
-        // Exact bid: 20 * 3 = 60, plus bonus 15 = 75
-        expect(actualScore).toBe(75);
+        // Exact bid: 20 points per trick taken = 20 * 2 = 40, plus bonus 15 = 55
+        expect(actualScore).toBe(55);
     });
     
     test('should handle successful zero bid correctly', () => {
@@ -162,6 +160,25 @@ describe('SkullKingGame Scoring Logic', () => {
         // Round 6 with 4 players = 6 cards dealt
         // Failed zero bid: -10 * 6 = -60 (bonus ignored)
         expect(actualScore).toBe(-60);
+    });
+    
+    test('should calculate based on tricks taken, not cards dealt', () => {
+        // This test verifies the fix for the scoring bug
+        // Different rounds with same bid should give same score
+        const bid = 2;
+        const actual = 2;
+        const bonus = 10;
+        
+        // Round 3: 3 cards dealt, bid 2 tricks
+        const score1 = gameInstance.testCalculateRoundScore(bid, actual, bonus, 3, 4);
+        expect(score1).toBe(50); // 20 * 2 + 10 = 50
+        
+        // Round 7: 7 cards dealt, bid 2 tricks  
+        const score2 = gameInstance.testCalculateRoundScore(bid, actual, bonus, 7, 4);
+        expect(score2).toBe(50); // 20 * 2 + 10 = 50 (same as round 3!)
+        
+        // Scores should be equal because tricks taken (2) is the same
+        expect(score1).toBe(score2);
     });
 });
 
@@ -486,6 +503,44 @@ describe('SkullKingGame Validation', () => {
             result = gameInstance.testValidateSinglePlayerInput(1, 1, -10, 'Alice');
             expect(result).toBe("Alice can't use negative numbers, ye scallywag!");
         });
+        
+        test('should reject round with bonus points when bid does not equal actual', () => {
+            // Try to add a round where Alice has bonus points but didn't make her bid
+            const invalidRoundData = {
+                'Alice': { bid: 1, actual: 0, bonus: 20 }, // Wrong: bonus with incorrect bid
+                'Bob': { bid: 0, actual: 1, bonus: 0 }
+            };
+            
+            const result = gameInstance.viewModel.addRound(invalidRoundData);
+            expect(result).toBe("Alice can't earn bonus points without bidding correctly (bid: 1, actual: 0)!");
+            
+            // Verify the round was NOT added
+            const gameState = gameInstance.viewModel.getGameState();
+            expect(gameState.rounds.length).toBe(0);
+            expect(gameState.currentRound).toBe(1);
+        });
+        
+        test('should accept round with bonus points when bid equals actual', () => {
+            // Valid round where Alice has bonus points and made her bid
+            const validRoundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 20 }, // Correct: bonus with exact bid
+                'Bob': { bid: 0, actual: 0, bonus: 10 }    // Also correct: zero bid success with bonus
+            };
+            
+            const result = gameInstance.viewModel.addRound(validRoundData);
+            expect(result).toBeNull(); // Should succeed
+            
+            // Verify the round was added
+            const gameState = gameInstance.viewModel.getGameState();
+            expect(gameState.rounds.length).toBe(1);
+            expect(gameState.currentRound).toBe(2);
+            
+            // Verify scores include bonuses
+            const aliceScore = gameState.players.find((p: any) => p.name === 'Alice')?.score;
+            const bobScore = gameState.players.find((p: any) => p.name === 'Bob')?.score;
+            expect(aliceScore).toBe(40); // 20 * 1 + 20 bonus = 40
+            expect(bobScore).toBe(20);   // 10 * 1 (cards) + 10 bonus = 20
+        });
 
         test('should reject NaN values', () => {
             const result = gameInstance.testValidateSinglePlayerInput(NaN, 1, 0, 'Alice');
@@ -550,9 +605,8 @@ describe('SkullKingGame Validation', () => {
             const round = 3;
             
             const actualScore = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 4); // 4 players
-            // Round 3 with 4 players = 3 cards dealt
-            // Exact bid: 20 * 3 = 60, plus bonus 15 = 75
-            expect(actualScore).toBe(75);
+            // Exact bid: 20 * tricks taken (2) = 40, plus bonus 15 = 55
+            expect(actualScore).toBe(55);
         });
         
         test('should allow bonus points for successful zero bids', () => {
@@ -1297,29 +1351,29 @@ describe('SkullKingGame Score Sorting', () => {
 
         // Round 2: 2 cards each for 3 players
         gameInstance.viewModel.addRound({
-            'Alice': { bid: 1, actual: 1, bonus: 0 },    // Score: 40, Total: 60
+            'Alice': { bid: 1, actual: 1, bonus: 0 },    // Score: 20, Total: 40
             'Bob': { bid: 0, actual: 1, bonus: 0 },      // Score: -20, Total: -10
             'Charlie': { bid: 1, actual: 0, bonus: 0 }   // Score: -10, Total: 0
         });
         
         // Round 3: 3 cards each for 3 players
         gameInstance.viewModel.addRound({
-            'Alice': { bid: 1, actual: 1, bonus: 0 },    // Score: 60, Total: 120
-            'Bob': { bid: 1, actual: 1, bonus: 0 },      // Score: 60, Total: 50
-            'Charlie': { bid: 1, actual: 1, bonus: 80 }  // Score: 140, Total: 140
+            'Alice': { bid: 1, actual: 1, bonus: 0 },    // Score: 20, Total: 60
+            'Bob': { bid: 1, actual: 1, bonus: 0 },      // Score: 20, Total: 10
+            'Charlie': { bid: 1, actual: 1, bonus: 80 }  // Score: 100, Total: 100
         });
 
         // Check the sorted players from view model
         const sortedPlayers = gameInstance.viewModel.getPlayersSortedByScore();
         
         expect(sortedPlayers[0].name).toBe('Charlie');
-        expect(sortedPlayers[0].score).toBe(140);
+        expect(sortedPlayers[0].score).toBe(100);
         
         expect(sortedPlayers[1].name).toBe('Alice');
-        expect(sortedPlayers[1].score).toBe(120);
+        expect(sortedPlayers[1].score).toBe(60);
         
         expect(sortedPlayers[2].name).toBe('Bob');
-        expect(sortedPlayers[2].score).toBe(50);
+        expect(sortedPlayers[2].score).toBe(10);
     });
 
     test('should handle tied scores by maintaining original order', () => {
@@ -1370,13 +1424,13 @@ describe('SkullKingGame Score Sorting', () => {
         gameInstance.viewModel.addRound({
             'Alice': { bid: 0, actual: 1, bonus: 0 },    // Score: -30, Total: -30
             'Bob': { bid: 0, actual: 1, bonus: 0 },      // Score: -30, Total: -10
-            'Charlie': { bid: 1, actual: 1, bonus: 30 }  // Score: 90, Total: 130
+            'Charlie': { bid: 1, actual: 1, bonus: 30 }  // Score: 50, Total: 90
         });
 
         sortedPlayers = gameInstance.viewModel.getPlayersSortedByScore();
         
         expect(sortedPlayers[0].name).toBe('Charlie');
-        expect(sortedPlayers[0].score).toBe(130);
+        expect(sortedPlayers[0].score).toBe(90);
         expect(sortedPlayers[1].name).toBe('Bob'); 
         expect(sortedPlayers[1].score).toBe(-10);
         expect(sortedPlayers[2].name).toBe('Alice');
