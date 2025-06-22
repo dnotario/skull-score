@@ -41,6 +41,7 @@ const enTranslation = {
     game_complete_title: "🏴‍☠️ Game Complete! 🏴‍☠️",
     round_label: "Round",
     round_display: "{round} of 10",
+    cards_each: "{cards} cards each",
     record_round_button: "Record Round",
     // Round inputs
     player_label: "Player",
@@ -183,6 +184,7 @@ const deTranslation = {
     game_complete_title: "🏴‍☠️ Spiel Beendet! 🏴‍☠️",
     round_label: "Runde",
     round_display: "{round} von 10",
+    cards_each: "{cards} Karten jeweils",
     record_round_button: "Runde Aufzeichnen",
     // Round inputs
     player_label: "Spieler",
@@ -325,6 +327,7 @@ const esTranslation = {
     game_complete_title: "🏴‍☠️ ¡Juego Completo! 🏴‍☠️",
     round_label: "Ronda",
     round_display: "{round} de 10",
+    cards_each: "{cards} cartas cada uno",
     record_round_button: "Registrar Ronda",
     // Round inputs
     player_label: "Jugador",
@@ -1379,7 +1382,7 @@ class SkullKingGame {
             return;
         const maxTricks = this.viewModel.getMaxTricksForCurrentRound();
         const roundDisplay = maxTricks < currentRound ?
-            `${currentRound} (${maxTricks} cards each)` :
+            `${currentRound} (${this.t('cards_each', { cards: maxTricks.toString() })})` :
             currentRound.toString();
         if (roundNumberEl) {
             roundNumberEl.textContent = roundDisplay;

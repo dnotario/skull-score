@@ -45,6 +45,7 @@ interface Translation {
     game_complete_title: string;
     round_label: string;
     round_display: string;
+    cards_each: string;
     record_round_button: string;
     
     // Round inputs
@@ -209,6 +210,7 @@ const enTranslation: Translation = {
     game_complete_title: "🏴‍☠️ Game Complete! 🏴‍☠️",
     round_label: "Round",
     round_display: "{round} of 10",
+    cards_each: "{cards} cards each",
     record_round_button: "Record Round",
     
     // Round inputs
@@ -373,6 +375,7 @@ const deTranslation: Translation = {
     game_complete_title: "🏴‍☠️ Spiel Beendet! 🏴‍☠️",
     round_label: "Runde",
     round_display: "{round} von 10",
+    cards_each: "{cards} Karten jeweils",
     record_round_button: "Runde Aufzeichnen",
     
     // Round inputs
@@ -537,6 +540,7 @@ const esTranslation: Translation = {
     game_complete_title: "🏴‍☠️ ¡Juego Completo! 🏴‍☠️",
     round_label: "Ronda",
     round_display: "{round} de 10",
+    cards_each: "{cards} cartas cada uno",
     record_round_button: "Registrar Ronda",
     
     // Round inputs

@@ -1138,7 +1138,7 @@ class SkullKingGame {
         
         const maxTricks = this.viewModel.getMaxTricksForCurrentRound();
         const roundDisplay = maxTricks < currentRound ? 
-            `${currentRound} (${maxTricks} cards each)` : 
+            `${currentRound} (${this.t('cards_each', { cards: maxTricks.toString() })})` : 
             currentRound.toString();
             
         if (roundNumberEl) {
