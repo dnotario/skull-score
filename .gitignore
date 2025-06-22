@@ -3,12 +3,10 @@ node_modules/
 
 # Build files
 *.js.map
-
-# Generated JavaScript files
-# DO NOT commit game.js - it's automatically generated from game.ts
-# Edit game.ts (TypeScript source) and run 'npm run build' to update game.js
-# This prevents conflicts and ensures game.ts is the single source of truth
-# game.js - Commented out for staging branch to allow GitHub Pages deployment
+dist/
+build/
+# DO NOT commit generated JavaScript files - edit game.ts instead!
+game.js
 
 # IDE
 .idea/
