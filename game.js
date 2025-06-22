@@ -630,9 +630,10 @@ class GameViewModel {
     // Scoring Logic
     calculateRoundScore(bid, actual, bonus, roundNumber) {
         const scoringMode = this.getScoringMode();
+        const cardsDealt = this.getCardsPerRound(roundNumber, this.state.players.length);
         if (scoringMode === 'rascal') {
-            // Rascal's scoring: potential points = 10 × cards dealt (roundNumber)
-            const potentialPoints = 10 * roundNumber;
+            // Rascal's scoring: potential points = 10 × cards dealt
+            const potentialPoints = 10 * cardsDealt;
             const difference = Math.abs(bid - actual);
             if (difference === 0) {
                 // Direct hit: full points + bonus
@@ -650,14 +651,14 @@ class GameViewModel {
         else {
             // Normal/Traditional Skull King scoring
             if (bid === 0) {
-                // Zero bid scoring
-                return actual === 0 ? 10 * roundNumber + bonus : -10 * roundNumber;
+                // Zero bid scoring: 10 points per card dealt for success
+                return actual === 0 ? 10 * cardsDealt + bonus : -10 * cardsDealt;
             }
             else {
                 // Non-zero bid scoring
                 if (bid === actual) {
-                    // Correct prediction: 20 points per trick + bonus
-                    return 20 * actual + bonus;
+                    // Correct prediction: 20 points per card dealt + bonus
+                    return 20 * cardsDealt + bonus;
                 }
                 else {
                     // Incorrect prediction: -10 points per difference (no bonus)
@@ -1119,7 +1120,47 @@ class GameViewModel {
         return translationSystem.translate(key, params);
     }
     // Public method for testing
-    testCalculateRoundScore(bid, actual, bonus, roundNumber) {
+    testCalculateRoundScore(bid, actual, bonus, roundNumber, playerCount) {
+        // For testing, allow overriding player count
+        if (playerCount !== undefined) {
+            const cardsDealt = this.getCardsPerRound(roundNumber, playerCount);
+            const scoringMode = this.getScoringMode();
+            if (scoringMode === 'rascal') {
+                // Rascal's scoring: potential points = 10 × cards dealt
+                const potentialPoints = 10 * cardsDealt;
+                const difference = Math.abs(bid - actual);
+                if (difference === 0) {
+                    // Direct hit: full points + bonus
+                    return potentialPoints + bonus;
+                }
+                else if (difference === 1) {
+                    // Glancing blow: half points + half bonus
+                    return Math.floor(potentialPoints / 2) + Math.floor(bonus / 2);
+                }
+                else {
+                    // Complete miss: no points
+                    return 0;
+                }
+            }
+            else {
+                // Normal/Traditional Skull King scoring
+                if (bid === 0) {
+                    // Zero bid scoring: 10 points per card dealt for success
+                    return actual === 0 ? 10 * cardsDealt + bonus : -10 * cardsDealt;
+                }
+                else {
+                    // Non-zero bid scoring
+                    if (bid === actual) {
+                        // Correct prediction: 20 points per card dealt + bonus
+                        return 20 * cardsDealt + bonus;
+                    }
+                    else {
+                        // Incorrect prediction: -10 points per difference (no bonus)
+                        return -10 * Math.abs(bid - actual);
+                    }
+                }
+            }
+        }
         return this.calculateRoundScore(bid, actual, bonus, roundNumber);
     }
 }
@@ -2008,8 +2049,8 @@ class SkullKingGame {
         modal.style.display = 'flex';
     }
     // Public method for testing the scoring logic
-    testCalculateRoundScore(bid, actual, bonus, roundNumber) {
-        return this.viewModel.testCalculateRoundScore(bid, actual, bonus, roundNumber);
+    testCalculateRoundScore(bid, actual, bonus, roundNumber, playerCount) {
+        return this.viewModel.testCalculateRoundScore(bid, actual, bonus, roundNumber, playerCount);
     }
     // Public method for validation testing
     testValidateSinglePlayerInput(bid, actual, bonus, playerName, roundNumber) {
