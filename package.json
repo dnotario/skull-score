@@ -7,7 +7,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "build:tsc": "tsc",
-    "build:copy": "mkdir -p build/runFiles && cp index.html styles.css manifest.json sw.js build/runFiles/ && cp favicon.ico icon-16.png icon-32.png icon-192.png icon-512.png apple-touch-icon.png icon.svg skull_logo.png build/runFiles/ 2>/dev/null || true",
+    "build:copy": "mkdir -p build/runFiles && cp index.html styles.css manifest.json sw.js robots.txt sitemap.xml build/runFiles/ && cp favicon.ico icon-16.png icon-32.png icon-192.png icon-512.png apple-touch-icon.png icon.svg skull_logo.png og-image.png twitter-image.png build/runFiles/ 2>/dev/null || true",
     "build": "rm -rf build/runFiles && npm run build:tsc && npm run build:copy",
     "dev": "tsc --watch",
     "clean": "rm -rf build",

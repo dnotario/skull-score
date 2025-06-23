@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-US">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +7,7 @@
     <!-- SEO Meta Tags -->
     <title id="page-title" data-i18n="page_title">Skull King Score Keeper - Free Digital Scorecard & Score Tracker</title>
     <meta name="description" content="Free Skull King score keeper and digital scorecard. Track scores, calculate points, and enjoy pirate commentary for the Skull King card game. Mobile-friendly score tracker with automatic scoring." data-i18n-content="page_description">
-    <meta name="keywords" content="Skull King, score keeper, scorecard, score tracker, Skull King scoring, card game scorer, trick taking game, pirate game, score calculator, digital scorecard" data-i18n-content="page_keywords">
+    <meta name="keywords" content="skull king score keeper, skull king scorecard, skull king calculator, skull king scoring app, digital skull king score sheet, skull king points tracker, skull king game scorer, trick taking game calculator, pirate game score keeper, skull king tournament scoring, skull king bid tracker, skull king scoring rules, skull king score pad alternative, free skull king scorer, mobile skull king scorecard, skull king score sheet pdf alternative, skull king scoring app free, skull king points calculator, digital skull king scorepad, skull king game tracker online, skull king bidding tracker, skull king tournament scorer" data-i18n-content="page_keywords">
     <meta name="author" content="Skull King Score Keeper">
     <meta name="robots" content="index, follow">
     
@@ -25,9 +25,20 @@
     <meta name="twitter:description" content="Free digital score keeper for Skull King card game with automatic scoring and pirate commentary." data-i18n-content="twitter_description">
     <meta name="twitter:image" content="https://www.skullkingscorekeeper.com/twitter-image.png">
     
+    <!-- Additional Open Graph tags -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:locale:alternate" content="de_DE">
+    <meta property="og:locale:alternate" content="es_ES">
+    <meta property="article:author" content="Skull King Score Keeper Team">
+    
     <!-- PWA and App Installation Meta Tags -->
     <meta name="theme-color" content="#d4af37">
     <meta name="msapplication-TileColor" content="#2c1810">
+    <!-- Language alternates for SEO -->
+    <link rel="alternate" hreflang="en" href="https://www.skullkingscorekeeper.com/" />
+    <link rel="alternate" hreflang="de" href="https://www.skullkingscorekeeper.com/?lang=de" />
+    <link rel="alternate" hreflang="es" href="https://www.skullkingscorekeeper.com/?lang=es" />
+    <link rel="alternate" hreflang="x-default" href="https://www.skullkingscorekeeper.com/" />
     <link rel="canonical" href="https://www.skullkingscorekeeper.com">
     
     <!-- Favicons -->
@@ -73,6 +84,10 @@
     }
     </script>
     
+    <!-- Performance optimizations -->
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+    <link rel="dns-prefetch" href="https://www.google-analytics.com">
+    
     <link rel="stylesheet" href="styles.css">
     
     <!-- Google Analytics -->
@@ -89,7 +104,7 @@
         <div class="header-content">
             <h1 id="header-title" data-i18n="header_title">⚓ Skull King Score Keeper ☠️</h1>
             <p class="tagline" id="header-tagline" data-i18n="header_tagline">Track Yer Plunder, Ye Scurvy Dogs!</p>
-            <button id="install-app-btn-header" class="install-app-btn-header">📱</button>
+            <button id="install-app-btn-header" class="install-app-btn-header" aria-label="Install app">📱</button>
         </div>
     </header>
 
@@ -98,7 +113,7 @@
         <div id="new-game-section" class="new-game-section hidden">
             <div class="parchment">
                 <div class="global-actions">
-                    <button id="new-game-ingame-btn" class="btn btn-secondary" data-i18n="new_game_button">New Game</button>
+                    <button id="new-game-ingame-btn" class="btn btn-secondary" data-i18n="new_game_button" aria-label="Start new Skull King game">New Game</button>
                 </div>
             </div>
         </div>
@@ -119,7 +134,7 @@
                 </ul>
                 
                 <div class="player-setup">
-                    <button id="new-game-btn" class="btn btn-primary" data-i18n="start_button">Start Your Skull King Score Tracking</button>
+                    <button id="new-game-btn" class="btn btn-primary" data-i18n="start_button" aria-label="Start tracking Skull King scores">Start Your Skull King Score Tracking</button>
                 </div>
                 
                 <div class="seo-content">
@@ -132,14 +147,14 @@
         <!-- Player Names Section -->
         <section id="player-names-section" class="player-names-section hidden">
             <div class="parchment">
-                <button id="close-setup-btn" class="close-button" aria-label="Close">×</button>
+                <button id="close-setup-btn" class="close-button" aria-label="Close player setup menu">×</button>
                 <h2 id="name-crew-title" data-i18n="name_crew_title">Name Yer Crew</h2>
                 <div id="player-names-inputs"></div>
                 
                 <!-- All buttons grouped together for better mobile visibility -->
                 <div class="all-player-buttons">
-                    <button id="add-player-btn" class="btn btn-secondary" data-i18n="add_pirate_button">Add Pirate</button>
-                    <button id="start-game-btn" class="btn btn-primary" data-i18n="set_sail_button">Set Sail!</button>
+                    <button id="add-player-btn" class="btn btn-secondary" data-i18n="add_pirate_button" aria-label="Add another player to the game">Add Pirate</button>
+                    <button id="start-game-btn" class="btn btn-primary" data-i18n="set_sail_button" aria-label="Begin Skull King game with current players">Set Sail!</button>
                 </div>
                 
                 <!-- Scoring Mode Selection -->
@@ -171,7 +186,7 @@
             <div class="current-scores parchment">
                 <div class="score-header">
                     <h2 id="current-bounty-title" data-i18n="current_bounty_title">Current Bounty</h2>
-                    <button id="read-scores-btn" class="btn btn-primary" data-i18n="read_scores_button">🔊 Read Scores</button>
+                    <button id="read-scores-btn" class="btn btn-primary" data-i18n="read_scores_button" aria-label="Read current scores aloud">🔊 Read Scores</button>
                 </div>
                 <div id="score-display" class="score-grid"></div>
                 
@@ -199,7 +214,7 @@
                 </div>
                 <div id="round-inputs" class="round-inputs"></div>
                 <div class="record-round-container">
-                    <button id="add-round-btn" class="btn btn-primary" data-i18n="record_round_button">Record Round</button>
+                    <button id="add-round-btn" class="btn btn-primary" data-i18n="record_round_button" aria-label="Save round scores and advance to next round">Record Round</button>
                 </div>
             </div>
 
@@ -213,12 +228,79 @@
                 <h3 id="modal-title" data-i18n="confirm_action_title">Confirm Action</h3>
                 <p id="modal-message"></p>
                 <div id="modal-buttons" class="modal-buttons">
-                    <button id="modal-confirm" class="btn btn-primary" data-i18n="aye_button">Aye</button>
-                    <button id="modal-cancel" class="btn btn-secondary" data-i18n="nay_button">Nay</button>
+                    <button id="modal-confirm" class="btn btn-primary" data-i18n="aye_button" aria-label="Confirm action">Aye</button>
+                    <button id="modal-cancel" class="btn btn-secondary" data-i18n="nay_button" aria-label="Cancel action">Nay</button>
                 </div>
             </div>
         </div>
     </main>
+
+    <!-- FAQ Section -->
+    <section class="faq-section parchment">
+        <div class="container">
+            <h2>Frequently Asked Questions about Skull King Scoring</h2>
+            
+            <div class="faq-item">
+                <h3>How does Skull King scoring work?</h3>
+                <p>In traditional Skull King scoring, players bid on the number of tricks they'll take each round. If you bid correctly, you earn 20 points × tricks taken plus any bonus points. If you fail your bid, you lose 10 points × the difference between your bid and actual tricks.</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>What's the difference between Normal and Rascal scoring?</h3>
+                <p>Normal scoring rewards exact bids with 20× tricks taken. Rascal scoring uses a more forgiving system: 10× cards dealt for exact bids, 5× cards dealt for being off by one, and 0 points for missing by 2 or more.</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>Can I track Skull King scores on my phone?</h3>
+                <p>Yes! Our Skull King score keeper is fully mobile-responsive and works perfectly on all devices without downloading an app. Just visit the website and start tracking scores immediately.</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>How many players can use the Skull King scorecard?</h3>
+                <p>The digital scorecard supports 2-8 players, perfect for any Skull King game size. Each player can have a custom pirate name for added fun!</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>Do I need to download an app to use the Skull King scorer?</h3>
+                <p>No download needed! This is a web-based Skull King score tracker that works directly in your browser. You can optionally install it as a Progressive Web App for offline use.</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>How do bonus points work in Skull King?</h3>
+                <p>Bonus points are earned by capturing special cards like the Skull King (30-50 points per pirate captured), Pirates (10 points each), or using the White Whale expansion. You can only score bonus points when you meet your exact bid.</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>Can I save my Skull King game progress?</h3>
+                <p>Yes! The score keeper automatically saves your game to your device's local storage. You can close the browser and return later to continue where you left off.</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>Is this Skull King score tracker free to use?</h3>
+                <p>Absolutely! This Skull King digital scorecard is completely free with no ads, subscriptions, or hidden costs. Enjoy unlimited games!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Game Info Section -->
+    <section class="game-info parchment">
+        <div class="container">
+            <h2>About Skull King Score Tracking</h2>
+            <p>Skull King is a popular trick-taking card game where accurate score keeping is essential for fair gameplay. Our digital Skull King scorecard eliminates math errors and speeds up your game night. Whether you're a seasoned pirate or new to the seas, this Skull King score tracker makes the game more enjoyable by handling all the complex calculations automatically.</p>
+            
+            <h3>Skull King Scoring Made Easy</h3>
+            <p>Whether you're using traditional Skull King scoring rules or the Rascal variant, our calculator handles all the math instantly. Track bids, actual tricks won, and bonus points for special cards like the Skull King, pirates, mermaids, and the escape. No more disputes over Skull King scoring - our digital scorecard keeps everyone honest!</p>
+            
+            <h3>Perfect for Skull King Tournaments</h3>
+            <p>Tournament organizers love our Skull King score tracker for its accuracy and speed. Keep multiple games running smoothly, export results for record keeping, and crown your Skull King champion with confidence. The automatic score calculation prevents errors that can ruin competitive play.</p>
+            
+            <h3>How to Use This Skull King Score Keeper</h3>
+            <p>Using our Skull King digital scorecard is simple: Enter player names, choose your scoring mode (Normal or Rascal), then input each player's bid and actual tricks for every round. The score keeper automatically calculates points, tracks running totals, and even provides pirate-themed commentary on your performance!</p>
+            
+            <h3>Skull King Scoring Rules Explained</h3>
+            <p>New to Skull King? Here's a quick scoring guide: In Normal mode, bidding correctly earns 20 points per trick taken. Missing your bid costs 10 points per trick difference. Zero bids earn 10 points × the round number if successful. Rascal scoring is more forgiving, awarding partial points for close bids. Bonus points are only awarded when you meet your exact bid!</p>
+        </div>
+    </section>
 
     <!-- Footer Disclaimer -->
     <footer class="disclaimer-footer">
