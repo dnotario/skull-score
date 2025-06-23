@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+Disallow: /build/
+Disallow: /node_modules/
+Disallow: /src/
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /tests/
+
+# Allow search engines to access all game files
+Allow: /*.js
+Allow: /*.css
+Allow: /*.html
+Allow: /*.png
+Allow: /*.jpg
+Allow: /*.webp
+Allow: /manifest.json
+
+# Crawl delay to be respectful of server resources
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://www.skullkingscorekeeper.com/sitemap.xml
