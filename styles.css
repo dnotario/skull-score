@@ -992,6 +992,72 @@ input[type="text"]:focus {
     }
 }
 
+/* FAQ Section */
+.faq-section {
+    margin-top: 2rem;
+}
+
+.faq-section h2 {
+    color: #8B4513;
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+.faq-item {
+    margin-bottom: 2rem;
+}
+
+.faq-item h3 {
+    color: #654321;
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.faq-item p {
+    color: #2c1810;
+    line-height: 1.6;
+    margin-bottom: 0;
+}
+
+/* Hide landing-only content during gameplay */
+.landing-only {
+    display: block;
+}
+
+body.game-active .landing-only {
+    display: none;
+}
+
+/* Game Info Section */
+.game-info {
+    margin-top: 2rem;
+}
+
+.game-info h2 {
+    color: #8B4513;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+.game-info h3 {
+    color: #654321;
+    font-size: 1.3rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.game-info p {
+    color: #2c1810;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
 /* Footer Disclaimer */
 .disclaimer-footer {
     background: #2c1810;

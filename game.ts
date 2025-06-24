@@ -1037,6 +1037,7 @@ class SkullKingGame {
         document.getElementById('player-names-section')?.classList.add('hidden');
         document.getElementById('game-section')?.classList.add('hidden');
         document.getElementById('new-game-section')?.classList.add('hidden');
+        document.body.classList.remove('game-active');
     }
 
     private showPlayerSetup(): void {
@@ -1044,6 +1045,7 @@ class SkullKingGame {
         document.getElementById('player-names-section')?.classList.remove('hidden');
         document.getElementById('game-section')?.classList.add('hidden');
         document.getElementById('new-game-section')?.classList.add('hidden');
+        document.body.classList.remove('game-active');
         
         // Ensure scoring mode translations are applied
         this.updateAllTranslations();
@@ -1054,6 +1056,7 @@ class SkullKingGame {
         document.getElementById('player-names-section')?.classList.add('hidden');
         document.getElementById('game-section')?.classList.remove('hidden');
         document.getElementById('new-game-section')?.classList.remove('hidden');
+        document.body.classList.add('game-active');
     }
 
     private updatePlayerInputs(): void {
