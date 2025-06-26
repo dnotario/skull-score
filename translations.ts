@@ -182,6 +182,14 @@ interface Translation {
     bonus_clear_btn: string;
     bonus_apply_btn: string;
     bonus_error_bid_mismatch: string;
+    bonus_rascal_too_far_off_error: string;
+    
+    // Update prompts
+    update_available_title: string;
+    update_available_message: string;
+    
+    // Error title
+    error_title: string;
 }
 
 // English translations
@@ -362,7 +370,15 @@ const enTranslation: Translation = {
     bonus_total_label: "Total Bonus:",
     bonus_clear_btn: "Clear",
     bonus_apply_btn: "Apply Bonus",
-    bonus_error_bid_mismatch: "Arrr! Bonus only be allowed when yer bid equals actual tricks won!"
+    bonus_error_bid_mismatch: "Arrr! Bonus only be allowed when yer bid equals actual tricks won!",
+    bonus_rascal_too_far_off_error: "Arrr! In Rascal mode, bonus only be allowed when exact or off by 1! (Ye get half bonus when off by 1)",
+    
+    // Update prompts
+    update_available_title: "Ahoy! New Treasure Available!",
+    update_available_message: "A newer version of the score keeper be ready! Reload to get the latest features?",
+    
+    // Error title
+    error_title: "Avast!"
 };
 
 // German translations
@@ -543,7 +559,15 @@ const deTranslation: Translation = {
     bonus_total_label: "Gesamt-Bonus:",
     bonus_clear_btn: "Löschen",
     bonus_apply_btn: "Bonus Anwenden",
-    bonus_error_bid_mismatch: "Arrr! Bonus nur erlaubt, wenn Gebot gleich gewonnene Stiche!"
+    bonus_error_bid_mismatch: "Arrr! Bonus nur erlaubt, wenn Gebot gleich gewonnene Stiche!",
+    bonus_rascal_too_far_off_error: "Arrr! Im Schurken-Modus nur Bonus bei exakt oder um 1 daneben! (Halber Bonus bei um 1 daneben)",
+    
+    // Update prompts
+    update_available_title: "Ahoi! Neue Version verfügbar!",
+    update_available_message: "Eine neuere Version des Punktezählers ist bereit! Neu laden für die neuesten Funktionen?",
+    
+    // Error title
+    error_title: "Achtung!"
 };
 
 // Spanish translations
@@ -724,7 +748,15 @@ const esTranslation: Translation = {
     bonus_total_label: "Bonus Total:",
     bonus_clear_btn: "Borrar",
     bonus_apply_btn: "Aplicar Bonus",
-    bonus_error_bid_mismatch: "¡Arrr! ¡Bonus solo permitido cuando apuesta igual a bazas ganadas!"
+    bonus_error_bid_mismatch: "¡Arrr! ¡Bonus solo permitido cuando apuesta igual a bazas ganadas!",
+    bonus_rascal_too_far_off_error: "¡Arrr! En modo Pícaro, bonus solo permitido cuando exacto o fallo por 1! (Medio bonus si fallas por 1)",
+    
+    // Update prompts
+    update_available_title: "¡Ahoy! ¡Nueva versión disponible!",
+    update_available_message: "¡Una nueva versión del contador está lista! ¿Recargar para obtener las últimas funciones?",
+    
+    // Error title
+    error_title: "¡Alto!"
 };
 
 // Export translations object for easy access

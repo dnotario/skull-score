@@ -1,6 +1,6 @@
 // Service Worker for Skull King Score Keeper
-// Build timestamp: 2025-06-26T11-45-53-899Z
-const CACHE_VERSION = '2025-06-26T11-45-53-899Z';
+// Build timestamp: 2025-06-26T12-09-58-178Z
+const CACHE_VERSION = '2025-06-26T12-09-58-178Z';
 const CACHE_NAME = `skull-king-v${CACHE_VERSION}`;
 const urlsToCache = [
   './',
@@ -30,6 +30,30 @@ self.addEventListener('install', event => {
 
 // Fetch event - network first, fallback to cache
 self.addEventListener('fetch', event => {
+  // Skip cache for navigation requests when online to ensure updates
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Update the cache with the fresh response
+          if (response && response.status === 200 && response.type === 'basic') {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME)
+              .then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Offline - return cached index.html
+          return caches.match('./index.html');
+        })
+    );
+    return;
+  }
+  
+  // For non-navigation requests, use network-first strategy
   event.respondWith(
     fetch(event.request)
       .then(response => {
@@ -51,20 +75,7 @@ self.addEventListener('fetch', event => {
       })
       .catch(() => {
         // Network failed, try cache
-        return caches.match(event.request)
-          .then(response => {
-            if (response) {
-              return response;
-            }
-            // Return offline fallback if appropriate
-            if (event.request.mode === 'navigate') {
-              return caches.match('./index.html');
-            }
-            return new Response('Network error', {
-              status: 408,
-              statusText: 'Request timeout.'
-            });
-          });
+        return caches.match(event.request);
       })
   );
 });
