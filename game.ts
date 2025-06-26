@@ -353,13 +353,6 @@ class GameViewModel {
             });
         }
 
-        // Reasonable bonus limits
-        if (Math.abs(bonus) > 100) {
-            return this.t('unreasonable_bonus_error', {
-                playerName,
-                bonus: bonus.toString()
-            });
-        }
 
         return null; // Valid
     }
@@ -1126,7 +1119,11 @@ class SkullKingGame {
                     </div>
                     <div class="input-group">
                         <label for="bonus-player-${index}" class="input-label">${this.t('bonus_label')}</label>
-                        <input type="number" id="bonus-player-${index}" placeholder="0" min="0" oninput="game.updateRoundScoreByIndex(${index})">
+                        <button class="bonus-button" id="bonus-player-${index}" onclick="game.openBonusModal(${index})" aria-label="Calculate bonus">
+                            <span class="bonus-icon">🧮</span>
+                            <span class="bonus-text">${this.t('calculate_button', { fallback: 'Calculate' })}</span>
+                            <span class="bonus-value" id="bonus-value-${index}">0</span>
+                        </button>
                     </div>
                     <div class="input-group">
                         <label class="input-label">${this.t('score_label')}</label>
@@ -1186,12 +1183,12 @@ class SkullKingGame {
         players.forEach((player, index) => {
             const bidInput = document.getElementById(`bid-player-${index}`) as HTMLInputElement;
             const actualInput = document.getElementById(`actual-player-${index}`) as HTMLInputElement;
-            const bonusInput = document.getElementById(`bonus-player-${index}`) as HTMLInputElement;
+            const bonusButton = document.getElementById(`bonus-player-${index}`);
 
             // Parse values, defaulting to 0 for empty inputs
             const bidValue = bidInput?.value?.trim() || '0';
             const actualValue = actualInput?.value?.trim() || '0';
-            const bonusValue = bonusInput?.value?.trim() || '0';
+            const bonusValue = bonusButton?.getAttribute('data-bonus-value') || '0';
 
             data[player.name] = {
                 bid: parseInt(bidValue),
@@ -1206,6 +1203,20 @@ class SkullKingGame {
     private clearRoundInputs(): void {
         const inputs = document.querySelectorAll('#round-inputs input') as NodeListOf<HTMLInputElement>;
         inputs.forEach(input => input.value = '');
+        
+        // Reset bonus buttons
+        const players = this.viewModel.getPlayers();
+        players.forEach((_, index) => {
+            const bonusButton = document.getElementById(`bonus-player-${index}`);
+            const bonusValueEl = document.getElementById(`bonus-value-${index}`);
+            if (bonusButton && bonusValueEl) {
+                bonusButton.setAttribute('data-bonus-value', '0');
+                bonusValueEl.textContent = '0';
+            }
+        });
+        
+        // Clear stored bonus data for the round
+        this.playerBonusData = {};
     }
 
     private showCommentary(): void {
@@ -1501,15 +1512,15 @@ class SkullKingGame {
     private updateRoundScoreInternalByIndex(playerIndex: number): void {
         const bidInput = document.getElementById(`bid-player-${playerIndex}`) as HTMLInputElement;
         const actualInput = document.getElementById(`actual-player-${playerIndex}`) as HTMLInputElement;
-        const bonusInput = document.getElementById(`bonus-player-${playerIndex}`) as HTMLInputElement;
+        const bonusButton = document.getElementById(`bonus-player-${playerIndex}`);
         const scoreDisplay = document.getElementById(`score-player-${playerIndex}`);
         
-        if (!bidInput || !actualInput || !bonusInput || !scoreDisplay) return;
+        if (!bidInput || !actualInput || !scoreDisplay) return;
         
         // Get input values
         const bidValue = bidInput.value.trim();
         const actualValue = actualInput.value.trim();
-        const bonusValue = bonusInput.value.trim();
+        const bonusValue = bonusButton?.getAttribute('data-bonus-value') || '0';
         
         // Only show score when both bid and actual have values (Option 1: Progressive Disclosure)
         if (!bidValue || !actualValue) {
@@ -1521,7 +1532,7 @@ class SkullKingGame {
         // Parse values (bonus defaults to 0 if empty)
         const bid = parseInt(bidValue);
         const actual = parseInt(actualValue);
-        const bonus = bonusValue ? parseInt(bonusValue) : 0;
+        const bonus = parseInt(bonusValue);
         
         // Get player name for validation
         const players = this.viewModel.getPlayers();
@@ -1589,11 +1600,15 @@ class SkullKingGame {
             
             const bidInput = document.getElementById(`bid-player-${playerIndex}`) as HTMLInputElement;
             const actualInput = document.getElementById(`actual-player-${playerIndex}`) as HTMLInputElement;
-            const bonusInput = document.getElementById(`bonus-player-${playerIndex}`) as HTMLInputElement;
+            const bonusButton = document.getElementById(`bonus-player-${playerIndex}`);
+            const bonusValueEl = document.getElementById(`bonus-value-${playerIndex}`);
 
             if (bidInput) bidInput.value = data.bid.toString();
             if (actualInput) actualInput.value = data.actual.toString();
-            if (bonusInput) bonusInput.value = data.bonus.toString();
+            if (bonusButton && bonusValueEl) {
+                bonusButton.setAttribute('data-bonus-value', data.bonus.toString());
+                bonusValueEl.textContent = data.bonus.toString();
+            }
             
             // Update the computed score for this player
             this.updateRoundScoreInternalByIndex(playerIndex);
@@ -1878,6 +1893,248 @@ class SkullKingGame {
             document.body.appendChild(modal);
         }
         modal.style.display = 'flex';
+    }
+
+    // Bonus Calculator Modal Methods
+    private currentBonusPlayerIndex: number = -1;
+    private bonusCounters = {
+        standard14: 0,
+        black14: 0,
+        mermaidPirate: 0,
+        skullPirate: 0,
+        mermaidSkull: 0
+    };
+    private playerBonusData: { [key: number]: {
+        standard14: number;
+        black14: number;
+        mermaidPirate: number;
+        skullPirate: number;
+        mermaidSkull: number;
+    } } = {};
+
+    public openBonusModal(playerIndex: number): void {
+        this.currentBonusPlayerIndex = playerIndex;
+        
+        // Check if bid equals actual for this player
+        const bidInput = document.getElementById(`bid-player-${playerIndex}`) as HTMLInputElement;
+        const actualInput = document.getElementById(`actual-player-${playerIndex}`) as HTMLInputElement;
+        
+        if (!bidInput || !actualInput) return;
+        
+        const bid = parseInt(bidInput.value) || 0;
+        const actual = parseInt(actualInput.value) || 0;
+        
+        // Only allow bonus if bid equals actual
+        if (bid !== actual) {
+            alert(this.t('bonus_error_bid_mismatch', { fallback: 'Bonus only allowed when bid equals actual!' }));
+            return;
+        }
+        
+        // Restore previous values if they exist, otherwise reset
+        if (this.playerBonusData[playerIndex]) {
+            this.bonusCounters = { ...this.playerBonusData[playerIndex] };
+        } else {
+            // Reset counters
+            this.bonusCounters = {
+                standard14: 0,
+                black14: 0,
+                mermaidPirate: 0,
+                skullPirate: 0,
+                mermaidSkull: 0
+            };
+        }
+        
+        // Update UI with restored or reset values
+        this.updateBonusCountersUI();
+        
+        // Show modal
+        const modal = document.getElementById('bonus-modal-overlay');
+        if (modal) {
+            modal.classList.add('active');
+        }
+    }
+
+    private updateBonusCountersUI(): void {
+        // Update all counter displays
+        Object.keys(this.bonusCounters).forEach(key => {
+            const counterEl = document.getElementById(`counter-${key}`);
+            if (counterEl) {
+                counterEl.textContent = this.bonusCounters[key as keyof typeof this.bonusCounters].toString();
+            }
+            
+            // Update points display
+            const count = this.bonusCounters[key as keyof typeof this.bonusCounters];
+            const pointsEl = document.getElementById(`points-${key}`);
+            if (pointsEl) {
+                const points = this.calculateBonusPoints(key as keyof typeof this.bonusCounters, count);
+                pointsEl.textContent = points.toString();
+            }
+        });
+        
+        // Update button states
+        this.updateBonusButtonStates();
+        
+        // Update total
+        this.updateBonusTotal();
+    }
+    
+    private calculateBonusPoints(type: keyof typeof this.bonusCounters, count: number): number {
+        const pointsMap = {
+            standard14: 10,
+            black14: 20,
+            mermaidPirate: 20,
+            skullPirate: 30,
+            mermaidSkull: 40
+        };
+        return count * pointsMap[type];
+    }
+
+    public closeBonusModal(): void {
+        const modal = document.getElementById('bonus-modal-overlay');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+        // Don't clear counters on close - keep them for persistence
+    }
+
+    public updateBonusCounter(type: keyof typeof this.bonusCounters, delta: number): void {
+        // Define maximum limits for each bonus type
+        const maxLimits = {
+            standard14: 3,      // Yellow/Purple/Green 14s
+            black14: 1,         // Jolly Roger 14
+            mermaidPirate: 6,   // Pirates captured by Mermaid
+            skullPirate: 6,     // Pirates captured by Skull King
+            mermaidSkull: 1     // Skull King captured by Mermaid
+        };
+        
+        // Update counter value with min/max constraints
+        const newValue = this.bonusCounters[type] + delta;
+        this.bonusCounters[type] = Math.max(0, Math.min(maxLimits[type], newValue));
+        
+        // Update UI
+        const counterEl = document.getElementById(`counter-${type}`);
+        if (counterEl) {
+            counterEl.textContent = this.bonusCounters[type].toString();
+        }
+        
+        // Update points display
+        const pointsEl = document.getElementById(`points-${type}`);
+        if (pointsEl) {
+            const multipliers = {
+                standard14: 10,
+                black14: 20,
+                mermaidPirate: 20,
+                skullPirate: 30,
+                mermaidSkull: 40
+            };
+            pointsEl.textContent = (this.bonusCounters[type] * multipliers[type]).toString();
+        }
+        
+        // Update button states
+        this.updateBonusButtonStates();
+        
+        // Update total
+        this.updateBonusTotal();
+    }
+
+    private updateBonusButtonStates(): void {
+        const maxLimits = {
+            standard14: 3,
+            black14: 1,
+            mermaidPirate: 6,
+            skullPirate: 6,
+            mermaidSkull: 1
+        };
+        
+        // Update button states for each bonus type
+        Object.keys(this.bonusCounters).forEach(key => {
+            const type = key as keyof typeof this.bonusCounters;
+            const count = this.bonusCounters[type];
+            const max = maxLimits[type];
+            
+            // Get increment and decrement buttons
+            const incrementBtn = document.querySelector(`button[onclick="game.updateBonusCounter('${type}', 1)"]`) as HTMLButtonElement;
+            const decrementBtn = document.querySelector(`button[onclick="game.updateBonusCounter('${type}', -1)"]`) as HTMLButtonElement;
+            
+            // Disable/enable buttons based on limits
+            if (incrementBtn) {
+                incrementBtn.disabled = count >= max;
+            }
+            if (decrementBtn) {
+                decrementBtn.disabled = count <= 0;
+            }
+        });
+    }
+
+    private updateBonusTotal(): void {
+        const total = 
+            this.bonusCounters.standard14 * 10 +
+            this.bonusCounters.black14 * 20 +
+            this.bonusCounters.mermaidPirate * 20 +
+            this.bonusCounters.skullPirate * 30 +
+            this.bonusCounters.mermaidSkull * 40;
+            
+        const totalEl = document.getElementById('bonus-total-value');
+        if (totalEl) {
+            totalEl.textContent = total.toString();
+        }
+    }
+
+    public clearBonusCalculator(): void {
+        this.clearBonusCounters();
+        this.updateBonusButtonStates();
+        this.updateBonusTotal();
+    }
+
+    private clearBonusCounters(): void {
+        // Reset all counters
+        for (const key in this.bonusCounters) {
+            this.bonusCounters[key as keyof typeof this.bonusCounters] = 0;
+            const counterEl = document.getElementById(`counter-${key}`);
+            if (counterEl) {
+                counterEl.textContent = '0';
+            }
+            const pointsEl = document.getElementById(`points-${key}`);
+            if (pointsEl) {
+                pointsEl.textContent = '0';
+            }
+        }
+    }
+
+    public applyBonusCalculator(): void {
+        if (this.currentBonusPlayerIndex === -1) return;
+        
+        // Calculate total bonus
+        const total = 
+            this.bonusCounters.standard14 * 10 +
+            this.bonusCounters.black14 * 20 +
+            this.bonusCounters.mermaidPirate * 20 +
+            this.bonusCounters.skullPirate * 30 +
+            this.bonusCounters.mermaidSkull * 40;
+        
+        // Update the bonus value display
+        const bonusValueEl = document.getElementById(`bonus-value-${this.currentBonusPlayerIndex}`);
+        if (bonusValueEl) {
+            bonusValueEl.textContent = total.toString();
+        }
+        
+        // Store the bonus value in a data attribute for persistence
+        const bonusButton = document.getElementById(`bonus-player-${this.currentBonusPlayerIndex}`);
+        if (bonusButton) {
+            bonusButton.setAttribute('data-bonus-value', total.toString());
+        }
+        
+        // Store the counters for this player to restore when reopening
+        if (!this.playerBonusData) {
+            this.playerBonusData = {};
+        }
+        this.playerBonusData[this.currentBonusPlayerIndex] = { ...this.bonusCounters };
+        
+        // Trigger the update with the new bonus value
+        this.updateRoundScoreByIndex(this.currentBonusPlayerIndex);
+        
+        // Close modal
+        this.closeBonusModal();
     }
 
     // Public method for testing the scoring logic

@@ -92,3 +92,4 @@ The app functions as a **score keeper**, not a full game implementation:
 - Test thoroughly on mobile devices before deploying
 - Always ask me before committing or pushing
 - Please do not commit and push to staging unless I say so
+- Build after you make code changes
