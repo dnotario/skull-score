@@ -325,6 +325,80 @@
         </div>
     </footer>
 
+    <!-- Bonus Calculator Modal -->
+    <div id="bonus-modal-overlay" class="modal-overlay">
+        <div class="bonus-modal">
+            <div class="bonus-modal-header">
+                <h3 id="bonus-calculator-title" data-i18n="bonus_calculator_title">Calculate Yer Bonus Plunder</h3>
+                <button class="close-button" onclick="game.closeBonusModal()" aria-label="Close bonus calculator">×</button>
+            </div>
+            
+            <div class="bonus-modal-content">
+                <div class="bonus-category">
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-standard-14" data-i18n="bonus_label_standard_14">Yellow/Purple/Green 14s</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateBonusCounter('standard14', -1)">−</button>
+                            <span class="counter-value" id="counter-standard14">0</span>
+                            <button class="counter-btn" onclick="game.updateBonusCounter('standard14', 1)">+</button>
+                        </div>
+                        <span class="bonus-points">+<span id="points-standard14">0</span></span>
+                    </div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-black-14" data-i18n="bonus_label_black_14">Black (Jolly Roger) 14</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateBonusCounter('black14', -1)">−</button>
+                            <span class="counter-value" id="counter-black14">0</span>
+                            <button class="counter-btn" onclick="game.updateBonusCounter('black14', 1)">+</button>
+                        </div>
+                        <span class="bonus-points">+<span id="points-black14">0</span></span>
+                    </div>
+                </div>
+                
+                <div class="bonus-category">
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-mermaid-pirate" data-i18n="bonus_label_mermaid_pirate">Pirates captured by Mermaid</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateBonusCounter('mermaidPirate', -1)">−</button>
+                            <span class="counter-value" id="counter-mermaidPirate">0</span>
+                            <button class="counter-btn" onclick="game.updateBonusCounter('mermaidPirate', 1)">+</button>
+                        </div>
+                        <span class="bonus-points">+<span id="points-mermaidPirate">0</span></span>
+                    </div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-sk-pirate" data-i18n="bonus_label_sk_pirate">Pirates captured by Skull King</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateBonusCounter('skullPirate', -1)">−</button>
+                            <span class="counter-value" id="counter-skullPirate">0</span>
+                            <button class="counter-btn" onclick="game.updateBonusCounter('skullPirate', 1)">+</button>
+                        </div>
+                        <span class="bonus-points">+<span id="points-skullPirate">0</span></span>
+                    </div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-mermaid-sk" data-i18n="bonus_label_mermaid_sk">Skull King captured by Mermaid</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateBonusCounter('mermaidSkull', -1)">−</button>
+                            <span class="counter-value" id="counter-mermaidSkull">0</span>
+                            <button class="counter-btn" onclick="game.updateBonusCounter('mermaidSkull', 1)">+</button>
+                        </div>
+                        <span class="bonus-points">+<span id="points-mermaidSkull">0</span></span>
+                    </div>
+                </div>
+                
+                <!-- Total -->
+                <div class="bonus-total">
+                    <span class="bonus-total-label" id="bonus-total-label" data-i18n="bonus_total_label">Total Bonus:</span>
+                    <span class="bonus-total-value" id="bonus-total-value">0</span>
+                </div>
+            </div>
+            
+            <div class="bonus-modal-footer">
+                <button class="btn btn-secondary" onclick="game.clearBonusCalculator()" id="bonus-clear-btn" data-i18n="bonus_clear_btn">Clear</button>
+                <button class="btn btn-primary" onclick="game.applyBonusCalculator()" id="bonus-apply-btn" data-i18n="bonus_apply_btn">Apply Bonus</button>
+            </div>
+        </div>
+    </div>
+
     <script src="game.js"></script>
 </body>
 </html>

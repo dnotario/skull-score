@@ -166,6 +166,22 @@ interface Translation {
     scoring_mode_normal_desc: string;
     scoring_mode_rascal: string;
     scoring_mode_rascal_desc: string;
+    
+    // Bonus calculator
+    calc_button: string;
+    calculate_button: string;
+    bonus_calculator_title: string;
+    bonus_category_14s: string;
+    bonus_category_captures: string;
+    bonus_label_standard_14: string;
+    bonus_label_black_14: string;
+    bonus_label_mermaid_pirate: string;
+    bonus_label_sk_pirate: string;
+    bonus_label_mermaid_sk: string;
+    bonus_total_label: string;
+    bonus_clear_btn: string;
+    bonus_apply_btn: string;
+    bonus_error_bid_mismatch: string;
 }
 
 // English translations
@@ -330,7 +346,23 @@ const enTranslation: Translation = {
     scoring_mode_normal: "Normal Scoring",
     scoring_mode_normal_desc: "Traditional Skull King: Zero bid = 10×round, correct bid = 20×tricks + bonus",
     scoring_mode_rascal: "Rascal's Scoring",
-    scoring_mode_rascal_desc: "Even-keeled scoring: 10 pts × cards dealt. Direct hit = full, off by 1 = half, off by 2+ = none"
+    scoring_mode_rascal_desc: "Even-keeled scoring: 10 pts × cards dealt. Direct hit = full, off by 1 = half, off by 2+ = none",
+    
+    // Bonus calculator
+    calc_button: "Calc",
+    calculate_button: "Calculate",
+    bonus_calculator_title: "Bonus Calculator",
+    bonus_category_14s: "Number 14 Cards Captured",
+    bonus_category_captures: "Character Captures",
+    bonus_label_standard_14: "Yellow/Purple/Green 14s",
+    bonus_label_black_14: "Black (Jolly Roger) 14",
+    bonus_label_mermaid_pirate: "Pirates captured by Mermaid",
+    bonus_label_sk_pirate: "Pirates captured by Skull King",
+    bonus_label_mermaid_sk: "Skull King captured by Mermaid",
+    bonus_total_label: "Total Bonus:",
+    bonus_clear_btn: "Clear",
+    bonus_apply_btn: "Apply Bonus",
+    bonus_error_bid_mismatch: "Arrr! Bonus only be allowed when yer bid equals actual tricks won!"
 };
 
 // German translations
@@ -495,7 +527,23 @@ const deTranslation: Translation = {
     scoring_mode_normal: "Normale Wertung",
     scoring_mode_normal_desc: "Traditionelle Skull King: Null-Gebot = 10×Runde, korrektes Gebot = 20×Stiche + Bonus",
     scoring_mode_rascal: "Schurken-Wertung",
-    scoring_mode_rascal_desc: "Ausgeglichene Wertung: 10 Pkt × ausgeteilte Karten. Direkttreffer = voll, um 1 daneben = halb, um 2+ daneben = null"
+    scoring_mode_rascal_desc: "Ausgeglichene Wertung: 10 Pkt × ausgeteilte Karten. Direkttreffer = voll, um 1 daneben = halb, um 2+ daneben = null",
+    
+    // Bonus calculator
+    calc_button: "Rechner",
+    calculate_button: "Berechnen",
+    bonus_calculator_title: "Bonus-Rechner",
+    bonus_category_14s: "Eroberte Nummer 14 Karten",
+    bonus_category_captures: "Charakterfänge",
+    bonus_label_standard_14: "Gelbe/Lila/Grüne 14er",
+    bonus_label_black_14: "Schwarze (Jolly Roger) 14",
+    bonus_label_mermaid_pirate: "Piraten von Meerjungfrau gefangen",
+    bonus_label_sk_pirate: "Piraten vom Skull King gefangen",
+    bonus_label_mermaid_sk: "Skull King von Meerjungfrau gefangen",
+    bonus_total_label: "Gesamt-Bonus:",
+    bonus_clear_btn: "Löschen",
+    bonus_apply_btn: "Bonus Anwenden",
+    bonus_error_bid_mismatch: "Arrr! Bonus nur erlaubt, wenn Gebot gleich gewonnene Stiche!"
 };
 
 // Spanish translations
@@ -660,7 +708,23 @@ const esTranslation: Translation = {
     scoring_mode_normal: "Puntuación Normal",
     scoring_mode_normal_desc: "Skull King tradicional: Apuesta cero = 10×ronda, apuesta correcta = 20×bazas + bonus",
     scoring_mode_rascal: "Puntuación Pícaro",
-    scoring_mode_rascal_desc: "Puntuación equilibrada: 10 pts × cartas repartidas. Acierto = completo, fallo por 1 = mitad, fallo por 2+ = cero"
+    scoring_mode_rascal_desc: "Puntuación equilibrada: 10 pts × cartas repartidas. Acierto = completo, fallo por 1 = mitad, fallo por 2+ = cero",
+    
+    // Bonus calculator
+    calc_button: "Calc",
+    calculate_button: "Calcular",
+    bonus_calculator_title: "Calculadora de Bonus",
+    bonus_category_14s: "Cartas Número 14 Capturadas",
+    bonus_category_captures: "Capturas de Personajes",
+    bonus_label_standard_14: "14s Amarillo/Morado/Verde",
+    bonus_label_black_14: "14 Negro (Jolly Roger)",
+    bonus_label_mermaid_pirate: "Piratas capturados por Sirena",
+    bonus_label_sk_pirate: "Piratas capturados por Rey Calavera",
+    bonus_label_mermaid_sk: "Rey Calavera capturado por Sirena",
+    bonus_total_label: "Bonus Total:",
+    bonus_clear_btn: "Borrar",
+    bonus_apply_btn: "Aplicar Bonus",
+    bonus_error_bid_mismatch: "¡Arrr! ¡Bonus solo permitido cuando apuesta igual a bazas ganadas!"
 };
 
 // Export translations object for easy access
