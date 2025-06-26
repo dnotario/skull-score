@@ -182,7 +182,6 @@ interface Translation {
     bonus_clear_btn: string;
     bonus_apply_btn: string;
     bonus_error_bid_mismatch: string;
-    bonus_rascal_too_far_off_error: string;
     
     // Update prompts
     update_available_title: string;
@@ -371,7 +370,6 @@ const enTranslation: Translation = {
     bonus_clear_btn: "Clear",
     bonus_apply_btn: "Apply Bonus",
     bonus_error_bid_mismatch: "Arrr! Bonus only be allowed when yer bid equals actual tricks won!",
-    bonus_rascal_too_far_off_error: "Arrr! In Rascal mode, bonus only be allowed when exact or off by 1! (Ye get half bonus when off by 1)",
     
     // Update prompts
     update_available_title: "Ahoy! New Treasure Available!",
@@ -560,7 +558,6 @@ const deTranslation: Translation = {
     bonus_clear_btn: "Löschen",
     bonus_apply_btn: "Bonus Anwenden",
     bonus_error_bid_mismatch: "Arrr! Bonus nur erlaubt, wenn Gebot gleich gewonnene Stiche!",
-    bonus_rascal_too_far_off_error: "Arrr! Im Schurken-Modus nur Bonus bei exakt oder um 1 daneben! (Halber Bonus bei um 1 daneben)",
     
     // Update prompts
     update_available_title: "Ahoi! Neue Version verfügbar!",
@@ -749,7 +746,6 @@ const esTranslation: Translation = {
     bonus_clear_btn: "Borrar",
     bonus_apply_btn: "Aplicar Bonus",
     bonus_error_bid_mismatch: "¡Arrr! ¡Bonus solo permitido cuando apuesta igual a bazas ganadas!",
-    bonus_rascal_too_far_off_error: "¡Arrr! En modo Pícaro, bonus solo permitido cuando exacto o fallo por 1! (Medio bonus si fallas por 1)",
     
     // Update prompts
     update_available_title: "¡Ahoy! ¡Nueva versión disponible!",

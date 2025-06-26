@@ -346,23 +346,13 @@ class GameViewModel {
 
         // Bonus point validation
         if (bonus > 0) {
-            const scoringMode = this.state.scoringMode || 'normal';
-            const difference = Math.abs(bid - actual);
-            
-            if (scoringMode === 'normal' && bid !== actual) {
-                // In normal mode, bonus only applies when correctly predicting tricks
+            // According to official rules: "Only awarded if you make your exact bid!"
+            // This applies to BOTH scoring modes
+            if (bid !== actual) {
                 return this.t('bonus_without_correct_bid_error', {
                     playerName,
                     bid: bid.toString(),
                     actual: actual.toString()
-                });
-            } else if (scoringMode === 'rascal' && difference > 1) {
-                // In rascal mode, bonus applies when exact or off by 1
-                return this.t('bonus_rascal_too_far_off_error', {
-                    playerName,
-                    bid: bid.toString(),
-                    actual: actual.toString(),
-                    fallback: `${playerName}: Bonus only allowed when exact or off by 1 in Rascal mode!`
                 });
             }
         }
@@ -1943,16 +1933,11 @@ class SkullKingGame {
         const scoringMode = this.viewModel.getScoringMode();
         const difference = Math.abs(bid - actual);
         
-        if (scoringMode === 'normal' && bid !== actual) {
+        // Bonus is only allowed when bid equals actual in BOTH modes
+        if (bid !== actual) {
             this.showModal(
                 this.t('error_title'),
                 this.t('bonus_error_bid_mismatch', { fallback: 'Bonus only allowed when bid equals actual!' })
-            );
-            return;
-        } else if (scoringMode === 'rascal' && difference > 1) {
-            this.showModal(
-                this.t('error_title'),
-                this.t('bonus_rascal_too_far_off_error', { fallback: 'Bonus only allowed when exact or off by 1 in Rascal mode!' })
             );
             return;
         }

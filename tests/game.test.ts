@@ -552,9 +552,10 @@ describe('SkullKingGame Validation', () => {
             expect(result).toBe("Alice can only use whole numbers, no half measures!");
         });
 
-        test('should reject unreasonable bonus values', () => {
+        test('should accept high bonus values when prediction is correct', () => {
+            // The game doesn't restrict bonus values as long as the prediction is correct
             const result = gameInstance.testValidateSinglePlayerInput(1, 1, 150, 'Alice');
-            expect(result).toBe("Alice's bonus of 150 seems too high.");
+            expect(result).toBeNull(); // Should succeed - no upper limit on bonus
         });
 
         test('should reject bonus points for incorrect predictions', () => {
@@ -577,6 +578,140 @@ describe('SkullKingGame Validation', () => {
             // Round 1 with 2 players = max 1 trick
             const result = gameInstance.testValidateSinglePlayerInput(0, 2, 0, 'Alice', 1);
             expect(result).toBe("Alice can't win more than 1 tricks in round 1!");
+        });
+    });
+    
+    describe('Rascal Mode Bonus Validation', () => {
+        beforeEach(() => {
+            // Set up game in Rascal mode
+            gameInstance.viewModel.startNewGame(false);
+            gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+            gameInstance.viewModel.setScoringMode('rascal');
+            gameInstance.viewModel.validateAndStartGame();
+        });
+        
+        test('should allow bonus when bid equals actual in Rascal mode', () => {
+            const result = gameInstance.testValidateSinglePlayerInput(1, 1, 20, 'Alice');
+            expect(result).toBeNull(); // Should succeed
+        });
+        
+        test('should reject bonus when off by 1 in Rascal mode', () => {
+            // Bonuses are only allowed when EXACT in both modes
+            // Off by 1 (bid 0, actual 1)
+            let result = gameInstance.testValidateSinglePlayerInput(0, 1, 20, 'Alice');
+            expect(result).toContain("can't earn bonus points without bidding correctly");
+            
+            // Off by 1 (bid 1, actual 0)
+            result = gameInstance.testValidateSinglePlayerInput(1, 0, 20, 'Alice');
+            expect(result).toContain("can't earn bonus points without bidding correctly");
+        });
+        
+        test('should reject bonus when off by more than 1 in Rascal mode', () => {
+            // For this test, we need to advance to a later round with more tricks available
+            // Add 4 dummy rounds to get to round 5
+            for (let i = 0; i < 4; i++) {
+                const dummyRound = {
+                    'Alice': { bid: 0, actual: 0, bonus: 0 },
+                    'Bob': { bid: 0, actual: 0, bonus: 0 }
+                };
+                gameInstance.viewModel.addRound(dummyRound);
+            }
+            
+            // Now in round 5 with 2 players = 5 tricks available
+            // Off by 2 (bid 1, actual 3)
+            let result = gameInstance.testValidateSinglePlayerInput(1, 3, 20, 'Alice', 5);
+            expect(result).toContain("can't earn bonus points without bidding correctly");
+            
+            // Off by 3 (bid 0, actual 3)
+            result = gameInstance.testValidateSinglePlayerInput(0, 3, 20, 'Alice', 5);
+            expect(result).toContain("can't earn bonus points without bidding correctly");
+        });
+        
+        test('should not allow bonus when off by 1 in Rascal mode', () => {
+            // Try to add round where Alice is off by 1 with bonus
+            const roundData = {
+                'Alice': { bid: 0, actual: 1, bonus: 20 }, // Off by 1
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const addResult = gameInstance.viewModel.addRound(roundData);
+            expect(addResult).toContain("can't earn bonus points without bidding correctly");
+            
+            // Verify the round was NOT added
+            const gameState = gameInstance.viewModel.getGameState();
+            expect(gameState.rounds.length).toBe(0);
+        });
+        
+        test('should give full bonus when exact in Rascal mode', () => {
+            // Add round where Alice is exact with bonus
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 20 }, // Exact
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const addResult = gameInstance.viewModel.addRound(roundData);
+            expect(addResult).toBeNull(); // Should succeed
+            
+            // Verify Alice got full base score and full bonus
+            const gameState = gameInstance.viewModel.getGameState();
+            const aliceScore = gameState.players.find((p: any) => p.name === 'Alice')?.score;
+            // Round 1 with 2 players = 1 card dealt
+            // Rascal scoring: 10 * cards dealt = 10 potential points
+            // Exact = full points = 10 + full bonus (20) = 30
+            expect(aliceScore).toBe(30);
+        });
+        
+        test('should reject bonus when off by 2+ in Rascal mode', () => {
+            // Create a fresh game instance to avoid interference
+            const freshGame = new window.SkullKingGame();
+            freshGame.viewModel.startNewGame(false);
+            freshGame.viewModel.setTempPlayers(['Alice', 'Bob']);
+            freshGame.viewModel.setScoringMode('rascal');
+            freshGame.viewModel.validateAndStartGame();
+            
+            // Advance to round 3 to have more tricks available
+            // Round 1: 1 trick total
+            freshGame.viewModel.addRound({
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            });
+            
+            // Round 2: 2 tricks total
+            freshGame.viewModel.addRound({
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 1, actual: 1, bonus: 0 }
+            });
+            
+            // Verify we're now in round 3
+            let gameState = freshGame.viewModel.getGameState();
+            expect(gameState.currentRound).toBe(3);
+            
+            // Try to add round 3 where Alice is off by 2 with bonus  
+            // Round 3 with 2 players = 3 tricks total
+            const roundData = {
+                'Alice': { bid: 0, actual: 2, bonus: 20 }, // Off by 2 - should reject bonus
+                'Bob': { bid: 1, actual: 1, bonus: 0 }
+            };
+            
+            const addResult = freshGame.viewModel.addRound(roundData);
+            expect(addResult).toContain("can't earn bonus points without bidding correctly");
+            
+            // Verify round was NOT added  
+            gameState = freshGame.viewModel.getGameState();
+            expect(gameState.rounds.length).toBe(2); // Only the 2 rounds we added
+        });
+        
+        test('should handle Normal mode bonus validation correctly', () => {
+            // Switch back to normal mode
+            gameInstance.viewModel.setScoringMode('normal');
+            
+            // In normal mode, bonus only allowed when exact
+            let result = gameInstance.testValidateSinglePlayerInput(1, 0, 20, 'Alice');
+            expect(result).toContain("can't earn bonus points without bidding correctly");
+            
+            // Exact bid should allow bonus
+            result = gameInstance.testValidateSinglePlayerInput(1, 1, 20, 'Alice');
+            expect(result).toBeNull(); // Should succeed
         });
     });
 
