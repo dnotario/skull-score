@@ -74,6 +74,11 @@ See **README.md** for complete technical details including:
 - Validated bonus point restrictions (only allowed when bid = actual)
 - Added tests to ensure rounds with invalid bonus points are rejected
 
+### UI Improvements
+- Standardized font sizes and spacing in bonus calculator popup to match main page design
+- Improved mobile experience with better touch targets and consistent sizing
+- Enhanced visual hierarchy for better readability across all modals
+
 ## What's NOT Implemented
 
 The app functions as a **score keeper**, not a full game implementation:
