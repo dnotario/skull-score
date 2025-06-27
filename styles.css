@@ -267,6 +267,8 @@ input[type="text"]:focus {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    position: relative;
+    z-index: 1;
 }
 
 .player-name-input input {
