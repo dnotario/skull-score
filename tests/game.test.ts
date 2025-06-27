@@ -2262,4 +2262,150 @@ describe('SkullKingGame Translation System', () => {
         const englishCommentary = gameInstance.viewModel.getCurrentCommentary();
         expect(englishCommentary).toBeDefined();
     });
+
+    test('should reorder players when dragging', () => {
+        // Setup temp players
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'Dave']);
+        
+        // Test reordering from index 0 to index 2
+        gameInstance.viewModel.reorderTempPlayers(0, 2);
+        let players = gameInstance.viewModel.getTempPlayers();
+        expect(players).toEqual(['Bob', 'Charlie', 'Alice', 'Dave']);
+        
+        // Test reordering from index 3 to index 1
+        gameInstance.viewModel.reorderTempPlayers(3, 1);
+        players = gameInstance.viewModel.getTempPlayers();
+        expect(players).toEqual(['Bob', 'Dave', 'Charlie', 'Alice']);
+        
+        // Test reordering with same index (should not change)
+        gameInstance.viewModel.reorderTempPlayers(1, 1);
+        players = gameInstance.viewModel.getTempPlayers();
+        expect(players).toEqual(['Bob', 'Dave', 'Charlie', 'Alice']);
+    });
+
+    test('should handle drag events correctly', () => {
+        // Setup temp players
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        gameInstance.updatePlayerInputs();
+        
+        // Create mock drag event
+        const mockTarget = document.createElement('div');
+        const mockDragEvent = {
+            target: mockTarget,
+            dataTransfer: {
+                effectAllowed: '',
+                setData: jest.fn(),
+                setDragImage: jest.fn(),
+                dropEffect: ''
+            },
+            offsetX: 10,
+            offsetY: 10,
+            preventDefault: jest.fn(),
+            stopPropagation: jest.fn()
+        } as unknown as DragEvent;
+        
+        // Test drag start
+        mockTarget.classList.add('player-name-input');
+        gameInstance.handleDragStart(mockDragEvent, 0);
+        expect(mockTarget.classList.contains('dragging')).toBe(true);
+        
+        // Test drag over
+        gameInstance.handleDragOver(mockDragEvent);
+        expect(mockDragEvent.preventDefault).toHaveBeenCalled();
+        
+        // Test drop
+        gameInstance.handleDrop(mockDragEvent, 2);
+        expect(mockDragEvent.preventDefault).toHaveBeenCalled();
+        expect(mockDragEvent.stopPropagation).toHaveBeenCalled();
+        
+        // Verify players were reordered
+        const players = gameInstance.viewModel.getTempPlayers();
+        expect(players).toEqual(['Bob', 'Charlie', 'Alice']);
+    });
+
+    test('should allow bonus entry in Rascal mode when off by one', () => {
+        // Start a game in Rascal mode
+        gameInstance.viewModel.setScoringMode('rascal');
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Mock the modal display function
+        const showModalSpy = jest.spyOn(gameInstance, 'showModal');
+        
+        // Mock the DOM elements for player 0
+        const bidInput = document.createElement('input');
+        bidInput.id = 'bid-player-0';
+        bidInput.value = '2';
+        document.body.appendChild(bidInput);
+        
+        const actualInput = document.createElement('input');
+        actualInput.id = 'actual-player-0';
+        actualInput.value = '3'; // Off by 1
+        document.body.appendChild(actualInput);
+        
+        const bonusModal = document.createElement('div');
+        bonusModal.id = 'bonus-modal-overlay';
+        document.body.appendChild(bonusModal);
+        
+        // Try to open bonus modal when off by 1 in Rascal mode - should work
+        gameInstance.openBonusModal(0);
+        expect(showModalSpy).not.toHaveBeenCalled();
+        expect(bonusModal.classList.contains('active')).toBe(true);
+        
+        // Now test when off by 2 - should not work
+        actualInput.value = '4'; // Off by 2
+        bonusModal.classList.remove('active');
+        gameInstance.openBonusModal(0);
+        expect(showModalSpy).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.stringContaining('No bonus when ye be off by 2 or more')
+        );
+        expect(bonusModal.classList.contains('active')).toBe(false);
+        
+        // Clean up
+        showModalSpy.mockRestore();
+    });
+
+    test('should block bonus entry in Traditional mode when bid does not equal actual', () => {
+        // Start a game in Traditional mode
+        gameInstance.viewModel.setScoringMode('normal');
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Mock the modal display function
+        const showModalSpy = jest.spyOn(gameInstance, 'showModal');
+        
+        // Mock the DOM elements for player 0
+        const bidInput = document.createElement('input');
+        bidInput.id = 'bid-player-0';
+        bidInput.value = '2';
+        document.body.appendChild(bidInput);
+        
+        const actualInput = document.createElement('input');
+        actualInput.id = 'actual-player-0';
+        actualInput.value = '3'; // Off by 1
+        document.body.appendChild(actualInput);
+        
+        const bonusModal = document.createElement('div');
+        bonusModal.id = 'bonus-modal-overlay';
+        document.body.appendChild(bonusModal);
+        
+        // Try to open bonus modal when off by 1 in Traditional mode - should not work
+        gameInstance.openBonusModal(0);
+        expect(showModalSpy).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.stringContaining('Bonus only be allowed when yer bid equals actual')
+        );
+        expect(bonusModal.classList.contains('active')).toBe(false);
+        
+        // Now test when bid equals actual - should work
+        actualInput.value = '2'; // Exact match
+        showModalSpy.mockClear();
+        gameInstance.openBonusModal(0);
+        expect(showModalSpy).not.toHaveBeenCalled();
+        expect(bonusModal.classList.contains('active')).toBe(true);
+        
+        // Clean up
+        showModalSpy.mockRestore();
+    });
 });
