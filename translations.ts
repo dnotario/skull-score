@@ -182,6 +182,7 @@ interface Translation {
     bonus_clear_btn: string;
     bonus_apply_btn: string;
     bonus_error_bid_mismatch: string;
+    bonus_error_rascal_miss: string;
     
     // Update prompts
     update_available_title: string;
@@ -370,6 +371,7 @@ const enTranslation: Translation = {
     bonus_clear_btn: "Clear",
     bonus_apply_btn: "Apply Bonus",
     bonus_error_bid_mismatch: "Arrr! Bonus only be allowed when yer bid equals actual tricks won!",
+    bonus_error_rascal_miss: "Shiver me timbers! No bonus when ye be off by 2 or more!",
     
     // Update prompts
     update_available_title: "Ahoy! New Treasure Available!",
@@ -558,6 +560,7 @@ const deTranslation: Translation = {
     bonus_clear_btn: "Löschen",
     bonus_apply_btn: "Bonus Anwenden",
     bonus_error_bid_mismatch: "Arrr! Bonus nur erlaubt, wenn Gebot gleich gewonnene Stiche!",
+    bonus_error_rascal_miss: "Donnerwetter! Kein Bonus bei 2 oder mehr daneben!",
     
     // Update prompts
     update_available_title: "Ahoi! Neue Version verfügbar!",
@@ -746,6 +749,7 @@ const esTranslation: Translation = {
     bonus_clear_btn: "Borrar",
     bonus_apply_btn: "Aplicar Bonus",
     bonus_error_bid_mismatch: "¡Arrr! ¡Bonus solo permitido cuando apuesta igual a bazas ganadas!",
+    bonus_error_rascal_miss: "¡Por mil rayos! ¡Sin bonus cuando fallas por 2 o más!",
     
     // Update prompts
     update_available_title: "¡Ahoy! ¡Nueva versión disponible!",
