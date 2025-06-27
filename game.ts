@@ -344,13 +344,31 @@ class GameViewModel {
             });
         }
 
-        // Bonus point validation - only applies when correctly predicting tricks
-        if (bid !== actual && bonus > 0) {
-            return this.t('bonus_without_correct_bid_error', {
-                playerName,
-                bid: bid.toString(),
-                actual: actual.toString()
-            });
+        // Bonus point validation
+        if (bonus > 0) {
+            const scoringMode = this.state.scoringMode || 'normal';
+            
+            if (scoringMode === 'normal') {
+                // Traditional scoring: "Only awarded if you make your exact bid!"
+                if (bid !== actual) {
+                    return this.t('bonus_without_correct_bid_error', {
+                        playerName,
+                        bid: bid.toString(),
+                        actual: actual.toString()
+                    });
+                }
+            } else if (scoringMode === 'rascal') {
+                // Rascal scoring: Bonuses allowed for direct hit or glancing blow (off by 1)
+                // Full bonus for exact bid, half bonus for off by 1, no bonus for off by 2+
+                const difference = Math.abs(bid - actual);
+                if (difference > 1) {
+                    return this.t('bonus_without_correct_bid_error', {
+                        playerName,
+                        bid: bid.toString(),
+                        actual: actual.toString()
+                    });
+                }
+            }
         }
 
 
@@ -858,6 +876,7 @@ class SkullKingGame {
         this.initializePWA();
         this.initializeTranslations();
         this.updateUI();
+        this.registerServiceWorkerUpdateHandler();
     }
 
     private setupEventListeners(): void {
@@ -1122,7 +1141,7 @@ class SkullKingGame {
                         <button class="bonus-button" id="bonus-player-${index}" onclick="game.openBonusModal(${index})" aria-label="Calculate bonus">
                             <span class="bonus-icon">🧮</span>
                             <span class="bonus-text">${this.t('calculate_button', { fallback: 'Calculate' })}</span>
-                            <span class="bonus-value" id="bonus-value-${index}">0</span>
+                            <span class="bonus-value no-bonus" id="bonus-value-${index}">0</span>
                         </button>
                     </div>
                     <div class="input-group">
@@ -1212,6 +1231,7 @@ class SkullKingGame {
             if (bonusButton && bonusValueEl) {
                 bonusButton.setAttribute('data-bonus-value', '0');
                 bonusValueEl.textContent = '0';
+                bonusValueEl.classList.add('no-bonus');
             }
         });
         
@@ -1608,6 +1628,12 @@ class SkullKingGame {
             if (bonusButton && bonusValueEl) {
                 bonusButton.setAttribute('data-bonus-value', data.bonus.toString());
                 bonusValueEl.textContent = data.bonus.toString();
+                // Update styling based on whether bonus is applied
+                if (data.bonus > 0) {
+                    bonusValueEl.classList.remove('no-bonus');
+                } else {
+                    bonusValueEl.classList.add('no-bonus');
+                }
             }
             
             // Update the computed score for this player
@@ -1924,9 +1950,16 @@ class SkullKingGame {
         const bid = parseInt(bidInput.value) || 0;
         const actual = parseInt(actualInput.value) || 0;
         
-        // Only allow bonus if bid equals actual
+        // Check bonus eligibility based on scoring mode
+        const scoringMode = this.viewModel.getScoringMode();
+        const difference = Math.abs(bid - actual);
+        
+        // Bonus is only allowed when bid equals actual in BOTH modes
         if (bid !== actual) {
-            alert(this.t('bonus_error_bid_mismatch', { fallback: 'Bonus only allowed when bid equals actual!' }));
+            this.showModal(
+                this.t('error_title'),
+                this.t('bonus_error_bid_mismatch', { fallback: 'Bonus only allowed when bid equals actual!' })
+            );
             return;
         }
         
@@ -2116,6 +2149,12 @@ class SkullKingGame {
         const bonusValueEl = document.getElementById(`bonus-value-${this.currentBonusPlayerIndex}`);
         if (bonusValueEl) {
             bonusValueEl.textContent = total.toString();
+            // Remove gray styling if bonus is applied, add it back if bonus is 0
+            if (total > 0) {
+                bonusValueEl.classList.remove('no-bonus');
+            } else {
+                bonusValueEl.classList.add('no-bonus');
+            }
         }
         
         // Store the bonus value in a data attribute for persistence
@@ -2150,6 +2189,67 @@ class SkullKingGame {
     // Public method for testing scoring modes
     public getViewModel(): GameViewModel {
         return this.viewModel;
+    }
+    
+    // Service Worker Update Handler
+    private registerServiceWorkerUpdateHandler(): void {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            // Check for updates every time the app gains focus
+            window.addEventListener('focus', () => {
+                navigator.serviceWorker.getRegistration().then(registration => {
+                    if (registration) {
+                        registration.update();
+                    }
+                });
+            });
+            
+            // Listen for new service worker taking control
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                // New service worker has taken control, show update prompt
+                this.showUpdatePrompt();
+            });
+            
+            // Also check on visibility change (for mobile)
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    navigator.serviceWorker.getRegistration().then(registration => {
+                        if (registration) {
+                            registration.update();
+                        }
+                    });
+                }
+            });
+        }
+    }
+    
+    private showUpdatePrompt(): void {
+        // Store the original confirm button handler
+        const confirmBtn = document.getElementById('modal-confirm');
+        const originalHandler = confirmBtn?.onclick;
+        
+        // Set up reload on confirm
+        if (confirmBtn) {
+            confirmBtn.onclick = () => {
+                const modal = document.getElementById('modal');
+                if (modal) modal.classList.add('hidden');
+                window.location.reload();
+            };
+        }
+        
+        this.showModal(
+            this.t('update_available_title', { fallback: 'Update Available!' }),
+            this.t('update_available_message', { fallback: 'A new version is available. Reload to update?' })
+        );
+        
+        // Restore original handler when modal is closed
+        const cancelBtn = document.getElementById('modal-cancel');
+        if (cancelBtn) {
+            const originalCancelHandler = cancelBtn.onclick;
+            cancelBtn.onclick = () => {
+                if (originalCancelHandler) originalCancelHandler.call(cancelBtn, new MouseEvent('click'));
+                if (confirmBtn && originalHandler) confirmBtn.onclick = originalHandler;
+            };
+        }
     }
 }
 

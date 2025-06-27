@@ -182,6 +182,13 @@ interface Translation {
     bonus_clear_btn: string;
     bonus_apply_btn: string;
     bonus_error_bid_mismatch: string;
+    
+    // Update prompts
+    update_available_title: string;
+    update_available_message: string;
+    
+    // Error title
+    error_title: string;
 }
 
 // English translations
@@ -356,13 +363,20 @@ const enTranslation: Translation = {
     bonus_category_captures: "Character Captures",
     bonus_label_standard_14: "Yellow/Purple/Green 14s",
     bonus_label_black_14: "Black (Jolly Roger) 14",
-    bonus_label_mermaid_pirate: "Pirates captured by Mermaid",
+    bonus_label_mermaid_pirate: "Mermaids captured by Pirates",
     bonus_label_sk_pirate: "Pirates captured by Skull King",
     bonus_label_mermaid_sk: "Skull King captured by Mermaid",
     bonus_total_label: "Total Bonus:",
     bonus_clear_btn: "Clear",
     bonus_apply_btn: "Apply Bonus",
-    bonus_error_bid_mismatch: "Arrr! Bonus only be allowed when yer bid equals actual tricks won!"
+    bonus_error_bid_mismatch: "Arrr! Bonus only be allowed when yer bid equals actual tricks won!",
+    
+    // Update prompts
+    update_available_title: "Ahoy! New Treasure Available!",
+    update_available_message: "A newer version of the score keeper be ready! Reload to get the latest features?",
+    
+    // Error title
+    error_title: "Avast!"
 };
 
 // German translations
@@ -537,13 +551,20 @@ const deTranslation: Translation = {
     bonus_category_captures: "Charakterfänge",
     bonus_label_standard_14: "Gelbe/Lila/Grüne 14er",
     bonus_label_black_14: "Schwarze (Jolly Roger) 14",
-    bonus_label_mermaid_pirate: "Piraten von Meerjungfrau gefangen",
+    bonus_label_mermaid_pirate: "Meerjungfrauen von Piraten gefangen",
     bonus_label_sk_pirate: "Piraten vom Skull King gefangen",
     bonus_label_mermaid_sk: "Skull King von Meerjungfrau gefangen",
     bonus_total_label: "Gesamt-Bonus:",
     bonus_clear_btn: "Löschen",
     bonus_apply_btn: "Bonus Anwenden",
-    bonus_error_bid_mismatch: "Arrr! Bonus nur erlaubt, wenn Gebot gleich gewonnene Stiche!"
+    bonus_error_bid_mismatch: "Arrr! Bonus nur erlaubt, wenn Gebot gleich gewonnene Stiche!",
+    
+    // Update prompts
+    update_available_title: "Ahoi! Neue Version verfügbar!",
+    update_available_message: "Eine neuere Version des Punktezählers ist bereit! Neu laden für die neuesten Funktionen?",
+    
+    // Error title
+    error_title: "Achtung!"
 };
 
 // Spanish translations
@@ -718,13 +739,20 @@ const esTranslation: Translation = {
     bonus_category_captures: "Capturas de Personajes",
     bonus_label_standard_14: "14s Amarillo/Morado/Verde",
     bonus_label_black_14: "14 Negro (Jolly Roger)",
-    bonus_label_mermaid_pirate: "Piratas capturados por Sirena",
+    bonus_label_mermaid_pirate: "Sirenas capturadas por Piratas",
     bonus_label_sk_pirate: "Piratas capturados por Rey Calavera",
     bonus_label_mermaid_sk: "Rey Calavera capturado por Sirena",
     bonus_total_label: "Bonus Total:",
     bonus_clear_btn: "Borrar",
     bonus_apply_btn: "Aplicar Bonus",
-    bonus_error_bid_mismatch: "¡Arrr! ¡Bonus solo permitido cuando apuesta igual a bazas ganadas!"
+    bonus_error_bid_mismatch: "¡Arrr! ¡Bonus solo permitido cuando apuesta igual a bazas ganadas!",
+    
+    // Update prompts
+    update_available_title: "¡Ahoy! ¡Nueva versión disponible!",
+    update_available_message: "¡Una nueva versión del contador está lista! ¿Recargar para obtener las últimas funciones?",
+    
+    // Error title
+    error_title: "¡Alto!"
 };
 
 // Export translations object for easy access
