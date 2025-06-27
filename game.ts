@@ -1141,7 +1141,7 @@ class SkullKingGame {
                         <button class="bonus-button" id="bonus-player-${index}" onclick="game.openBonusModal(${index})" aria-label="Calculate bonus">
                             <span class="bonus-icon">🧮</span>
                             <span class="bonus-text">${this.t('calculate_button', { fallback: 'Calculate' })}</span>
-                            <span class="bonus-value" id="bonus-value-${index}">0</span>
+                            <span class="bonus-value no-bonus" id="bonus-value-${index}">0</span>
                         </button>
                     </div>
                     <div class="input-group">
@@ -1231,6 +1231,7 @@ class SkullKingGame {
             if (bonusButton && bonusValueEl) {
                 bonusButton.setAttribute('data-bonus-value', '0');
                 bonusValueEl.textContent = '0';
+                bonusValueEl.classList.add('no-bonus');
             }
         });
         
@@ -1627,6 +1628,12 @@ class SkullKingGame {
             if (bonusButton && bonusValueEl) {
                 bonusButton.setAttribute('data-bonus-value', data.bonus.toString());
                 bonusValueEl.textContent = data.bonus.toString();
+                // Update styling based on whether bonus is applied
+                if (data.bonus > 0) {
+                    bonusValueEl.classList.remove('no-bonus');
+                } else {
+                    bonusValueEl.classList.add('no-bonus');
+                }
             }
             
             // Update the computed score for this player
@@ -2142,6 +2149,12 @@ class SkullKingGame {
         const bonusValueEl = document.getElementById(`bonus-value-${this.currentBonusPlayerIndex}`);
         if (bonusValueEl) {
             bonusValueEl.textContent = total.toString();
+            // Remove gray styling if bonus is applied, add it back if bonus is 0
+            if (total > 0) {
+                bonusValueEl.classList.remove('no-bonus');
+            } else {
+                bonusValueEl.classList.add('no-bonus');
+            }
         }
         
         // Store the bonus value in a data attribute for persistence

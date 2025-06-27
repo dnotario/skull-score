@@ -1574,6 +1574,11 @@ body.game-active .landing-only {
     font-size: 0.85rem;
 }
 
+.bonus-value.no-bonus {
+    color: #999;
+    opacity: 1;
+}
+
 /* Mobile adjustments for bonus value text */
 @media (max-width: 600px) {
     .bonus-value {
