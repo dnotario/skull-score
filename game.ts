@@ -346,14 +346,28 @@ class GameViewModel {
 
         // Bonus point validation
         if (bonus > 0) {
-            // According to official rules: "Only awarded if you make your exact bid!"
-            // This applies to BOTH scoring modes
-            if (bid !== actual) {
-                return this.t('bonus_without_correct_bid_error', {
-                    playerName,
-                    bid: bid.toString(),
-                    actual: actual.toString()
-                });
+            const scoringMode = this.state.scoringMode || 'normal';
+            
+            if (scoringMode === 'normal') {
+                // Traditional scoring: "Only awarded if you make your exact bid!"
+                if (bid !== actual) {
+                    return this.t('bonus_without_correct_bid_error', {
+                        playerName,
+                        bid: bid.toString(),
+                        actual: actual.toString()
+                    });
+                }
+            } else if (scoringMode === 'rascal') {
+                // Rascal scoring: Bonuses allowed for direct hit or glancing blow (off by 1)
+                // Full bonus for exact bid, half bonus for off by 1, no bonus for off by 2+
+                const difference = Math.abs(bid - actual);
+                if (difference > 1) {
+                    return this.t('bonus_without_correct_bid_error', {
+                        playerName,
+                        bid: bid.toString(),
+                        actual: actual.toString()
+                    });
+                }
             }
         }
 

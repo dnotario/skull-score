@@ -595,15 +595,15 @@ describe('SkullKingGame Validation', () => {
             expect(result).toBeNull(); // Should succeed
         });
         
-        test('should reject bonus when off by 1 in Rascal mode', () => {
-            // Bonuses are only allowed when EXACT in both modes
+        test('should allow bonus when off by 1 in Rascal mode', () => {
+            // In Rascal mode, bonuses are allowed for glancing blows (off by 1)
             // Off by 1 (bid 0, actual 1)
             let result = gameInstance.testValidateSinglePlayerInput(0, 1, 20, 'Alice');
-            expect(result).toContain("can't earn bonus points without bidding correctly");
+            expect(result).toBeNull(); // Should succeed - glancing blow gets half bonus
             
             // Off by 1 (bid 1, actual 0)
             result = gameInstance.testValidateSinglePlayerInput(1, 0, 20, 'Alice');
-            expect(result).toContain("can't earn bonus points without bidding correctly");
+            expect(result).toBeNull(); // Should succeed - glancing blow gets half bonus
         });
         
         test('should reject bonus when off by more than 1 in Rascal mode', () => {
@@ -627,7 +627,7 @@ describe('SkullKingGame Validation', () => {
             expect(result).toContain("can't earn bonus points without bidding correctly");
         });
         
-        test('should not allow bonus when off by 1 in Rascal mode', () => {
+        test('should allow bonus when off by 1 in Rascal mode and give half', () => {
             // Try to add round where Alice is off by 1 with bonus
             const roundData = {
                 'Alice': { bid: 0, actual: 1, bonus: 20 }, // Off by 1
@@ -635,11 +635,16 @@ describe('SkullKingGame Validation', () => {
             };
             
             const addResult = gameInstance.viewModel.addRound(roundData);
-            expect(addResult).toContain("can't earn bonus points without bidding correctly");
+            expect(addResult).toBeNull(); // Should succeed now
             
-            // Verify the round was NOT added
+            // Verify the round was added
             const gameState = gameInstance.viewModel.getGameState();
-            expect(gameState.rounds.length).toBe(0);
+            expect(gameState.rounds.length).toBe(1);
+            
+            // Verify Alice got half points for glancing blow
+            const alice = gameState.players.find((p: any) => p.name === 'Alice');
+            // Round 1 with off by 1: 10/2 + 20/2 = 5 + 10 = 15
+            expect(alice?.score).toBe(15);
         });
         
         test('should give full bonus when exact in Rascal mode', () => {
