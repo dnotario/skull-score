@@ -325,9 +325,7 @@ input[type="text"]:focus {
 }
 
 .player-name-input.drag-over {
-    border: 2px dashed #d4af37;
-    background: rgba(212, 175, 55, 0.1);
-    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+    /* Remove visual styling - just use as a state indicator */
 }
 
 /* Prevent text selection during drag */
@@ -349,7 +347,6 @@ input[type="text"]:focus {
 /* Drag ghost element */
 .drag-ghost {
     opacity: 0.9;
-    transform: rotate(2deg);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     pointer-events: none !important;
 }
