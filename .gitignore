@@ -7,6 +7,8 @@ dist/
 build/
 # DO NOT commit generated JavaScript files - edit game.ts instead!
 game.js
+# DO NOT commit generated service worker - edit sw.template.js instead!
+sw.js
 
 # IDE
 .idea/

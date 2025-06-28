@@ -229,6 +229,22 @@ class GameViewModel {
         }
     }
 
+    reorderTempPlayers(fromIndex: number, toIndex: number): void {
+        if (fromIndex === toIndex) return;
+        
+        const players = [...this.tempPlayers];
+        const [removed] = players.splice(fromIndex, 1);
+        
+        // Adjust target index after removal
+        let adjustedIndex = toIndex;
+        if (fromIndex < toIndex) {
+            adjustedIndex = toIndex - 1;
+        }
+        
+        players.splice(adjustedIndex, 0, removed);
+        this.tempPlayers = players;
+    }
+
     setTempPlayers(players: string[]): void {
         this.tempPlayers = [...players];
     }
@@ -344,22 +360,33 @@ class GameViewModel {
             });
         }
 
-        // Bonus point validation - only applies when correctly predicting tricks
-        if (bid !== actual && bonus > 0) {
-            return this.t('bonus_without_correct_bid_error', {
-                playerName,
-                bid: bid.toString(),
-                actual: actual.toString()
-            });
+        // Bonus point validation
+        if (bonus > 0) {
+            const scoringMode = this.state.scoringMode || 'normal';
+            
+            if (scoringMode === 'normal') {
+                // Traditional scoring: "Only awarded if you make your exact bid!"
+                if (bid !== actual) {
+                    return this.t('bonus_without_correct_bid_error', {
+                        playerName,
+                        bid: bid.toString(),
+                        actual: actual.toString()
+                    });
+                }
+            } else if (scoringMode === 'rascal') {
+                // Rascal scoring: Bonuses allowed for direct hit or glancing blow (off by 1)
+                // Full bonus for exact bid, half bonus for off by 1, no bonus for off by 2+
+                const difference = Math.abs(bid - actual);
+                if (difference > 1) {
+                    return this.t('bonus_without_correct_bid_error', {
+                        playerName,
+                        bid: bid.toString(),
+                        actual: actual.toString()
+                    });
+                }
+            }
         }
 
-        // Reasonable bonus limits
-        if (Math.abs(bonus) > 100) {
-            return this.t('unreasonable_bonus_error', {
-                playerName,
-                bonus: bonus.toString()
-            });
-        }
 
         return null; // Valid
     }
@@ -865,6 +892,7 @@ class SkullKingGame {
         this.initializePWA();
         this.initializeTranslations();
         this.updateUI();
+        this.registerServiceWorkerUpdateHandler();
     }
 
     private setupEventListeners(): void {
@@ -1037,6 +1065,7 @@ class SkullKingGame {
         document.getElementById('player-names-section')?.classList.add('hidden');
         document.getElementById('game-section')?.classList.add('hidden');
         document.getElementById('new-game-section')?.classList.add('hidden');
+        document.body.classList.remove('game-active');
     }
 
     private showPlayerSetup(): void {
@@ -1044,6 +1073,7 @@ class SkullKingGame {
         document.getElementById('player-names-section')?.classList.remove('hidden');
         document.getElementById('game-section')?.classList.add('hidden');
         document.getElementById('new-game-section')?.classList.add('hidden');
+        document.body.classList.remove('game-active');
         
         // Ensure scoring mode translations are applied
         this.updateAllTranslations();
@@ -1054,6 +1084,7 @@ class SkullKingGame {
         document.getElementById('player-names-section')?.classList.add('hidden');
         document.getElementById('game-section')?.classList.remove('hidden');
         document.getElementById('new-game-section')?.classList.remove('hidden');
+        document.body.classList.add('game-active');
     }
 
     private updatePlayerInputs(): void {
@@ -1123,7 +1154,11 @@ class SkullKingGame {
                     </div>
                     <div class="input-group">
                         <label for="bonus-player-${index}" class="input-label">${this.t('bonus_label')}</label>
-                        <input type="number" id="bonus-player-${index}" placeholder="0" min="0" oninput="game.updateRoundScoreByIndex(${index})">
+                        <button class="bonus-button" id="bonus-player-${index}" onclick="game.openBonusModal(${index})" aria-label="Calculate bonus">
+                            <span class="bonus-icon">🧮</span>
+                            <span class="bonus-text">${this.t('calculate_button', { fallback: 'Calculate' })}</span>
+                            <span class="bonus-value no-bonus" id="bonus-value-${index}">0</span>
+                        </button>
                     </div>
                     <div class="input-group">
                         <label class="input-label">${this.t('score_label')}</label>
@@ -1183,12 +1218,12 @@ class SkullKingGame {
         players.forEach((player, index) => {
             const bidInput = document.getElementById(`bid-player-${index}`) as HTMLInputElement;
             const actualInput = document.getElementById(`actual-player-${index}`) as HTMLInputElement;
-            const bonusInput = document.getElementById(`bonus-player-${index}`) as HTMLInputElement;
+            const bonusButton = document.getElementById(`bonus-player-${index}`);
 
             // Parse values, defaulting to 0 for empty inputs
             const bidValue = bidInput?.value?.trim() || '0';
             const actualValue = actualInput?.value?.trim() || '0';
-            const bonusValue = bonusInput?.value?.trim() || '0';
+            const bonusValue = bonusButton?.getAttribute('data-bonus-value') || '0';
 
             data[player.name] = {
                 bid: parseInt(bidValue),
@@ -1203,6 +1238,21 @@ class SkullKingGame {
     private clearRoundInputs(): void {
         const inputs = document.querySelectorAll('#round-inputs input') as NodeListOf<HTMLInputElement>;
         inputs.forEach(input => input.value = '');
+        
+        // Reset bonus buttons
+        const players = this.viewModel.getPlayers();
+        players.forEach((_, index) => {
+            const bonusButton = document.getElementById(`bonus-player-${index}`);
+            const bonusValueEl = document.getElementById(`bonus-value-${index}`);
+            if (bonusButton && bonusValueEl) {
+                bonusButton.setAttribute('data-bonus-value', '0');
+                bonusValueEl.textContent = '0';
+                bonusValueEl.classList.add('no-bonus');
+            }
+        });
+        
+        // Clear stored bonus data for the round
+        this.playerBonusData = {};
     }
 
     private showCommentary(): void {
@@ -1498,15 +1548,15 @@ class SkullKingGame {
     private updateRoundScoreInternalByIndex(playerIndex: number): void {
         const bidInput = document.getElementById(`bid-player-${playerIndex}`) as HTMLInputElement;
         const actualInput = document.getElementById(`actual-player-${playerIndex}`) as HTMLInputElement;
-        const bonusInput = document.getElementById(`bonus-player-${playerIndex}`) as HTMLInputElement;
+        const bonusButton = document.getElementById(`bonus-player-${playerIndex}`);
         const scoreDisplay = document.getElementById(`score-player-${playerIndex}`);
         
-        if (!bidInput || !actualInput || !bonusInput || !scoreDisplay) return;
+        if (!bidInput || !actualInput || !scoreDisplay) return;
         
         // Get input values
         const bidValue = bidInput.value.trim();
         const actualValue = actualInput.value.trim();
-        const bonusValue = bonusInput.value.trim();
+        const bonusValue = bonusButton?.getAttribute('data-bonus-value') || '0';
         
         // Only show score when both bid and actual have values (Option 1: Progressive Disclosure)
         if (!bidValue || !actualValue) {
@@ -1518,7 +1568,7 @@ class SkullKingGame {
         // Parse values (bonus defaults to 0 if empty)
         const bid = parseInt(bidValue);
         const actual = parseInt(actualValue);
-        const bonus = bonusValue ? parseInt(bonusValue) : 0;
+        const bonus = parseInt(bonusValue);
         
         // Get player name for validation
         const players = this.viewModel.getPlayers();
@@ -1550,6 +1600,218 @@ class SkullKingGame {
     public removePlayer(index: number): void {
         this.viewModel.removeTempPlayer(index);
         this.updatePlayerInputs();
+    }
+
+
+    // Drag and drop handlers
+    private draggedPlayerIndex: number | null = null;
+    private touchStartY: number = 0;
+    private touchStartX: number = 0;
+    private draggedElement: HTMLElement | null = null;
+    private dragGhost: HTMLElement | null = null;
+
+    public handleDragStart(event: DragEvent, index: number): void {
+        // Commit any edits to the input field first
+        const input = document.getElementById(`player-${index}`) as HTMLInputElement;
+        if (input && document.activeElement === input) {
+            input.blur(); // This will trigger the onchange event
+        }
+        
+        this.draggedPlayerIndex = index;
+        const target = event.target as HTMLElement;
+        target.classList.add('dragging');
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/html', target.innerHTML);
+            
+            // Create custom drag image
+            const dragImage = target.cloneNode(true) as HTMLElement;
+            dragImage.style.position = 'absolute';
+            dragImage.style.top = '-9999px';
+            dragImage.style.opacity = '0.9';
+            dragImage.style.transform = 'rotate(2deg)';
+            dragImage.classList.remove('dragging'); // Remove dragging class from the ghost
+            document.body.appendChild(dragImage);
+            
+            // Set the drag image
+            event.dataTransfer.setDragImage(dragImage, event.offsetX, event.offsetY);
+            
+            // Remove the drag image after a moment
+            setTimeout(() => dragImage.remove(), 0);
+        }
+    }
+
+    public handleDragOver(event: DragEvent): void {
+        if (event.preventDefault) {
+            event.preventDefault();
+        }
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
+        }
+        
+        const target = event.target as HTMLElement;
+        const playerInput = target.closest('.player-name-input');
+        
+        // Remove previous drag-over classes
+        document.querySelectorAll('.player-name-input').forEach(el => el.classList.remove('drag-over'));
+        
+        if (playerInput && !playerInput.classList.contains('dragging')) {
+            playerInput.classList.add('drag-over');
+        }
+    }
+
+    public handleDrop(event: DragEvent, dropIndex: number): void {
+        if (event.stopPropagation) {
+            event.stopPropagation();
+        }
+        if (event.preventDefault) {
+            event.preventDefault();
+        }
+
+        const target = event.target as HTMLElement;
+        const playerInput = target.closest('.player-name-input');
+        if (playerInput) {
+            playerInput.classList.remove('drag-over');
+        }
+
+        if (this.draggedPlayerIndex !== null && this.draggedPlayerIndex !== dropIndex) {
+            // When dragging down, insert AFTER the drop target
+            // When dragging up, insert AT the drop target position
+            let targetIndex = dropIndex;
+            if (this.draggedPlayerIndex < dropIndex) {
+                // Dragging down - we want to place it after the drop target
+                targetIndex = dropIndex + 1;
+            }
+            
+            this.viewModel.reorderTempPlayers(this.draggedPlayerIndex, targetIndex);
+            this.updatePlayerInputs();
+        }
+    }
+
+    public handleDragEnd(event: DragEvent): void {
+        const target = event.target as HTMLElement;
+        target.classList.remove('dragging');
+        
+        // Remove all drag-over classes
+        const allInputs = document.querySelectorAll('.player-name-input');
+        allInputs.forEach(input => {
+            input.classList.remove('drag-over');
+        });
+        
+        this.draggedPlayerIndex = null;
+    }
+
+    // Touch handlers for mobile support
+    public handleTouchStart(event: TouchEvent, index: number): void {
+        // Commit any edits to the input field first
+        const input = document.getElementById(`player-${index}`) as HTMLInputElement;
+        if (input && document.activeElement === input) {
+            input.blur(); // This will trigger the onchange event
+        }
+        
+        this.draggedPlayerIndex = index;
+        const touch = event.touches[0];
+        this.touchStartY = touch.clientY;
+        this.touchStartX = touch.clientX;
+        
+        const target = event.target as HTMLElement;
+        const playerInput = target.closest('.player-name-input') as HTMLElement;
+        if (playerInput) {
+            this.draggedElement = playerInput;
+            playerInput.classList.add('dragging');
+            
+            // Create ghost element
+            this.dragGhost = playerInput.cloneNode(true) as HTMLElement;
+            this.dragGhost.classList.add('drag-ghost');
+            this.dragGhost.classList.remove('dragging'); // Remove dragging class from the ghost
+            this.dragGhost.style.position = 'fixed';
+            this.dragGhost.style.pointerEvents = 'none';
+            this.dragGhost.style.zIndex = '1000';
+            this.dragGhost.style.width = playerInput.offsetWidth + 'px';
+            
+            // Position ghost at touch point
+            const rect = playerInput.getBoundingClientRect();
+            this.dragGhost.style.left = rect.left + 'px';
+            this.dragGhost.style.top = rect.top + 'px';
+            
+            document.body.appendChild(this.dragGhost);
+        }
+    }
+
+    public handleTouchMove(event: TouchEvent): void {
+        if (!this.draggedElement || this.draggedPlayerIndex === null) return;
+        
+        event.preventDefault();
+        const touch = event.touches[0];
+        
+        // Move ghost element with touch
+        if (this.dragGhost) {
+            const deltaX = touch.clientX - this.touchStartX;
+            const deltaY = touch.clientY - this.touchStartY;
+            const rect = this.draggedElement.getBoundingClientRect();
+            
+            this.dragGhost.style.left = (rect.left + deltaX) + 'px';
+            this.dragGhost.style.top = (rect.top + deltaY) + 'px';
+        }
+        
+        // Find the element under the touch point (excluding the ghost)
+        if (this.dragGhost) {
+            this.dragGhost.style.display = 'none';
+        }
+        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (this.dragGhost) {
+            this.dragGhost.style.display = '';
+        }
+        
+        const dropTarget = elementBelow?.closest('.player-name-input');
+        
+        // Remove previous drag-over classes
+        document.querySelectorAll('.player-name-input').forEach(el => el.classList.remove('drag-over'));
+        
+        // Add drag-over class to current target
+        if (dropTarget && dropTarget !== this.draggedElement) {
+            dropTarget.classList.add('drag-over');
+        }
+    }
+
+    public handleTouchEnd(event: TouchEvent): void {
+        if (!this.draggedElement || this.draggedPlayerIndex === null) return;
+        
+        const touch = event.changedTouches[0];
+        
+        // Temporarily hide ghost to find element below
+        if (this.dragGhost) {
+            this.dragGhost.style.display = 'none';
+        }
+        
+        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        const dropTarget = elementBelow?.closest('.player-name-input');
+        
+        if (dropTarget && dropTarget !== this.draggedElement) {
+            const dropIndex = parseInt(dropTarget.getAttribute('data-player-index') || '0');
+            if (!isNaN(dropIndex) && this.draggedPlayerIndex !== dropIndex) {
+                // When dragging down, insert AFTER the drop target
+                // When dragging up, insert AT the drop target position
+                let targetIndex = dropIndex;
+                if (this.draggedPlayerIndex < dropIndex) {
+                    // Dragging down - we want to place it after the drop target
+                    targetIndex = dropIndex + 1;
+                }
+                
+                this.viewModel.reorderTempPlayers(this.draggedPlayerIndex, targetIndex);
+                this.updatePlayerInputs();
+            }
+        }
+        
+        // Clean up
+        if (this.dragGhost) {
+            this.dragGhost.remove();
+            this.dragGhost = null;
+        }
+        this.draggedElement.classList.remove('dragging');
+        document.querySelectorAll('.player-name-input').forEach(el => el.classList.remove('drag-over'));
+        this.draggedElement = null;
+        this.draggedPlayerIndex = null;
     }
 
     public updateRoundScore(playerName: string): void {
@@ -1586,11 +1848,21 @@ class SkullKingGame {
             
             const bidInput = document.getElementById(`bid-player-${playerIndex}`) as HTMLInputElement;
             const actualInput = document.getElementById(`actual-player-${playerIndex}`) as HTMLInputElement;
-            const bonusInput = document.getElementById(`bonus-player-${playerIndex}`) as HTMLInputElement;
+            const bonusButton = document.getElementById(`bonus-player-${playerIndex}`);
+            const bonusValueEl = document.getElementById(`bonus-value-${playerIndex}`);
 
             if (bidInput) bidInput.value = data.bid.toString();
             if (actualInput) actualInput.value = data.actual.toString();
-            if (bonusInput) bonusInput.value = data.bonus.toString();
+            if (bonusButton && bonusValueEl) {
+                bonusButton.setAttribute('data-bonus-value', data.bonus.toString());
+                bonusValueEl.textContent = data.bonus.toString();
+                // Update styling based on whether bonus is applied
+                if (data.bonus > 0) {
+                    bonusValueEl.classList.remove('no-bonus');
+                } else {
+                    bonusValueEl.classList.add('no-bonus');
+                }
+            }
             
             // Update the computed score for this player
             this.updateRoundScoreInternalByIndex(playerIndex);
@@ -1679,6 +1951,15 @@ class SkullKingGame {
     }
 
     private updateStaticContent(): void {
+        // Update all elements with data-i18n attributes
+        const elementsWithI18n = document.querySelectorAll('[data-i18n]');
+        elementsWithI18n.forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            if (key) {
+                element.textContent = this.t(key as keyof Translation);
+            }
+        });
+
         // Header
         const headerTitle = document.getElementById('header-title');
         if (headerTitle) headerTitle.textContent = this.t('header_title');
@@ -1877,6 +2158,268 @@ class SkullKingGame {
         modal.style.display = 'flex';
     }
 
+    // Bonus Calculator Modal Methods
+    private currentBonusPlayerIndex: number = -1;
+    private bonusCounters = {
+        standard14: 0,
+        black14: 0,
+        mermaidPirate: 0,
+        skullPirate: 0,
+        mermaidSkull: 0
+    };
+    private playerBonusData: { [key: number]: {
+        standard14: number;
+        black14: number;
+        mermaidPirate: number;
+        skullPirate: number;
+        mermaidSkull: number;
+    } } = {};
+
+    public openBonusModal(playerIndex: number): void {
+        this.currentBonusPlayerIndex = playerIndex;
+        
+        // Check if bid equals actual for this player
+        const bidInput = document.getElementById(`bid-player-${playerIndex}`) as HTMLInputElement;
+        const actualInput = document.getElementById(`actual-player-${playerIndex}`) as HTMLInputElement;
+        
+        if (!bidInput || !actualInput) return;
+        
+        const bid = parseInt(bidInput.value) || 0;
+        const actual = parseInt(actualInput.value) || 0;
+        
+        // Check bonus eligibility based on scoring mode
+        const scoringMode = this.viewModel.getScoringMode();
+        const difference = Math.abs(bid - actual);
+        
+        // In Traditional mode, bonus is only allowed when bid equals actual
+        // In Rascal mode, bonus is allowed when off by 0 or 1 (Direct Hit or Glancing Blow)
+        if (scoringMode === 'normal' && bid !== actual) {
+            this.showModal(
+                this.t('error_title'),
+                this.t('bonus_error_bid_mismatch', { fallback: 'Bonus only allowed when bid equals actual!' })
+            );
+            return;
+        } else if (scoringMode === 'rascal' && difference > 1) {
+            this.showModal(
+                this.t('error_title'),
+                this.t('bonus_error_rascal_miss', { fallback: 'No bonus when off by 2 or more!' })
+            );
+            return;
+        }
+        
+        // Restore previous values if they exist, otherwise reset
+        if (this.playerBonusData[playerIndex]) {
+            this.bonusCounters = { ...this.playerBonusData[playerIndex] };
+        } else {
+            // Reset counters
+            this.bonusCounters = {
+                standard14: 0,
+                black14: 0,
+                mermaidPirate: 0,
+                skullPirate: 0,
+                mermaidSkull: 0
+            };
+        }
+        
+        // Update UI with restored or reset values
+        this.updateBonusCountersUI();
+        
+        // Show modal
+        const modal = document.getElementById('bonus-modal-overlay');
+        if (modal) {
+            modal.classList.add('active');
+        }
+    }
+
+    private updateBonusCountersUI(): void {
+        // Update all counter displays
+        Object.keys(this.bonusCounters).forEach(key => {
+            const counterEl = document.getElementById(`counter-${key}`);
+            if (counterEl) {
+                counterEl.textContent = this.bonusCounters[key as keyof typeof this.bonusCounters].toString();
+            }
+            
+            // Update points display
+            const count = this.bonusCounters[key as keyof typeof this.bonusCounters];
+            const pointsEl = document.getElementById(`points-${key}`);
+            if (pointsEl) {
+                const points = this.calculateBonusPoints(key as keyof typeof this.bonusCounters, count);
+                pointsEl.textContent = points.toString();
+            }
+        });
+        
+        // Update button states
+        this.updateBonusButtonStates();
+        
+        // Update total
+        this.updateBonusTotal();
+    }
+    
+    private calculateBonusPoints(type: keyof typeof this.bonusCounters, count: number): number {
+        const pointsMap = {
+            standard14: 10,
+            black14: 20,
+            mermaidPirate: 20,
+            skullPirate: 30,
+            mermaidSkull: 40
+        };
+        return count * pointsMap[type];
+    }
+
+    public closeBonusModal(): void {
+        const modal = document.getElementById('bonus-modal-overlay');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+        // Don't clear counters on close - keep them for persistence
+    }
+
+    public updateBonusCounter(type: keyof typeof this.bonusCounters, delta: number): void {
+        // Define maximum limits for each bonus type
+        const maxLimits = {
+            standard14: 3,      // Yellow/Purple/Green 14s
+            black14: 1,         // Jolly Roger 14
+            mermaidPirate: 6,   // Pirates captured by Mermaid
+            skullPirate: 6,     // Pirates captured by Skull King
+            mermaidSkull: 1     // Skull King captured by Mermaid
+        };
+        
+        // Update counter value with min/max constraints
+        const newValue = this.bonusCounters[type] + delta;
+        this.bonusCounters[type] = Math.max(0, Math.min(maxLimits[type], newValue));
+        
+        // Update UI
+        const counterEl = document.getElementById(`counter-${type}`);
+        if (counterEl) {
+            counterEl.textContent = this.bonusCounters[type].toString();
+        }
+        
+        // Update points display
+        const pointsEl = document.getElementById(`points-${type}`);
+        if (pointsEl) {
+            const multipliers = {
+                standard14: 10,
+                black14: 20,
+                mermaidPirate: 20,
+                skullPirate: 30,
+                mermaidSkull: 40
+            };
+            pointsEl.textContent = (this.bonusCounters[type] * multipliers[type]).toString();
+        }
+        
+        // Update button states
+        this.updateBonusButtonStates();
+        
+        // Update total
+        this.updateBonusTotal();
+    }
+
+    private updateBonusButtonStates(): void {
+        const maxLimits = {
+            standard14: 3,
+            black14: 1,
+            mermaidPirate: 6,
+            skullPirate: 6,
+            mermaidSkull: 1
+        };
+        
+        // Update button states for each bonus type
+        Object.keys(this.bonusCounters).forEach(key => {
+            const type = key as keyof typeof this.bonusCounters;
+            const count = this.bonusCounters[type];
+            const max = maxLimits[type];
+            
+            // Get increment and decrement buttons
+            const incrementBtn = document.querySelector(`button[onclick="game.updateBonusCounter('${type}', 1)"]`) as HTMLButtonElement;
+            const decrementBtn = document.querySelector(`button[onclick="game.updateBonusCounter('${type}', -1)"]`) as HTMLButtonElement;
+            
+            // Disable/enable buttons based on limits
+            if (incrementBtn) {
+                incrementBtn.disabled = count >= max;
+            }
+            if (decrementBtn) {
+                decrementBtn.disabled = count <= 0;
+            }
+        });
+    }
+
+    private updateBonusTotal(): void {
+        const total = 
+            this.bonusCounters.standard14 * 10 +
+            this.bonusCounters.black14 * 20 +
+            this.bonusCounters.mermaidPirate * 20 +
+            this.bonusCounters.skullPirate * 30 +
+            this.bonusCounters.mermaidSkull * 40;
+            
+        const totalEl = document.getElementById('bonus-total-value');
+        if (totalEl) {
+            totalEl.textContent = total.toString();
+        }
+    }
+
+    public clearBonusCalculator(): void {
+        this.clearBonusCounters();
+        this.updateBonusButtonStates();
+        this.updateBonusTotal();
+    }
+
+    private clearBonusCounters(): void {
+        // Reset all counters
+        for (const key in this.bonusCounters) {
+            this.bonusCounters[key as keyof typeof this.bonusCounters] = 0;
+            const counterEl = document.getElementById(`counter-${key}`);
+            if (counterEl) {
+                counterEl.textContent = '0';
+            }
+            const pointsEl = document.getElementById(`points-${key}`);
+            if (pointsEl) {
+                pointsEl.textContent = '0';
+            }
+        }
+    }
+
+    public applyBonusCalculator(): void {
+        if (this.currentBonusPlayerIndex === -1) return;
+        
+        // Calculate total bonus
+        const total = 
+            this.bonusCounters.standard14 * 10 +
+            this.bonusCounters.black14 * 20 +
+            this.bonusCounters.mermaidPirate * 20 +
+            this.bonusCounters.skullPirate * 30 +
+            this.bonusCounters.mermaidSkull * 40;
+        
+        // Update the bonus value display
+        const bonusValueEl = document.getElementById(`bonus-value-${this.currentBonusPlayerIndex}`);
+        if (bonusValueEl) {
+            bonusValueEl.textContent = total.toString();
+            // Remove gray styling if bonus is applied, add it back if bonus is 0
+            if (total > 0) {
+                bonusValueEl.classList.remove('no-bonus');
+            } else {
+                bonusValueEl.classList.add('no-bonus');
+            }
+        }
+        
+        // Store the bonus value in a data attribute for persistence
+        const bonusButton = document.getElementById(`bonus-player-${this.currentBonusPlayerIndex}`);
+        if (bonusButton) {
+            bonusButton.setAttribute('data-bonus-value', total.toString());
+        }
+        
+        // Store the counters for this player to restore when reopening
+        if (!this.playerBonusData) {
+            this.playerBonusData = {};
+        }
+        this.playerBonusData[this.currentBonusPlayerIndex] = { ...this.bonusCounters };
+        
+        // Trigger the update with the new bonus value
+        this.updateRoundScoreByIndex(this.currentBonusPlayerIndex);
+        
+        // Close modal
+        this.closeBonusModal();
+    }
+
     // Public method for testing the scoring logic
     public testCalculateRoundScore(bid: number, actual: number, bonus: number, roundNumber: number, playerCount: number): number {
         return this.viewModel.testCalculateRoundScore(bid, actual, bonus, roundNumber, playerCount);
@@ -1890,6 +2433,67 @@ class SkullKingGame {
     // Public method for testing scoring modes
     public getViewModel(): GameViewModel {
         return this.viewModel;
+    }
+    
+    // Service Worker Update Handler
+    private registerServiceWorkerUpdateHandler(): void {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            // Check for updates every time the app gains focus
+            window.addEventListener('focus', () => {
+                navigator.serviceWorker.getRegistration().then(registration => {
+                    if (registration) {
+                        registration.update();
+                    }
+                });
+            });
+            
+            // Listen for new service worker taking control
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                // New service worker has taken control, show update prompt
+                this.showUpdatePrompt();
+            });
+            
+            // Also check on visibility change (for mobile)
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    navigator.serviceWorker.getRegistration().then(registration => {
+                        if (registration) {
+                            registration.update();
+                        }
+                    });
+                }
+            });
+        }
+    }
+    
+    private showUpdatePrompt(): void {
+        // Store the original confirm button handler
+        const confirmBtn = document.getElementById('modal-confirm');
+        const originalHandler = confirmBtn?.onclick;
+        
+        // Set up reload on confirm
+        if (confirmBtn) {
+            confirmBtn.onclick = () => {
+                const modal = document.getElementById('modal');
+                if (modal) modal.classList.add('hidden');
+                window.location.reload();
+            };
+        }
+        
+        this.showModal(
+            this.t('update_available_title', { fallback: 'Update Available!' }),
+            this.t('update_available_message', { fallback: 'A new version is available. Reload to update?' })
+        );
+        
+        // Restore original handler when modal is closed
+        const cancelBtn = document.getElementById('modal-cancel');
+        if (cancelBtn) {
+            const originalCancelHandler = cancelBtn.onclick;
+            cancelBtn.onclick = () => {
+                if (originalCancelHandler) originalCancelHandler.call(cancelBtn, new MouseEvent('click'));
+                if (confirmBtn && originalHandler) confirmBtn.onclick = originalHandler;
+            };
+        }
     }
 }
 

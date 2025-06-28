@@ -88,7 +88,7 @@
     <link rel="preconnect" href="https://www.googletagmanager.com">
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
     
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20250628101401">
     
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-38L33WX5SY"></script>
@@ -236,9 +236,10 @@
     </main>
 
     <!-- FAQ Section -->
-    <section class="faq-section parchment">
+    <section class="faq-section landing-only">
         <div class="container">
-            <h2>Frequently Asked Questions about Skull King Scoring</h2>
+            <div class="parchment">
+                <h2>Frequently Asked Questions about Skull King Scoring</h2>
             
             <div class="faq-item">
                 <h3>How does Skull King scoring work?</h3>
@@ -267,7 +268,7 @@
             
             <div class="faq-item">
                 <h3>How do bonus points work in Skull King?</h3>
-                <p>Bonus points are earned by capturing special cards like the Skull King (30-50 points per pirate captured), Pirates (10 points each), or using the White Whale expansion. You can only score bonus points when you meet your exact bid.</p>
+                <p>Bonus points are earned by capturing special cards like the Skull King (30 points per pirate captured), Mermaids capturing pirates (20 points each), or Mermaid capturing Skull King (40 points). In Traditional scoring, you can only score bonus points when you meet your exact bid. In Rascal scoring, you get full bonus for exact bids and half bonus when off by one.</p>
             </div>
             
             <div class="faq-item">
@@ -279,13 +280,15 @@
                 <h3>Is this Skull King score tracker free to use?</h3>
                 <p>Absolutely! This Skull King digital scorecard is completely free with no ads, subscriptions, or hidden costs. Enjoy unlimited games!</p>
             </div>
+            </div>
         </div>
     </section>
 
     <!-- Game Info Section -->
-    <section class="game-info parchment">
+    <section class="game-info landing-only">
         <div class="container">
-            <h2>About Skull King Score Tracking</h2>
+            <div class="parchment">
+                <h2>About Skull King Score Tracking</h2>
             <p>Skull King is a popular trick-taking card game where accurate score keeping is essential for fair gameplay. Our digital Skull King scorecard eliminates math errors and speeds up your game night. Whether you're a seasoned pirate or new to the seas, this Skull King score tracker makes the game more enjoyable by handling all the complex calculations automatically.</p>
             
             <h3>Skull King Scoring Made Easy</h3>
@@ -298,7 +301,8 @@
             <p>Using our Skull King digital scorecard is simple: Enter player names, choose your scoring mode (Normal or Rascal), then input each player's bid and actual tricks for every round. The score keeper automatically calculates points, tracks running totals, and even provides pirate-themed commentary on your performance!</p>
             
             <h3>Skull King Scoring Rules Explained</h3>
-            <p>New to Skull King? Here's a quick scoring guide: In Normal mode, bidding correctly earns 20 points per trick taken. Missing your bid costs 10 points per trick difference. Zero bids earn 10 points × the round number if successful. Rascal scoring is more forgiving, awarding partial points for close bids. Bonus points are only awarded when you meet your exact bid!</p>
+            <p>New to Skull King? Here's a quick scoring guide: In Normal mode, bidding correctly earns 20 points per trick taken. Missing your bid costs 10 points per trick difference. Zero bids earn 10 points × the round number if successful. Rascal scoring is more forgiving, awarding partial points for close bids. In Normal mode, bonus points are only awarded when you meet your exact bid. In Rascal mode, you get full bonus for exact bids and half bonus when off by one!</p>
+            </div>
         </div>
     </section>
 
@@ -321,6 +325,80 @@
         </div>
     </footer>
 
-    <script src="game.js"></script>
+    <!-- Bonus Calculator Modal -->
+    <div id="bonus-modal-overlay" class="modal-overlay">
+        <div class="bonus-modal">
+            <div class="bonus-modal-header">
+                <h3 id="bonus-calculator-title" data-i18n="bonus_calculator_title">Calculate Yer Bonus Plunder</h3>
+                <button class="close-button" onclick="game.closeBonusModal()" aria-label="Close bonus calculator">×</button>
+            </div>
+            
+            <div class="bonus-modal-content">
+                <div class="bonus-category">
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-standard-14" data-i18n="bonus_label_standard_14">Yellow/Purple/Green 14s</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateBonusCounter('standard14', -1)">−</button>
+                            <span class="counter-value" id="counter-standard14">0</span>
+                            <button class="counter-btn" onclick="game.updateBonusCounter('standard14', 1)">+</button>
+                        </div>
+                        <span class="bonus-points">+<span id="points-standard14">0</span></span>
+                    </div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-black-14" data-i18n="bonus_label_black_14">Black (Jolly Roger) 14</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateBonusCounter('black14', -1)">−</button>
+                            <span class="counter-value" id="counter-black14">0</span>
+                            <button class="counter-btn" onclick="game.updateBonusCounter('black14', 1)">+</button>
+                        </div>
+                        <span class="bonus-points">+<span id="points-black14">0</span></span>
+                    </div>
+                </div>
+                
+                <div class="bonus-category">
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-mermaid-pirate" data-i18n="bonus_label_mermaid_pirate">Mermaids captured by Pirates</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateBonusCounter('mermaidPirate', -1)">−</button>
+                            <span class="counter-value" id="counter-mermaidPirate">0</span>
+                            <button class="counter-btn" onclick="game.updateBonusCounter('mermaidPirate', 1)">+</button>
+                        </div>
+                        <span class="bonus-points">+<span id="points-mermaidPirate">0</span></span>
+                    </div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-sk-pirate" data-i18n="bonus_label_sk_pirate">Pirates captured by Skull King</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateBonusCounter('skullPirate', -1)">−</button>
+                            <span class="counter-value" id="counter-skullPirate">0</span>
+                            <button class="counter-btn" onclick="game.updateBonusCounter('skullPirate', 1)">+</button>
+                        </div>
+                        <span class="bonus-points">+<span id="points-skullPirate">0</span></span>
+                    </div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-mermaid-sk" data-i18n="bonus_label_mermaid_sk">Skull King captured by Mermaid</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateBonusCounter('mermaidSkull', -1)">−</button>
+                            <span class="counter-value" id="counter-mermaidSkull">0</span>
+                            <button class="counter-btn" onclick="game.updateBonusCounter('mermaidSkull', 1)">+</button>
+                        </div>
+                        <span class="bonus-points">+<span id="points-mermaidSkull">0</span></span>
+                    </div>
+                </div>
+                
+                <!-- Total -->
+                <div class="bonus-total">
+                    <span class="bonus-total-label" id="bonus-total-label" data-i18n="bonus_total_label">Total Bonus:</span>
+                    <span class="bonus-total-value" id="bonus-total-value">0</span>
+                </div>
+            </div>
+            
+            <div class="bonus-modal-footer">
+                <button class="btn btn-secondary" onclick="game.clearBonusCalculator()" id="bonus-clear-btn" data-i18n="bonus_clear_btn">Clear</button>
+                <button class="btn btn-primary" onclick="game.applyBonusCalculator()" id="bonus-apply-btn" data-i18n="bonus_apply_btn">Apply Bonus</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js?v=20250628101401"></script>
 </body>
 </html>
