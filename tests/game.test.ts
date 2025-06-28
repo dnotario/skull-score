@@ -63,6 +63,7 @@ import '../build/runFiles/game.js';
 declare global {
     interface Window {
         SkullKingGame: any;
+        GameViewModel: any;
         i18n: any;
     }
 }
@@ -1801,22 +1802,23 @@ describe('SkullKingGame Real-time Score Calculation', () => {
         gameInstance.viewModel.validateAndStartGame();
         
         // Mock the DOM elements needed for score calculation
+        // Alice is player 0, Bob is player 1
         document.body.innerHTML += `
             <div id="round-inputs"></div>
             <div id="round-number"></div>
-            <input id="bid-Alice" type="number" />
-            <input id="actual-Alice" type="number" />
-            <input id="bonus-Alice" type="number" />
-            <div id="score-Alice"></div>
-            <input id="bid-Bob" type="number" />
-            <input id="actual-Bob" type="number" />
-            <input id="bonus-Bob" type="number" />
-            <div id="score-Bob"></div>
+            <input id="bid-player-0" type="number" />
+            <input id="actual-player-0" type="number" />
+            <button id="bonus-player-0" data-bonus-value="0"></button>
+            <div id="score-player-0" class="computed-score">-</div>
+            <input id="bid-player-1" type="number" />
+            <input id="actual-player-1" type="number" />
+            <button id="bonus-player-1" data-bonus-value="0"></button>
+            <div id="score-player-1" class="computed-score">-</div>
         `;
     });
     
     test('should show "-" when both bid and actual are empty', () => {
-        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        const scoreDisplay = document.getElementById('score-player-0') as HTMLElement;
         
         // Call updateRoundScore with empty inputs
         gameInstance.updateRoundScore('Alice');
@@ -1826,8 +1828,8 @@ describe('SkullKingGame Real-time Score Calculation', () => {
     });
     
     test('should show "-" with only bid filled (Progressive Disclosure)', () => {
-        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
-        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        const bidInput = document.getElementById('bid-player-0') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-player-0') as HTMLElement;
         
         bidInput.value = '1';  // Valid bid for round 1 with 2 players
         gameInstance.updateRoundScore('Alice');
@@ -1838,8 +1840,8 @@ describe('SkullKingGame Real-time Score Calculation', () => {
     });
     
     test('should show "-" with only actual filled (Progressive Disclosure)', () => {
-        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
-        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-player-0') as HTMLElement;
         
         actualInput.value = '1';  // Valid actual for round 1 with 2 players
         gameInstance.updateRoundScore('Alice');
@@ -1850,9 +1852,9 @@ describe('SkullKingGame Real-time Score Calculation', () => {
     });
     
     test('should calculate correct prediction score', () => {
-        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
-        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
-        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        const bidInput = document.getElementById('bid-player-0') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-player-0') as HTMLElement;
         
         bidInput.value = '1';
         actualInput.value = '1';
@@ -1864,14 +1866,14 @@ describe('SkullKingGame Real-time Score Calculation', () => {
     });
     
     test('should include bonus points for correct predictions', () => {
-        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
-        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
-        const bonusInput = document.getElementById('bonus-Alice') as HTMLInputElement;
-        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        const bidInput = document.getElementById('bid-player-0') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        const bonusButton = document.getElementById('bonus-player-0') as HTMLElement;
+        const scoreDisplay = document.getElementById('score-player-0') as HTMLElement;
         
         bidInput.value = '1';
         actualInput.value = '1';
-        bonusInput.value = '10';
+        bonusButton.setAttribute('data-bonus-value', '10');
         gameInstance.updateRoundScore('Alice');
         
         // Bid 1, Actual 1, Bonus 10 = 20 + 10 = 30
@@ -1880,14 +1882,14 @@ describe('SkullKingGame Real-time Score Calculation', () => {
     });
     
     test('should show "-" for bonus on incorrect prediction', () => {
-        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
-        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
-        const bonusInput = document.getElementById('bonus-Alice') as HTMLInputElement;
-        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        const bidInput = document.getElementById('bid-player-0') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        const bonusButton = document.getElementById('bonus-player-0') as HTMLElement;
+        const scoreDisplay = document.getElementById('score-player-0') as HTMLElement;
         
         bidInput.value = '1';
         actualInput.value = '0';
-        bonusInput.value = '10';
+        bonusButton.setAttribute('data-bonus-value', '10');
         gameInstance.updateRoundScore('Alice');
         
         // Invalid: bonus points on failed prediction
@@ -1896,9 +1898,9 @@ describe('SkullKingGame Real-time Score Calculation', () => {
     });
     
     test('should handle zero bid correctly', () => {
-        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
-        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
-        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        const bidInput = document.getElementById('bid-player-0') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-player-0') as HTMLElement;
         
         bidInput.value = '0';
         actualInput.value = '0';
@@ -1910,20 +1912,20 @@ describe('SkullKingGame Real-time Score Calculation', () => {
     });
     
     test('should show zero score correctly', () => {
-        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
-        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
-        const bonusInput = document.getElementById('bonus-Alice') as HTMLInputElement;
-        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        const bidInput = document.getElementById('bid-player-0') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        const bonusButton = document.getElementById('bonus-player-0') as HTMLElement;
+        const scoreDisplay = document.getElementById('score-player-0') as HTMLElement;
         
         bidInput.value = '0';
         actualInput.value = '0';
-        bonusInput.value = '0';
+        bonusButton.setAttribute('data-bonus-value', '0');
         
         // Add rounds to get to round 0 (which would give 0 points for zero bid)
         // Actually, this can't happen in normal game, but let's test the display
         bidInput.value = '1';
         actualInput.value = '1';
-        bonusInput.value = '0';
+        bonusButton.setAttribute('data-bonus-value', '0');
         
         // Mock the score calculation to return 0
         jest.spyOn(gameInstance.viewModel, 'testCalculateRoundScore').mockReturnValue(0);
@@ -1935,15 +1937,15 @@ describe('SkullKingGame Real-time Score Calculation', () => {
     });
     
     test('should show "-" for invalid inputs using centralized validation', () => {
-        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
-        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
-        const bonusInput = document.getElementById('bonus-Alice') as HTMLInputElement;
-        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        const bidInput = document.getElementById('bid-player-0') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        const bonusButton = document.getElementById('bonus-player-0') as HTMLElement;
+        const scoreDisplay = document.getElementById('score-player-0') as HTMLElement;
         
         // Test negative bid (uses centralized validation)
         bidInput.value = '-1';
         actualInput.value = '0';
-        bonusInput.value = '0';
+        bonusButton.setAttribute('data-bonus-value', '0');
         gameInstance.updateRoundScore('Alice');
         
         expect(scoreDisplay.textContent).toBe('-');
@@ -1951,7 +1953,7 @@ describe('SkullKingGame Real-time Score Calculation', () => {
         
         // Test negative bonus (uses centralized validation)
         bidInput.value = '1';
-        bonusInput.value = '-10';
+        bonusButton.setAttribute('data-bonus-value', '-10');
         gameInstance.updateRoundScore('Alice');
         
         expect(scoreDisplay.textContent).toBe('-');
@@ -1959,9 +1961,9 @@ describe('SkullKingGame Real-time Score Calculation', () => {
     });
     
     test('should show "-" when bid exceeds round limit', () => {
-        const bidInput = document.getElementById('bid-Alice') as HTMLInputElement;
-        const actualInput = document.getElementById('actual-Alice') as HTMLInputElement;
-        const scoreDisplay = document.getElementById('score-Alice') as HTMLElement;
+        const bidInput = document.getElementById('bid-player-0') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-player-0') as HTMLElement;
         
         // In round 1 with 2 players, max is 1
         bidInput.value = '2';
@@ -1994,36 +1996,36 @@ describe('SkullKingGame Real-time Score Calculation', () => {
         gameInstance.viewModel.setTempPlayers(["O'Brien", 'Bob & Alice']);
         gameInstance.viewModel.validateAndStartGame();
         
-        // Add DOM elements for special character names
+        // Add DOM elements for special character names (player-0 is O'Brien, player-1 is Bob & Alice)
         document.body.innerHTML += `
-            <input id="bid-O'Brien" type="number" />
-            <input id="actual-O'Brien" type="number" />
-            <input id="bonus-O'Brien" type="number" />
-            <div id="score-O'Brien"></div>
-            <input id="bid-Bob & Alice" type="number" />
-            <input id="actual-Bob & Alice" type="number" />
-            <input id="bonus-Bob & Alice" type="number" />
-            <div id="score-Bob & Alice"></div>
+            <input id="bid-player-0" type="number" />
+            <input id="actual-player-0" type="number" />
+            <button id="bonus-player-0" data-bonus-value="0"></button>
+            <div id="score-player-0" class="computed-score">-</div>
+            <input id="bid-player-1" type="number" />
+            <input id="actual-player-1" type="number" />
+            <button id="bonus-player-1" data-bonus-value="0"></button>
+            <div id="score-player-1" class="computed-score">-</div>
         `;
         
         // Set values and test score calculation for names with special characters
-        const bidOBrien = document.getElementById("bid-O'Brien") as HTMLInputElement;
-        const actualOBrien = document.getElementById("actual-O'Brien") as HTMLInputElement;
+        const bidOBrien = document.getElementById("bid-player-0") as HTMLInputElement;
+        const actualOBrien = document.getElementById("actual-player-0") as HTMLInputElement;
         bidOBrien.value = '1';
         actualOBrien.value = '1';
         
         gameInstance.updateRoundScore("O'Brien");
-        const scoreOBrien = document.getElementById("score-O'Brien") as HTMLElement;
+        const scoreOBrien = document.getElementById("score-player-0") as HTMLElement;
         expect(scoreOBrien.textContent).toBe('+20');
         
         // For Bob & Alice - max in round 1 with 2 players is 1
-        const bidBobAlice = document.getElementById('bid-Bob & Alice') as HTMLInputElement;
-        const actualBobAlice = document.getElementById('actual-Bob & Alice') as HTMLInputElement;
+        const bidBobAlice = document.getElementById('bid-player-1') as HTMLInputElement;
+        const actualBobAlice = document.getElementById('actual-player-1') as HTMLInputElement;
         bidBobAlice.value = '0';
         actualBobAlice.value = '0';
         
         gameInstance.updateRoundScore('Bob & Alice');
-        const scoreBobAlice = document.getElementById('score-Bob & Alice') as HTMLElement;
+        const scoreBobAlice = document.getElementById('score-player-1') as HTMLElement;
         expect(scoreBobAlice.textContent).toBe('+10'); // Successful zero bid in round 1
     });
 });
@@ -2347,5 +2349,198 @@ describe('SkullKingGame Translation System', () => {
         
         // Clean up
         showModalSpy.mockRestore();
+    });
+});
+
+describe('GameViewModel Player Reordering with Up/Down Buttons', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+        gameInstance.viewModel.startNewGame(false);
+    });
+    
+    test('movePlayerUp should move player up one position', () => {
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'David']);
+        
+        // Move Bob (index 1) up
+        gameInstance.movePlayerUp(1);
+        
+        const players = gameInstance.viewModel.getTempPlayers();
+        expect(players).toEqual(['Bob', 'Alice', 'Charlie', 'David']);
+    });
+    
+    test('movePlayerUp should not move first player', () => {
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        
+        // Try to move Alice (index 0) up - should do nothing
+        gameInstance.movePlayerUp(0);
+        
+        const players = gameInstance.viewModel.getTempPlayers();
+        expect(players).toEqual(['Alice', 'Bob', 'Charlie']);
+    });
+    
+    test('movePlayerDown should move player down one position', () => {
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'David']);
+        
+        // Move Bob (index 1) down
+        gameInstance.movePlayerDown(1);
+        
+        const players = gameInstance.viewModel.getTempPlayers();
+        expect(players).toEqual(['Alice', 'Charlie', 'Bob', 'David']);
+    });
+    
+    test('movePlayerDown should not move last player', () => {
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        
+        // Try to move Charlie (index 2) down - should do nothing
+        gameInstance.movePlayerDown(2);
+        
+        const players = gameInstance.viewModel.getTempPlayers();
+        expect(players).toEqual(['Alice', 'Bob', 'Charlie']);
+    });
+    
+    test('movePlayerUp and movePlayerDown should preserve input values', () => {
+        // Set up DOM elements
+        document.body.innerHTML = `
+            <div id="player-names-inputs">
+                <div class="player-name-input">
+                    <input type="text" id="player-0" value="Alice Modified">
+                </div>
+                <div class="player-name-input">
+                    <input type="text" id="player-1" value="Bob Modified">
+                </div>
+            </div>
+        `;
+        
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        
+        // Move Bob up - should save "Bob Modified" value
+        gameInstance.movePlayerUp(1);
+        
+        const players = gameInstance.viewModel.getTempPlayers();
+        expect(players).toEqual(['Bob Modified', 'Alice Modified']);
+    });
+});
+
+describe('GameViewModel Player Reordering', () => {
+    let viewModel: any;
+
+    beforeEach(() => {
+        viewModel = new window.GameViewModel();
+    });
+
+    test('reorderTempPlayers moves player from index 0 to index 2', () => {
+        // Setup initial players
+        viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'David']);
+        
+        // Move Alice from index 0 to index 2
+        viewModel.reorderTempPlayers(0, 2);
+        
+        const players = viewModel.getTempPlayers();
+        expect(players).toEqual(['Bob', 'Alice', 'Charlie', 'David']);
+    });
+
+    test('reorderTempPlayers moves player from index 3 to index 1', () => {
+        // Setup initial players
+        viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'David']);
+        
+        // Move David from index 3 to index 1
+        viewModel.reorderTempPlayers(3, 1);
+        
+        const players = viewModel.getTempPlayers();
+        expect(players).toEqual(['Alice', 'David', 'Bob', 'Charlie']);
+    });
+
+    test('reorderTempPlayers handles adjacent moves correctly', () => {
+        // Setup initial players
+        viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        
+        // Move Bob from index 1 to index 2
+        // Note: When moving down, the target index is adjusted after removal
+        // So moving from 1 to 2 actually keeps the order the same
+        viewModel.reorderTempPlayers(1, 2);
+        
+        const players = viewModel.getTempPlayers();
+        expect(players).toEqual(['Alice', 'Bob', 'Charlie']);
+        
+        // Test actual adjacent swap - move Bob to position after Charlie
+        viewModel.reorderTempPlayers(1, 3);
+        expect(viewModel.getTempPlayers()).toEqual(['Alice', 'Charlie', 'Bob']);
+    });
+
+    test('reorderTempPlayers does nothing when from and to are the same', () => {
+        // Setup initial players
+        viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        
+        // Move Bob from index 1 to index 1 (no change)
+        viewModel.reorderTempPlayers(1, 1);
+        
+        const players = viewModel.getTempPlayers();
+        expect(players).toEqual(['Alice', 'Bob', 'Charlie']);
+    });
+
+    test('reorderTempPlayers handles moving to the end', () => {
+        // Setup initial players
+        viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'David']);
+        
+        // Move Alice to the end
+        viewModel.reorderTempPlayers(0, 4);
+        
+        const players = viewModel.getTempPlayers();
+        expect(players).toEqual(['Bob', 'Charlie', 'David', 'Alice']);
+    });
+
+    test('reorderTempPlayers handles moving to the beginning', () => {
+        // Setup initial players
+        viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'David']);
+        
+        // Move David to the beginning
+        viewModel.reorderTempPlayers(3, 0);
+        
+        const players = viewModel.getTempPlayers();
+        expect(players).toEqual(['David', 'Alice', 'Bob', 'Charlie']);
+    });
+
+    test('reorderTempPlayers preserves player names exactly', () => {
+        // Setup initial players with special characters
+        viewModel.setTempPlayers(['Alice 123', 'Bob-Smith', 'Charlie!', 'David Jr.']);
+        
+        // Move Charlie! from index 2 to index 1
+        viewModel.reorderTempPlayers(2, 1);
+        
+        const players = viewModel.getTempPlayers();
+        expect(players).toEqual(['Alice 123', 'Charlie!', 'Bob-Smith', 'David Jr.']);
+    });
+
+    test('reorderTempPlayers works with minimum players (2)', () => {
+        // Setup initial players
+        viewModel.setTempPlayers(['Alice', 'Bob']);
+        
+        // Move Alice from index 0 to index 1
+        // When moving down, target index is adjusted, so 0->1 becomes 0->0 (no change)
+        viewModel.reorderTempPlayers(0, 1);
+        
+        const players = viewModel.getTempPlayers();
+        expect(players).toEqual(['Alice', 'Bob']);
+        
+        // To actually swap, need to move to index 2 (past the end)
+        viewModel.reorderTempPlayers(0, 2);
+        expect(viewModel.getTempPlayers()).toEqual(['Bob', 'Alice']);
+        
+        // Move back
+        viewModel.reorderTempPlayers(1, 0);
+        expect(viewModel.getTempPlayers()).toEqual(['Alice', 'Bob']);
+    });
+
+    test('reorderTempPlayers works with maximum players (8)', () => {
+        // Setup initial players
+        viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+        
+        // Move P5 from index 4 to index 2
+        viewModel.reorderTempPlayers(4, 2);
+        
+        const players = viewModel.getTempPlayers();
+        expect(players).toEqual(['P1', 'P2', 'P5', 'P3', 'P4', 'P6', 'P7', 'P8']);
     });
 });

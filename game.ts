@@ -953,6 +953,9 @@ class SkullKingGame {
 
 
     private handleStartGame(): void {
+        // Save any uncommitted input values before starting the game
+        this.saveUncommittedInputValues();
+        
         // Get selected scoring mode
         const scoringModeInput = document.querySelector('input[name="scoring-mode"]:checked') as HTMLInputElement;
         if (scoringModeInput) {
@@ -1093,9 +1096,21 @@ class SkullKingGame {
         if (!container) return;
 
         const tempPlayers = this.viewModel.getTempPlayers();
+        
+        
         container.innerHTML = tempPlayers.map((name, index) => `
-            <div class="player-name-input">
-                <input type="text" id="player-${index}" placeholder="${this.t('player_placeholder')}" value="${name}" onchange="game.updateTempPlayer(${index}, this.value)">
+            <div class="player-name-input" data-player-index="${index}">
+                <div class="reorder-controls">
+                    <button class="btn-reorder btn-up" onclick="game.movePlayerUp(${index})" 
+                            ${index === 0 ? 'disabled' : ''} 
+                            title="Move up">▲</button>
+                    <button class="btn-reorder btn-down" onclick="game.movePlayerDown(${index})" 
+                            ${index === tempPlayers.length - 1 ? 'disabled' : ''} 
+                            title="Move down">▼</button>
+                </div>
+                <input type="text" id="player-${index}" placeholder="${this.t('player_placeholder')}" value="${name}" 
+                       oninput="game.updateTempPlayer(${index}, this.value)"
+                       onchange="game.updateTempPlayer(${index}, this.value)">
                 <button class="btn-remove" onclick="game.removePlayer(${index})" title="Remove player">✕</button>
             </div>
         `).join('');
@@ -1601,221 +1616,44 @@ class SkullKingGame {
         this.viewModel.removeTempPlayer(index);
         this.updatePlayerInputs();
     }
-
-
-    // Drag and drop handlers
-    private draggedPlayerIndex: number | null = null;
-    private touchStartY: number = 0;
-    private touchStartX: number = 0;
-    private draggedElement: HTMLElement | null = null;
-    private dragGhost: HTMLElement | null = null;
-
-    public handleDragStart(event: DragEvent, index: number): void {
-        // Commit any edits to the input field first
-        const input = document.getElementById(`player-${index}`) as HTMLInputElement;
-        if (input && document.activeElement === input) {
-            input.blur(); // This will trigger the onchange event
-        }
-        
-        this.draggedPlayerIndex = index;
-        const target = event.target as HTMLElement;
-        target.classList.add('dragging');
-        if (event.dataTransfer) {
-            event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('text/html', target.innerHTML);
-            
-            // Create custom drag image
-            const dragImage = target.cloneNode(true) as HTMLElement;
-            dragImage.style.position = 'absolute';
-            dragImage.style.top = '-9999px';
-            dragImage.style.opacity = '0.9';
-            dragImage.style.transform = 'rotate(2deg)';
-            dragImage.classList.remove('dragging'); // Remove dragging class from the ghost
-            document.body.appendChild(dragImage);
-            
-            // Set the drag image
-            event.dataTransfer.setDragImage(dragImage, event.offsetX, event.offsetY);
-            
-            // Remove the drag image after a moment
-            setTimeout(() => dragImage.remove(), 0);
+    
+    // Public method for tests - update score by player name
+    public updateRoundScore(playerName: string): void {
+        const players = this.viewModel.getPlayers();
+        const playerIndex = players.findIndex(p => p.name === playerName);
+        if (playerIndex >= 0) {
+            this.updateRoundScoreInternalByIndex(playerIndex);
         }
     }
 
-    public handleDragOver(event: DragEvent): void {
-        if (event.preventDefault) {
-            event.preventDefault();
-        }
-        if (event.dataTransfer) {
-            event.dataTransfer.dropEffect = 'move';
-        }
-        
-        const target = event.target as HTMLElement;
-        const playerInput = target.closest('.player-name-input');
-        
-        // Remove previous drag-over classes
-        document.querySelectorAll('.player-name-input').forEach(el => el.classList.remove('drag-over'));
-        
-        if (playerInput && !playerInput.classList.contains('dragging')) {
-            playerInput.classList.add('drag-over');
-        }
+    // Helper method to save uncommitted input values before operations
+    private saveUncommittedInputValues(): void {
+        const inputs = document.querySelectorAll('.player-name-input input[type="text"]') as NodeListOf<HTMLInputElement>;
+        inputs.forEach((input, index) => {
+            const currentValue = input.value.trim();
+            // Update the temp player with the current input value
+            // This ensures any typed but uncommitted values are saved
+            this.viewModel.updateTempPlayer(index, currentValue);
+        });
     }
-
-    public handleDrop(event: DragEvent, dropIndex: number): void {
-        if (event.stopPropagation) {
-            event.stopPropagation();
-        }
-        if (event.preventDefault) {
-            event.preventDefault();
-        }
-
-        const target = event.target as HTMLElement;
-        const playerInput = target.closest('.player-name-input');
-        if (playerInput) {
-            playerInput.classList.remove('drag-over');
-        }
-
-        if (this.draggedPlayerIndex !== null && this.draggedPlayerIndex !== dropIndex) {
-            // When dragging down, insert AFTER the drop target
-            // When dragging up, insert AT the drop target position
-            let targetIndex = dropIndex;
-            if (this.draggedPlayerIndex < dropIndex) {
-                // Dragging down - we want to place it after the drop target
-                targetIndex = dropIndex + 1;
-            }
-            
-            this.viewModel.reorderTempPlayers(this.draggedPlayerIndex, targetIndex);
+    
+    // Move player up in the list
+    public movePlayerUp(index: number): void {
+        if (index > 0) {
+            this.saveUncommittedInputValues();
+            this.viewModel.reorderTempPlayers(index, index - 1);
             this.updatePlayerInputs();
         }
     }
-
-    public handleDragEnd(event: DragEvent): void {
-        const target = event.target as HTMLElement;
-        target.classList.remove('dragging');
-        
-        // Remove all drag-over classes
-        const allInputs = document.querySelectorAll('.player-name-input');
-        allInputs.forEach(input => {
-            input.classList.remove('drag-over');
-        });
-        
-        this.draggedPlayerIndex = null;
-    }
-
-    // Touch handlers for mobile support
-    public handleTouchStart(event: TouchEvent, index: number): void {
-        // Commit any edits to the input field first
-        const input = document.getElementById(`player-${index}`) as HTMLInputElement;
-        if (input && document.activeElement === input) {
-            input.blur(); // This will trigger the onchange event
+    
+    // Move player down in the list
+    public movePlayerDown(index: number): void {
+        const tempPlayers = this.viewModel.getTempPlayers();
+        if (index < tempPlayers.length - 1) {
+            this.saveUncommittedInputValues();
+            this.viewModel.reorderTempPlayers(index, index + 2); // +2 because we want to move after the next item
+            this.updatePlayerInputs();
         }
-        
-        this.draggedPlayerIndex = index;
-        const touch = event.touches[0];
-        this.touchStartY = touch.clientY;
-        this.touchStartX = touch.clientX;
-        
-        const target = event.target as HTMLElement;
-        const playerInput = target.closest('.player-name-input') as HTMLElement;
-        if (playerInput) {
-            this.draggedElement = playerInput;
-            playerInput.classList.add('dragging');
-            
-            // Create ghost element
-            this.dragGhost = playerInput.cloneNode(true) as HTMLElement;
-            this.dragGhost.classList.add('drag-ghost');
-            this.dragGhost.classList.remove('dragging'); // Remove dragging class from the ghost
-            this.dragGhost.style.position = 'fixed';
-            this.dragGhost.style.pointerEvents = 'none';
-            this.dragGhost.style.zIndex = '1000';
-            this.dragGhost.style.width = playerInput.offsetWidth + 'px';
-            
-            // Position ghost at touch point
-            const rect = playerInput.getBoundingClientRect();
-            this.dragGhost.style.left = rect.left + 'px';
-            this.dragGhost.style.top = rect.top + 'px';
-            
-            document.body.appendChild(this.dragGhost);
-        }
-    }
-
-    public handleTouchMove(event: TouchEvent): void {
-        if (!this.draggedElement || this.draggedPlayerIndex === null) return;
-        
-        event.preventDefault();
-        const touch = event.touches[0];
-        
-        // Move ghost element with touch
-        if (this.dragGhost) {
-            const deltaX = touch.clientX - this.touchStartX;
-            const deltaY = touch.clientY - this.touchStartY;
-            const rect = this.draggedElement.getBoundingClientRect();
-            
-            this.dragGhost.style.left = (rect.left + deltaX) + 'px';
-            this.dragGhost.style.top = (rect.top + deltaY) + 'px';
-        }
-        
-        // Find the element under the touch point (excluding the ghost)
-        if (this.dragGhost) {
-            this.dragGhost.style.display = 'none';
-        }
-        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (this.dragGhost) {
-            this.dragGhost.style.display = '';
-        }
-        
-        const dropTarget = elementBelow?.closest('.player-name-input');
-        
-        // Remove previous drag-over classes
-        document.querySelectorAll('.player-name-input').forEach(el => el.classList.remove('drag-over'));
-        
-        // Add drag-over class to current target
-        if (dropTarget && dropTarget !== this.draggedElement) {
-            dropTarget.classList.add('drag-over');
-        }
-    }
-
-    public handleTouchEnd(event: TouchEvent): void {
-        if (!this.draggedElement || this.draggedPlayerIndex === null) return;
-        
-        const touch = event.changedTouches[0];
-        
-        // Temporarily hide ghost to find element below
-        if (this.dragGhost) {
-            this.dragGhost.style.display = 'none';
-        }
-        
-        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-        const dropTarget = elementBelow?.closest('.player-name-input');
-        
-        if (dropTarget && dropTarget !== this.draggedElement) {
-            const dropIndex = parseInt(dropTarget.getAttribute('data-player-index') || '0');
-            if (!isNaN(dropIndex) && this.draggedPlayerIndex !== dropIndex) {
-                // When dragging down, insert AFTER the drop target
-                // When dragging up, insert AT the drop target position
-                let targetIndex = dropIndex;
-                if (this.draggedPlayerIndex < dropIndex) {
-                    // Dragging down - we want to place it after the drop target
-                    targetIndex = dropIndex + 1;
-                }
-                
-                this.viewModel.reorderTempPlayers(this.draggedPlayerIndex, targetIndex);
-                this.updatePlayerInputs();
-            }
-        }
-        
-        // Clean up
-        if (this.dragGhost) {
-            this.dragGhost.remove();
-            this.dragGhost = null;
-        }
-        this.draggedElement.classList.remove('dragging');
-        document.querySelectorAll('.player-name-input').forEach(el => el.classList.remove('drag-over'));
-        this.draggedElement = null;
-        this.draggedPlayerIndex = null;
-    }
-
-    public updateRoundScore(playerName: string): void {
-        this.updateRoundScoreInternal(playerName);
     }
 
     public updateRoundScoreByIndex(playerIndex: number): void {
@@ -2503,3 +2341,4 @@ const game = new SkullKingGame();
 // Expose game instance and class globally
 (window as any).game = game;
 (window as any).SkullKingGame = SkullKingGame;
+(window as any).GameViewModel = GameViewModel;
