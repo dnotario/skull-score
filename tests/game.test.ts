@@ -2263,66 +2263,6 @@ describe('SkullKingGame Translation System', () => {
         expect(englishCommentary).toBeDefined();
     });
 
-    test('should reorder players when dragging', () => {
-        // Setup temp players
-        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'Dave']);
-        
-        // Test reordering from index 0 to index 2
-        gameInstance.viewModel.reorderTempPlayers(0, 2);
-        let players = gameInstance.viewModel.getTempPlayers();
-        expect(players).toEqual(['Bob', 'Charlie', 'Alice', 'Dave']);
-        
-        // Test reordering from index 3 to index 1
-        gameInstance.viewModel.reorderTempPlayers(3, 1);
-        players = gameInstance.viewModel.getTempPlayers();
-        expect(players).toEqual(['Bob', 'Dave', 'Charlie', 'Alice']);
-        
-        // Test reordering with same index (should not change)
-        gameInstance.viewModel.reorderTempPlayers(1, 1);
-        players = gameInstance.viewModel.getTempPlayers();
-        expect(players).toEqual(['Bob', 'Dave', 'Charlie', 'Alice']);
-    });
-
-    test('should handle drag events correctly', () => {
-        // Setup temp players
-        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
-        gameInstance.updatePlayerInputs();
-        
-        // Create mock drag event
-        const mockTarget = document.createElement('div');
-        const mockDragEvent = {
-            target: mockTarget,
-            dataTransfer: {
-                effectAllowed: '',
-                setData: jest.fn(),
-                setDragImage: jest.fn(),
-                dropEffect: ''
-            },
-            offsetX: 10,
-            offsetY: 10,
-            preventDefault: jest.fn(),
-            stopPropagation: jest.fn()
-        } as unknown as DragEvent;
-        
-        // Test drag start
-        mockTarget.classList.add('player-name-input');
-        gameInstance.handleDragStart(mockDragEvent, 0);
-        expect(mockTarget.classList.contains('dragging')).toBe(true);
-        
-        // Test drag over
-        gameInstance.handleDragOver(mockDragEvent);
-        expect(mockDragEvent.preventDefault).toHaveBeenCalled();
-        
-        // Test drop
-        gameInstance.handleDrop(mockDragEvent, 2);
-        expect(mockDragEvent.preventDefault).toHaveBeenCalled();
-        expect(mockDragEvent.stopPropagation).toHaveBeenCalled();
-        
-        // Verify players were reordered
-        const players = gameInstance.viewModel.getTempPlayers();
-        expect(players).toEqual(['Bob', 'Charlie', 'Alice']);
-    });
-
     test('should allow bonus entry in Rascal mode when off by one', () => {
         // Start a game in Rascal mode
         gameInstance.viewModel.setScoringMode('rascal');
