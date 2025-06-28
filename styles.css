@@ -267,6 +267,8 @@ input[type="text"]:focus {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    position: relative;
+    z-index: 1;
 }
 
 .player-name-input input {
@@ -297,60 +299,6 @@ input[type="text"]:focus {
     transform: scale(1.1);
 }
 
-/* Drag handle */
-.drag-handle {
-    cursor: grab;
-    user-select: none;
-    padding: 0.5rem;
-    font-size: 1.2rem;
-    color: #8b6914;
-    transition: all 0.2s ease;
-}
-
-.drag-handle:hover {
-    color: #d4af37;
-    transform: scale(1.1);
-}
-
-/* Drag states */
-.player-name-input.dragging {
-    opacity: 0;
-    cursor: grabbing;
-}
-
-.player-name-input.dragging .drag-handle {
-    cursor: grabbing;
-}
-
-.player-name-input.drag-over {
-    border: 2px dashed #d4af37;
-    background: rgba(212, 175, 55, 0.1);
-    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
-}
-
-/* Prevent text selection during drag */
-.player-name-input[draggable="true"] {
-    user-select: none;
-}
-
-/* Touch support for mobile */
-.player-name-input {
-    touch-action: none;
-    position: relative;
-}
-
-/* Animate reordering */
-.player-name-input {
-    transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-/* Drag ghost element */
-.drag-ghost {
-    opacity: 0.9;
-    transform: rotate(2deg);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    pointer-events: none !important;
-}
 
 /* Close button for panels */
 .close-button {
@@ -986,11 +934,6 @@ input[type="text"]:focus {
     .btn-remove {
         font-size: 1.25rem;
         padding: 0.25rem;
-    }
-    
-    .drag-handle {
-        font-size: 1rem;
-        padding: 0.25rem 0.5rem;
     }
     
     .modal-content {
