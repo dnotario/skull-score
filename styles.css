@@ -273,6 +273,7 @@ input[type="text"]:focus {
 
 .player-name-input input {
     flex: 1;
+    margin-bottom: 0; /* Remove default margin when inside player-name-input */
 }
 
 .btn-small {
@@ -292,12 +293,52 @@ input[type="text"]:focus {
     padding: 0.25rem 0.5rem;
     line-height: 1;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
 }
 
 .btn-remove:hover {
     color: #a02833;
     transform: scale(1.1);
 }
+
+/* Reorder controls */
+.reorder-controls {
+    display: flex;
+    flex-direction: row;
+    gap: 0.2rem;
+    margin-right: 0.5rem;
+}
+
+.btn-reorder {
+    background: #8B4513;
+    color: #f4e4c1;
+    border: 1px solid #654321;
+    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1;
+    min-width: 24px;
+}
+
+.btn-reorder:hover:not(:disabled) {
+    background: #654321;
+    transform: scale(1.1);
+}
+
+.btn-reorder:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.btn-reorder:disabled:hover {
+    background: #8B4513;
+    transform: none;
+}
+
+/* Smooth reordering animation - removed to prevent flash */
 
 
 /* Close button for panels */
@@ -933,6 +974,11 @@ input[type="text"]:focus {
     
     .btn-remove {
         font-size: 1.25rem;
+        padding: 0.25rem;
+    }
+    
+    .drag-handle {
+        font-size: 1rem;
         padding: 0.25rem;
     }
     
