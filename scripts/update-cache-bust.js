@@ -11,17 +11,8 @@ const buildIndexPath = path.join(__dirname, '..', 'build', 'runFiles', 'index.ht
 if (fs.existsSync(buildIndexPath)) {
     let indexContent = fs.readFileSync(buildIndexPath, 'utf8');
     
-    // Update CSS version
-    indexContent = indexContent.replace(
-        /href="styles\.css(\?v=\d+)?"/g,
-        `href="styles.css?v=${version}"`
-    );
-    
-    // Update JS version
-    indexContent = indexContent.replace(
-        /src="game\.js(\?v=\d+)?"/g,
-        `src="game.js?v=${version}"`
-    );
+    // Replace {{BUILD_TIMESTAMP}} placeholder with version
+    indexContent = indexContent.replace(/{{BUILD_TIMESTAMP}}/g, version);
     
     // Write back to build directory only
     fs.writeFileSync(buildIndexPath, indexContent);
@@ -29,4 +20,19 @@ if (fs.existsSync(buildIndexPath)) {
     console.log(`Cache bust version updated in build artifact to: ${version}`);
 } else {
     console.error('Build file not found. Make sure build:copy runs before build:cache-bust');
+}
+
+// Update service worker timestamp
+const swPath = path.join(__dirname, '..', 'build', 'runFiles', 'sw.js');
+if (fs.existsSync(swPath)) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    let swContent = fs.readFileSync(swPath, 'utf8');
+    
+    // Replace timestamp placeholders
+    swContent = swContent.replace(/{{BUILD_TIMESTAMP}}/g, timestamp);
+    
+    // Write back to build directory
+    fs.writeFileSync(swPath, swContent);
+    
+    console.log(`Service worker timestamp updated to: ${timestamp}`);
 }
