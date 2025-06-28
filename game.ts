@@ -1951,6 +1951,15 @@ class SkullKingGame {
     }
 
     private updateStaticContent(): void {
+        // Update all elements with data-i18n attributes
+        const elementsWithI18n = document.querySelectorAll('[data-i18n]');
+        elementsWithI18n.forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            if (key) {
+                element.textContent = this.t(key as keyof Translation);
+            }
+        });
+
         // Header
         const headerTitle = document.getElementById('header-title');
         if (headerTitle) headerTitle.textContent = this.t('header_title');
