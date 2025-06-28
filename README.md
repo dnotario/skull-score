@@ -24,6 +24,7 @@ A pirate-themed web application for tracking scores in the Skull King card game,
 - **Score History**: View all previous rounds with detailed breakdowns
 - **New Game Options**: Start fresh while optionally keeping player names
 - **Round Deletion**: Remove the last round if needed
+- **Bonus Calculator**: Interactive popup modal for calculating complex bonus points
 
 ## 🚀 Getting Started
 

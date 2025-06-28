@@ -34,6 +34,7 @@ The application is fully implemented and deployed across multiple environments:
 - Comprehensive error messages in pirate dialect
 
 ✅ **Advanced Features**
+- Interactive bonus calculator modal with visual counters for all bonus types
 - Intelligent pirate commentary system with 100+ unique variants
 - Audio score readouts with text-to-speech integration
 - Comprehensive input validation and error handling
@@ -74,13 +75,21 @@ See **README.md** for complete technical details including:
 - Validated bonus point restrictions (only allowed when bid = actual)
 - Added tests to ensure rounds with invalid bonus points are rejected
 
+### UI Improvements
+- Standardized font sizes and spacing in bonus calculator popup to match main page design
+- Improved mobile experience with better touch targets and consistent sizing
+- Enhanced visual hierarchy for better readability across all modals
+
 ## What's NOT Implemented
 
 The app functions as a **score keeper**, not a full game implementation:
-- No card tracking or automatic bonus calculation for special cards
-- No expansion content (Kraken, White Whale, Loot, pirate abilities)
-- No game variants (two-player mode, alternative round structures)
-- Players must manually calculate and enter bonus points for special card captures
+- No card tracking or automatic determination of which bonuses were earned
+- No expansion content (Kraken, White Whale, Loot cards, pirate abilities)
+- Two-player mode is supported but without the Graybeard ghost player mechanics
+- No optional scoring variants (Cannonball/Grapeshot for Rascal mode)
+- No variable round structures (only standard 10-round games)
+
+Note: While we don't track cards, we do provide an interactive bonus calculator UI where players can easily tally their bonus points using visual counters for each bonus type.
 
 ## Development Guidelines
 
@@ -92,3 +101,4 @@ The app functions as a **score keeper**, not a full game implementation:
 - Test thoroughly on mobile devices before deploying
 - Always ask me before committing or pushing
 - Please do not commit and push to staging unless I say so
+- Build after you make code changes
