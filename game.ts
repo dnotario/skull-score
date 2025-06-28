@@ -1094,15 +1094,7 @@ class SkullKingGame {
 
         const tempPlayers = this.viewModel.getTempPlayers();
         container.innerHTML = tempPlayers.map((name, index) => `
-            <div class="player-name-input" draggable="true" data-player-index="${index}" 
-                 ondragstart="game.handleDragStart(event, ${index})"
-                 ondragover="game.handleDragOver(event)"
-                 ondrop="game.handleDrop(event, ${index})"
-                 ondragend="game.handleDragEnd(event)"
-                 ontouchstart="game.handleTouchStart(event, ${index})"
-                 ontouchmove="game.handleTouchMove(event)"
-                 ontouchend="game.handleTouchEnd(event)">
-                <span class="drag-handle" aria-label="Drag to reorder">☰</span>
+            <div class="player-name-input">
                 <input type="text" id="player-${index}" placeholder="${this.t('player_placeholder')}" value="${name}" onchange="game.updateTempPlayer(${index}, this.value)">
                 <button class="btn-remove" onclick="game.removePlayer(${index})" title="Remove player">✕</button>
             </div>
