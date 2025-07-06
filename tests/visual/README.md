@@ -1,0 +1,182 @@
+# Visual Testing with Jest
+
+This directory contains visual regression tests for the Skull King Score Keeper app, fully integrated with Jest.
+
+## Architecture
+
+```
+tests/visual/
+├── visual.test.ts      # Main Jest test file
+└── helpers/
+    ├── actions.ts      # Page actions (setupGame, fillRound, etc.)
+    ├── devices.ts      # Device configurations
+    ├── scenarios.ts    # Test scenario definitions  
+    ├── screenshot.ts   # Screenshot capture and comparison
+    └── matchers.ts     # Jest custom matchers
+```
+
+## Quick Start
+
+```bash
+# Run all tests (unit + visual)
+npm test
+
+# Run only visual tests (automatically starts dev server)
+npm run test:visual
+
+# Update golden images (when changes are intentional)
+npm run test:visual:update
+```
+
+**Note**: The visual test commands automatically start and stop the development server. You'll see clear messages about server startup before tests run.
+
+## Perfect Pixel Matching
+
+This visual test system uses **zero-tolerance image comparison**:
+- ANY pixel difference = test failure
+- No thresholds or percentages
+- Explicit approval required for all changes
+
+## Workflow
+
+### 1. Normal Development
+
+```bash
+# Make your changes
+# Run visual tests
+npm run test:visual
+```
+
+### 2. When Tests Fail
+
+If visual tests fail, you'll see:
+- ❌ Visual snapshot does not match
+- Number of pixels different
+- Diff image location: `visual-tests/diffs/`
+- Current image location: `visual-tests/current/`
+
+### 3. Review Changes
+
+1. Check the diff images in `visual-tests/diffs/`
+2. Compare with golden images in `visual-tests/golden/`
+3. Decide if changes are intentional
+
+### 4. Approve Changes
+
+If changes are intentional, update golden images:
+
+```bash
+# Update ALL golden images
+npm run test:visual:update
+
+# Update specific tests (using Jest pattern)
+UPDATE_GOLDEN=true npm test -- visual --testNamePattern="iPhone.*landing"
+```
+
+## Running Specific Tests
+
+### By Device
+```bash
+VISUAL_DEVICES=iPhone_12_Pro npm run test:visual
+VISUAL_DEVICES=iPhone_12_Pro,Desktop_HD npm run test:visual
+```
+
+### By Scenario
+```bash
+# By tag
+VISUAL_SCENARIOS=basic npm run test:visual
+VISUAL_SCENARIOS=modal npm run test:visual
+
+# By specific scenario names
+VISUAL_SCENARIOS=landing_page npm run test:visual
+VISUAL_SCENARIOS=landing_page,game_round_1 npm run test:visual
+```
+
+### Using Jest Filters
+```bash
+# Run tests matching pattern
+npm test -- visual --testNamePattern="iPhone"
+npm test -- visual --testNamePattern="landing"
+
+# Run in watch mode
+npm run test:watch -- --selectProjects visual
+```
+
+## Environment Variables
+
+- `UPDATE_GOLDEN=true` - Update golden images instead of comparing
+- `VISUAL_DEVICES` - Comma-separated device names (default: essential devices)
+- `VISUAL_SCENARIOS` - Comma-separated scenario names or tag (default: all)
+- `VISUAL_BASE_URL` - Base URL for testing (default: http://localhost:8080)
+
+## Adding New Tests
+
+### 1. Add a New Device
+
+Edit `helpers/devices.ts`:
+
+```typescript
+export const devices: Record<string, Device> = {
+  // ... existing devices ...
+  
+  My_Device: {
+    name: 'My_Device',
+    viewport: { width: 400, height: 800 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true
+  }
+};
+```
+
+### 2. Add a New Scenario
+
+Edit `helpers/scenarios.ts`:
+
+```typescript
+export const scenarios: Record<string, Scenario> = {
+  // ... existing scenarios ...
+  
+  my_scenario: {
+    name: 'my_scenario',
+    description: 'Test description',
+    execute: async (page: Page) => {
+      await actions.setupGame(page, 4);
+      // Add your test steps
+    },
+    tags: ['mytag']
+  }
+};
+```
+
+## CI/CD Integration
+
+```yaml
+# GitHub Actions example
+- name: Run Tests
+  run: |
+    npm run build
+    npm test
+```
+
+## Debugging Tips
+
+1. **View current screenshots**: Check `visual-tests/current/`
+2. **View diff images**: Check `visual-tests/diffs/`
+3. **Run with headed browser**: Modify `visual.test.ts` to use `headless: false`
+4. **Increase timeouts**: Tests have 30s timeout by default
+
+## Directory Structure
+
+- `visual-tests/golden/` - Baseline images (in version control)
+- `visual-tests/current/` - Latest captured screenshots
+- `visual-tests/diffs/` - Difference images when tests fail
+
+## Benefits of Jest Integration
+
+- **Single test command**: `npm test` runs everything
+- **Better IDE support**: Click to run individual tests
+- **Watch mode**: Auto-rerun on changes
+- **Parallel execution**: Jest can parallelize tests
+- **Unified reporting**: Same reporters for all tests
+- **Test filtering**: Use Jest's powerful filtering options

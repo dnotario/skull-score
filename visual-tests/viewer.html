@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Diff Viewer - Skull King Score Keeper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1410;
+            color: #f4e4c1;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: #2c1810;
+            border-bottom: 3px solid #8B4513;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .header h1 {
+            color: #d4af37;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-passed { color: #4ade80; }
+        .stat-failed { color: #f87171; }
+        .stat-missing { color: #fbbf24; }
+
+        /* Controls */
+        .controls {
+            background: #2c1810;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #8B4513;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .control-group label {
+            color: #d4af37;
+            font-weight: bold;
+        }
+
+        select, button {
+            background: #3d2a1f;
+            color: #f4e4c1;
+            border: 1px solid #8B4513;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        select:hover, button:hover {
+            background: #4d3a2f;
+            border-color: #d4af37;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: #8B4513;
+            border-color: #d4af37;
+        }
+
+        .btn-primary:hover {
+            background: #a05020;
+        }
+
+        /* Test Grid */
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+        }
+
+        .test-card {
+            background: #2c1810;
+            border: 2px solid #8B4513;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .test-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.3);
+            border-color: #d4af37;
+        }
+
+        .test-card.passed {
+            border-color: #4ade80;
+        }
+
+        .test-card.failed {
+            border-color: #f87171;
+        }
+
+        .test-card.missing {
+            border-color: #fbbf24;
+        }
+
+        .test-card-header {
+            padding: 1rem;
+            background: #3d2a1f;
+            border-bottom: 1px solid #8B4513;
+        }
+
+        .test-card-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #d4af37;
+        }
+
+        .test-card-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .test-card-image {
+            width: 100%;
+            height: 200px;
+            background: #1a1410;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .test-card-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .diff-badge {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(0,0,0,0.8);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            padding: 2rem;
+            overflow: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #2c1810;
+            border: 3px solid #8B4513;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 1400px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            background: #3d2a1f;
+            border-bottom: 2px solid #8B4513;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: #d4af37;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #f4e4c1;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .modal-body {
+            flex: 1;
+            padding: 1.5rem;
+            overflow: auto;
+        }
+
+        .diff-viewer {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .diff-column {
+            text-align: center;
+        }
+
+        .diff-column h3 {
+            color: #d4af37;
+            margin-bottom: 1rem;
+        }
+
+        .diff-image-container {
+            background: #1a1410;
+            border: 2px solid #8B4513;
+            border-radius: 8px;
+            padding: 1rem;
+            position: relative;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .diff-image-container img {
+            max-width: 100%;
+            max-height: 600px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .slider-container {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            background: #1a1410;
+            border: 2px solid #8B4513;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .slider-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .slider-divider {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: #d4af37;
+            cursor: ew-resize;
+            z-index: 10;
+        }
+
+        .slider-divider::before {
+            content: '⬅️ ➡️';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #d4af37;
+            color: #2c1810;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .diff-stats {
+            background: #3d2a1f;
+            border: 1px solid #8B4513;
+            border-radius: 8px;
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .diff-stat {
+            padding: 0.5rem;
+        }
+
+        .diff-stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 0.25rem;
+        }
+
+        .diff-stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #d4af37;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            font-size: 1.2rem;
+        }
+
+        .error {
+            background: rgba(248, 113, 113, 0.1);
+            border: 2px solid #f87171;
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem;
+            text-align: center;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            opacity: 0.6;
+        }
+
+        .empty-state h2 {
+            color: #d4af37;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.4rem;
+            }
+
+            .header-stats {
+                gap: 1rem;
+                font-size: 0.9rem;
+            }
+
+            .controls {
+                padding: 1rem;
+            }
+
+            .test-grid {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+
+            .diff-viewer {
+                grid-template-columns: 1fr;
+            }
+
+            .modal {
+                padding: 0;
+            }
+
+            .modal-content {
+                border-radius: 0;
+                max-height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏴‍☠️ Visual Diff Viewer - Skull King Score Keeper</h1>
+        <div class="header-stats">
+            <div class="stat stat-passed">
+                <span>✅ Passed:</span>
+                <span id="stat-passed">0</span>
+            </div>
+            <div class="stat stat-failed">
+                <span>❌ Failed:</span>
+                <span id="stat-failed">0</span>
+            </div>
+            <div class="stat stat-missing">
+                <span>⚠️ Missing:</span>
+                <span id="stat-missing">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>Device:</label>
+            <select id="device-filter">
+                <option value="">All Devices</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Scenario:</label>
+            <select id="scenario-filter">
+                <option value="">All Scenarios</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Status:</label>
+            <select id="status-filter">
+                <option value="">All</option>
+                <option value="passed">✅ Passed</option>
+                <option value="failed">❌ Failed</option>
+                <option value="missing">⚠️ Missing</option>
+            </select>
+        </div>
+        <button id="refresh-btn" class="btn-primary">🔄 Refresh</button>
+    </div>
+
+    <div id="test-grid" class="test-grid">
+        <div class="loading">Loading visual test results...</div>
+    </div>
+
+    <!-- Modal for detailed view -->
+    <div id="detail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-title">Test Details</h2>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Content will be dynamically inserted -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let reportData = null;
+        let filteredResults = [];
+
+        // Load report on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadReport();
+            setupEventListeners();
+        });
+
+        async function loadReport() {
+            try {
+                const response = await fetch('diffs/report.json');
+                if (!response.ok) {
+                    throw new Error('Report not found');
+                }
+                
+                reportData = await response.json();
+                updateStats();
+                populateFilters();
+                filterAndDisplay();
+            } catch (error) {
+                console.error('Error loading report:', error);
+                showError('Failed to load visual test report. Make sure you have run the visual tests first.');
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('stat-passed').textContent = reportData.passed;
+            document.getElementById('stat-failed').textContent = reportData.failed;
+            document.getElementById('stat-missing').textContent = reportData.missing;
+        }
+
+        function populateFilters() {
+            const devices = new Set();
+            const scenarios = new Set();
+
+            reportData.results.forEach(result => {
+                devices.add(result.device);
+                scenarios.add(result.scenario);
+            });
+
+            // Populate device filter
+            const deviceFilter = document.getElementById('device-filter');
+            deviceFilter.innerHTML = '<option value="">All Devices</option>';
+            Array.from(devices).sort().forEach(device => {
+                const option = document.createElement('option');
+                option.value = device;
+                option.textContent = device.replace(/_/g, ' ');
+                deviceFilter.appendChild(option);
+            });
+
+            // Populate scenario filter
+            const scenarioFilter = document.getElementById('scenario-filter');
+            scenarioFilter.innerHTML = '<option value="">All Scenarios</option>';
+            Array.from(scenarios).sort().forEach(scenario => {
+                const option = document.createElement('option');
+                option.value = scenario;
+                option.textContent = scenario.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                scenarioFilter.appendChild(option);
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('device-filter').addEventListener('change', filterAndDisplay);
+            document.getElementById('scenario-filter').addEventListener('change', filterAndDisplay);
+            document.getElementById('status-filter').addEventListener('change', filterAndDisplay);
+            document.getElementById('refresh-btn').addEventListener('click', loadReport);
+
+            // Close modal on escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeModal();
+            });
+
+            // Close modal on background click
+            document.getElementById('detail-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'detail-modal') closeModal();
+            });
+        }
+
+        function filterAndDisplay() {
+            if (!reportData) return;
+
+            const deviceFilter = document.getElementById('device-filter').value;
+            const scenarioFilter = document.getElementById('scenario-filter').value;
+            const statusFilter = document.getElementById('status-filter').value;
+
+            filteredResults = reportData.results.filter(result => {
+                if (deviceFilter && result.device !== deviceFilter) return false;
+                if (scenarioFilter && result.scenario !== scenarioFilter) return false;
+                
+                if (statusFilter) {
+                    const status = getTestStatus(result);
+                    if (status !== statusFilter) return false;
+                }
+
+                return true;
+            });
+
+            displayResults();
+        }
+
+        function getTestStatus(result) {
+            if (!result.goldenExists || !result.currentExists) return 'missing';
+            return result.passed ? 'passed' : 'failed';
+        }
+
+        function displayResults() {
+            const grid = document.getElementById('test-grid');
+            
+            if (filteredResults.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <h2>No results found</h2>
+                        <p>Try adjusting your filters or run the visual tests.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filteredResults.map(result => {
+                const status = getTestStatus(result);
+                const statusClass = status;
+                const statusIcon = status === 'passed' ? '✅' : status === 'failed' ? '❌' : '⚠️';
+                
+                let imageSrc = 'current/' + result.name;
+                if (!result.currentExists) {
+                    imageSrc = 'golden/' + result.name;
+                }
+
+                return `
+                    <div class="test-card ${statusClass}" onclick="showDetails('${result.name}')">
+                        <div class="test-card-header">
+                            <div class="test-card-title">${result.scenario.replace(/_/g, ' ')}</div>
+                            <div class="test-card-info">
+                                <span>${result.device.replace(/_/g, ' ')}</span>
+                                <span>${statusIcon}</span>
+                            </div>
+                        </div>
+                        <div class="test-card-image">
+                            <img src="${imageSrc}" alt="${result.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"100\"><text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dy=\".3em\" fill=\"%23666\">Image not found</text></svg>'">
+                            ${result.diffPercent > 0 ? `<div class="diff-badge">${result.diffPercent.toFixed(1)}%</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showDetails(imageName) {
+            const result = reportData.results.find(r => r.name === imageName);
+            if (!result) return;
+
+            const modal = document.getElementById('detail-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+
+            modalTitle.textContent = `${result.device.replace(/_/g, ' ')} - ${result.scenario.replace(/_/g, ' ')}`;
+
+            if (!result.goldenExists || !result.currentExists) {
+                modalBody.innerHTML = `
+                    <div class="error">
+                        <h3>${!result.goldenExists ? 'No golden image' : 'No current image'}</h3>
+                        <p>Run visual tests and approve golden images to see comparisons.</p>
+                    </div>
+                `;
+            } else {
+                modalBody.innerHTML = `
+                    <div class="diff-stats">
+                        <div class="diff-stat">
+                            <div class="diff-stat-label">Status</div>
+                            <div class="diff-stat-value">${result.passed ? '✅ Passed' : '❌ Failed'}</div>
+                        </div>
+                        <div class="diff-stat">
+                            <div class="diff-stat-label">Difference</div>
+                            <div class="diff-stat-value">${result.diffPercent.toFixed(2)}%</div>
+                        </div>
+                        <div class="diff-stat">
+                            <div class="diff-stat-label">Pixels Changed</div>
+                            <div class="diff-stat-value">${result.pixelsDiff.toLocaleString()}</div>
+                        </div>
+                        <div class="diff-stat">
+                            <div class="diff-stat-label">Total Pixels</div>
+                            <div class="diff-stat-value">${result.totalPixels.toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="diff-viewer">
+                        <div class="diff-column">
+                            <h3>Golden (Expected)</h3>
+                            <div class="diff-image-container">
+                                <img src="golden/${result.name}" alt="Golden image">
+                            </div>
+                        </div>
+                        <div class="diff-column">
+                            <h3>Current (Actual)</h3>
+                            <div class="diff-image-container">
+                                <img src="current/${result.name}" alt="Current image">
+                            </div>
+                        </div>
+                        <div class="diff-column">
+                            <h3>Difference</h3>
+                            <div class="diff-image-container">
+                                ${result.pixelsDiff > 0 
+                                    ? `<img src="diffs/${result.name}" alt="Diff image">`
+                                    : '<p style="opacity: 0.6;">No differences</p>'
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    ${result.pixelsDiff > 0 ? `
+                        <h3 style="margin-top: 2rem; margin-bottom: 1rem; color: #d4af37;">Interactive Comparison</h3>
+                        <div class="slider-container" id="slider-container">
+                            <img src="golden/${result.name}" class="slider-image" style="clip-path: inset(0 50% 0 0);">
+                            <img src="current/${result.name}" class="slider-image">
+                            <div class="slider-divider" id="slider-divider" style="left: 50%;"></div>
+                        </div>
+                    ` : ''}
+                `;
+
+                // Setup slider if there are differences
+                if (result.pixelsDiff > 0) {
+                    setTimeout(() => setupSlider(), 100);
+                }
+            }
+
+            modal.classList.add('active');
+        }
+
+        function setupSlider() {
+            const container = document.getElementById('slider-container');
+            const divider = document.getElementById('slider-divider');
+            if (!container || !divider) return;
+
+            let isDragging = false;
+
+            divider.addEventListener('mousedown', () => isDragging = true);
+            document.addEventListener('mouseup', () => isDragging = false);
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+
+                const rect = container.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const percentage = (x / rect.width) * 100;
+
+                if (percentage >= 0 && percentage <= 100) {
+                    divider.style.left = percentage + '%';
+                    container.querySelector('img').style.clipPath = `inset(0 ${100 - percentage}% 0 0)`;
+                }
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('detail-modal').classList.remove('active');
+        }
+
+        function showError(message) {
+            document.getElementById('test-grid').innerHTML = `
+                <div class="error">
+                    <h2>Error</h2>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+{
+  "devices": [
+    {
+      "name": "iPhone_12_Pro",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScaleFactor": 3,
+      "isMobile": true,
+      "hasTouch": true,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1"
+    },
+    {
+      "name": "iPhone_SE",
+      "viewport": {
+        "width": 375,
+        "height": 667
+      },
+      "deviceScaleFactor": 2,
+      "isMobile": true,
+      "hasTouch": true,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1"
+    },
+    {
+      "name": "iPad_Air",
+      "viewport": {
+        "width": 820,
+        "height": 1180
+      },
+      "deviceScaleFactor": 2,
+      "isMobile": true,
+      "hasTouch": true,
+      "userAgent": "Mozilla/5.0 (iPad; CPU OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1"
+    },
+    {
+      "name": "Pixel_5",
+      "viewport": {
+        "width": 393,
+        "height": 851
+      },
+      "deviceScaleFactor": 2.75,
+      "isMobile": true,
+      "hasTouch": true,
+      "userAgent": "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
+    },
+    {
+      "name": "Desktop_HD",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "deviceScaleFactor": 1,
+      "isMobile": false,
+      "hasTouch": false,
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    },
+    {
+      "name": "Desktop_Laptop",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "deviceScaleFactor": 1,
+      "isMobile": false,
+      "hasTouch": false,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "landing_page",
+      "description": "Landing page with game description",
+      "steps": []
+    },
+    {
+      "name": "player_setup_empty",
+      "description": "Player setup screen with empty inputs",
+      "steps": [
+        { "action": "click", "selector": "#new-game-btn" },
+        { "action": "wait", "value": 500 }
+      ]
+    },
+    {
+      "name": "player_setup_filled",
+      "description": "Player setup with 4 players named",
+      "steps": [
+        { "action": "click", "selector": "#new-game-btn" },
+        { "action": "wait", "value": 1000 },
+        { "action": "fill", "selector": "#player-0", "value": "Captain Jack" },
+        { "action": "fill", "selector": "#player-1", "value": "Anne Bonny" },
+        { "action": "click", "selector": "#add-player-btn" },
+        { "action": "wait", "value": 300 },
+        { "action": "fill", "selector": "#player-2", "value": "Blackbeard" },
+        { "action": "click", "selector": "#add-player-btn" },
+        { "action": "wait", "value": 300 },
+        { "action": "fill", "selector": "#player-3", "value": "Calico Jack" }
+      ]
+    },
+    {
+      "name": "game_round_1",
+      "description": "First round of the game",
+      "steps": [
+        { "action": "setupGame", "players": 2 },
+        { "action": "wait", "value": 500 }
+      ]
+    },
+    {
+      "name": "game_round_1_filled",
+      "description": "First round with bids entered",
+      "steps": [
+        { "action": "setupGame", "players": 2 },
+        { "action": "wait", "value": 500 },
+        { "action": "fillRound", "roundNumber": 1, "data": [
+          { "bid": 0, "actual": 0, "bonus": 0 },
+          { "bid": 1, "actual": 1, "bonus": 10 }
+        ]}
+      ]
+    },
+    {
+      "name": "game_round_5",
+      "description": "Mid-game round 5",
+      "steps": [
+        { "action": "setupGame", "players": 3 },
+        { "action": "playRounds", "count": 4 },
+        { "action": "wait", "value": 500 }
+      ]
+    },
+    {
+      "name": "game_round_10",
+      "description": "Final round of the game",
+      "steps": [
+        { "action": "setupGame", "players": 3 },
+        { "action": "playRounds", "count": 9 },
+        { "action": "wait", "value": 500 }
+      ]
+    },
+    {
+      "name": "bonus_calculator_empty",
+      "description": "Bonus calculator modal (empty)",
+      "steps": [
+        { "action": "setupGame", "players": 2 },
+        { "action": "wait", "value": 500 },
+        { "action": "fillNth", "selector": "input[placeholder='Bid']", "index": 0, "value": "3" },
+        { "action": "fillNth", "selector": "input[placeholder='Got']", "index": 0, "value": "3" },
+        { "action": "wait", "value": 200 },
+        { "action": "clickNth", "selector": ".bonus-calculator-btn", "index": 0 },
+        { "action": "wait", "value": 300 }
+      ]
+    },
+    {
+      "name": "bonus_calculator_filled",
+      "description": "Bonus calculator with values",
+      "steps": [
+        { "action": "setupGame", "players": 2 },
+        { "action": "wait", "value": 500 },
+        { "action": "fill", "selector": "input[placeholder='Bid']:first-of-type", "value": "3" },
+        { "action": "fill", "selector": "input[placeholder='Got']:first-of-type", "value": "3" },
+        { "action": "wait", "value": 200 },
+        { "action": "click", "selector": ".bonus-calculator-btn:first-of-type" },
+        { "action": "wait", "value": 300 },
+        { "action": "click", "selector": "button[onclick*='standard14'][onclick*='1)']" },
+        { "action": "click", "selector": "button[onclick*='standard14'][onclick*='1)']" },
+        { "action": "click", "selector": "button[onclick*='mermaidPirate'][onclick*='1)']" },
+        { "action": "click", "selector": "button[onclick*='skullPirate'][onclick*='1)']" }
+      ]
+    },
+    {
+      "name": "error_modal",
+      "description": "Error modal for invalid input",
+      "steps": [
+        { "action": "setupGame", "players": 2 },
+        { "action": "wait", "value": 500 },
+        { "action": "fill", "selector": "input[placeholder='Bid']:first-of-type", "value": "5" },
+        { "action": "fill", "selector": "input[placeholder='Got']:first-of-type", "value": "3" },
+        { "action": "fill", "selector": "input[placeholder='Bid']:last-of-type", "value": "2" },
+        { "action": "fill", "selector": "input[placeholder='Got']:last-of-type", "value": "1" },
+        { "action": "click", "selector": "#add-round-btn" },
+        { "action": "wait", "value": 300 }
+      ]
+    },
+    {
+      "name": "game_complete",
+      "description": "Game complete with winner announcement",
+      "steps": [
+        { "action": "setupGame", "players": 2 },
+        { "action": "playRounds", "count": 10 },
+        { "action": "wait", "value": 500 }
+      ]
+    },
+    {
+      "name": "new_game_modal",
+      "description": "New game confirmation modal",
+      "steps": [
+        { "action": "setupGame", "players": 2 },
+        { "action": "playRounds", "count": 3 },
+        { "action": "wait", "value": 500 },
+        { "action": "click", "selector": "#new-game-ingame-btn" },
+        { "action": "wait", "value": 300 }
+      ]
+    },
+    {
+      "name": "scoring_mode_rascal",
+      "description": "Player setup with Rascal scoring selected",
+      "steps": [
+        { "action": "click", "selector": "#new-game-btn" },
+        { "action": "wait", "value": 500 },
+        { "action": "click", "selector": "#scoring-rascal" },
+        { "action": "wait", "value": 200 }
+      ]
+    }
+  ],
+  "settings": {
+    "baseUrl": "http://localhost:8080",
+    "screenshotFormat": "png",
+    "diffThreshold": 0.1,
+    "waitForLoadState": "networkidle",
+    "defaultWaitTime": 1000
+  }
+}
