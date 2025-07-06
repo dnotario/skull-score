@@ -45,7 +45,7 @@ def get_local_ip():
     except:
         return "localhost"
 
-def start_server(port=8080, open_path=""):
+def start_server(port=8080, open_path="", open_browser=True):
     """Start the development server"""
     local_ip = get_local_ip()
     
@@ -74,11 +74,12 @@ def start_server(port=8080, open_path=""):
         print(f"\n⚡ Server is running... Press Ctrl+C to stop")
         print(f"=" * 50 + "\n")
         
-        # Open in default browser
-        url = f'http://localhost:{port}'
-        if open_path:
-            url = f'{url}/{open_path}'
-        webbrowser.open(url)
+        # Open in default browser if requested
+        if open_browser:
+            url = f'http://localhost:{port}'
+            if open_path:
+                url = f'{url}/{open_path}'
+            webbrowser.open(url)
         
         try:
             httpd.serve_forever()
@@ -87,12 +88,16 @@ def start_server(port=8080, open_path=""):
             sys.exit(0)
 
 if __name__ == "__main__":
+    # Check for --no-browser flag
+    open_browser = "--no-browser" not in sys.argv
+    args = [arg for arg in sys.argv[1:] if arg != "--no-browser"]
+    
     # Check if a specific path was provided
-    if len(sys.argv) > 1 and not sys.argv[1].isdigit():
-        open_path = sys.argv[1]
-        port = int(sys.argv[2]) if len(sys.argv) > 2 else 8080
+    if len(args) > 0 and not args[0].isdigit():
+        open_path = args[0]
+        port = int(args[1]) if len(args) > 1 else 8080
     else:
-        port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
+        port = int(args[0]) if len(args) > 0 else 8080
         open_path = ""
     
-    start_server(port, open_path)
+    start_server(port, open_path, open_browser)

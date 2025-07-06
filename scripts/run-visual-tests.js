@@ -50,9 +50,9 @@ checkServerRunning((isRunning) => {
 
   console.log(`${colors.bright}Starting development server...${colors.reset}`);
   
-  // Start the dev server
+  // Start the dev server without opening browser
   const serverPath = path.join(__dirname, 'dev-server.py');
-  const server = spawn('python3', [serverPath], {
+  const server = spawn('python3', [serverPath, '--no-browser'], {
     stdio: 'inherit',  // Show server output directly
     detached: false,
     cwd: path.join(__dirname, '..')

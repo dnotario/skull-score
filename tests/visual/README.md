@@ -15,6 +15,28 @@ tests/visual/
     └── matchers.ts     # Jest custom matchers
 ```
 
+## Current Status
+
+### Working Scenarios (12 tests)
+These scenarios have golden images and pass consistently:
+- `landing_page` - Home page with game description
+- `player_setup_empty` - New game screen with empty inputs
+- `player_setup_filled` - Player setup with 4 players (no names)
+- `scoring_mode_rascal` - Player setup with Rascal mode selected
+
+### Scenarios with Issues
+These scenarios involve form input and gameplay, which have timing issues:
+- `player_setup_8_players` - Maximum players
+- `game_round_*` - Gameplay scenarios
+- `bonus_calculator_*` - Bonus calculation modals
+- `error_modal` - Error handling
+- `new_game_modal` - Confirmation dialogs
+
+### Known Limitations
+1. **Form Input Issues**: Playwright's `page.fill()` method sometimes hangs when trying to fill inputs in the game
+2. **Dev Server**: Automatically opens browser (disabled with --no-browser flag)
+3. **Parallel Execution**: Tests run in parallel with isolated contexts (no shared localStorage)
+
 ## Quick Start
 
 ```bash
@@ -174,9 +196,10 @@ export const scenarios: Record<string, Scenario> = {
 
 ## Benefits of Jest Integration
 
-- **Single test command**: `npm test` runs everything
+- **Single test command**: `npm test` runs unit tests only (visual tests separate)
 - **Better IDE support**: Click to run individual tests
 - **Watch mode**: Auto-rerun on changes
-- **Parallel execution**: Jest can parallelize tests
+- **Parallel execution**: Tests run with 4 workers by default
 - **Unified reporting**: Same reporters for all tests
 - **Test filtering**: Use Jest's powerful filtering options
+- **Isolated contexts**: Each test gets its own browser context

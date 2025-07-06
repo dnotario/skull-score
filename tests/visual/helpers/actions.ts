@@ -53,7 +53,7 @@ export async function setupGame(page: Page, playerCount: number = 2) {
   for (let i = 0; i < playerCount; i++) {
     const selector = `#player-${i}`;
     await page.waitForSelector(selector, { state: 'visible' });
-    await page.fill(selector, PIRATE_NAMES[i]);
+    await page.locator(selector).fill(PIRATE_NAMES[i]);
   }
   
   // Start the game
