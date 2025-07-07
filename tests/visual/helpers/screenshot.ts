@@ -18,7 +18,7 @@ const mkdir = promisify(fs.mkdir);
 
 // Paths for visual test artifacts
 const VISUAL_TESTS_DIR = path.join(__dirname, '../../../visual-tests');
-const GOLDEN_DIR = path.join(VISUAL_TESTS_DIR, 'golden');
+const GOLDEN_DIR = path.join(__dirname, '../goldens');
 const CURRENT_DIR = path.join(VISUAL_TESTS_DIR, 'current');
 const DIFFS_DIR = path.join(VISUAL_TESTS_DIR, 'diffs');
 
@@ -29,7 +29,7 @@ const BASE_URL = process.env.VISUAL_BASE_URL || 'http://localhost:8080';
  * Ensure all necessary directories exist
  */
 async function ensureDirectories() {
-  for (const dir of [VISUAL_TESTS_DIR, GOLDEN_DIR, CURRENT_DIR, DIFFS_DIR]) {
+  for (const dir of [GOLDEN_DIR, CURRENT_DIR, DIFFS_DIR]) {
     await mkdir(dir, { recursive: true });
   }
 }
