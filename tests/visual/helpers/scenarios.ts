@@ -194,8 +194,20 @@ export const scenarios: Record<string, Scenario> = {
     name: 'bonus_calculator_empty',
     description: 'Bonus calculator modal (empty)',
     execute: async (page: Page) => {
-      // Skip for now - need to debug
       await actions.setupGame(page, 2);
+      
+      // Wait for the round inputs to be visible
+      await page.waitForSelector('#bid-player-0', { state: 'visible' });
+      
+      // Player 0 bids and wins 1 (so they can add bonus)
+      await actions.setPlayerRound(page, 0, 1, 1);
+      // Player 1 bids and wins 0
+      await actions.setPlayerRound(page, 1, 0, 0);
+      
+      // Click bonus button for player 0 to open calculator
+      await page.click('#bonus-player-0');
+      await page.waitForSelector('#bonus-modal-overlay.active', { state: 'visible' });
+      await page.waitForTimeout(500);
     },
     tags: ['modal', 'bonus']
   },
@@ -204,8 +216,33 @@ export const scenarios: Record<string, Scenario> = {
     name: 'bonus_calculator_filled',
     description: 'Bonus calculator with values',
     execute: async (page: Page) => {
-      // Skip for now - same as empty
       await actions.setupGame(page, 2);
+      
+      // Wait for the round inputs to be visible
+      await page.waitForSelector('#bid-player-0', { state: 'visible' });
+      
+      // Player 0 bids and wins 1 (so they can add bonus)
+      await actions.setPlayerRound(page, 0, 1, 1);
+      // Player 1 bids and wins 0
+      await actions.setPlayerRound(page, 1, 0, 0);
+      
+      // Click bonus button for player 0 to open calculator
+      await page.click('#bonus-player-0');
+      await page.waitForSelector('#bonus-modal-overlay.active', { state: 'visible' });
+      await page.waitForTimeout(300);
+      
+      // Add some bonus values using the calculator
+      // Click standard14 twice (2 x 10 = 20 points)
+      await page.click('#standard14-plus');
+      await page.waitForTimeout(100);
+      await page.click('#standard14-plus');
+      await page.waitForTimeout(100);
+      
+      // Click skullPirate once (1 x 30 = 30 points)
+      await page.click('#skullPirate-plus');
+      await page.waitForTimeout(500);
+      
+      // Total should show 50 points
     },
     tags: ['modal', 'bonus']
   },
