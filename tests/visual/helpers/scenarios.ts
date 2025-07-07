@@ -36,23 +36,6 @@ export const scenarios: Record<string, Scenario> = {
     tags: ['basic', 'setup']
   },
   
-  player_setup_filled: {
-    name: 'player_setup_filled',
-    description: 'Player setup with 4 players (empty for now)',
-    execute: async (page: Page) => {
-      await page.click('#new-game-btn');
-      await page.waitForSelector('#player-names-section:not(.hidden)', { state: 'visible' });
-      await page.waitForTimeout(500);
-      
-      // Just add players, don't fill names yet
-      await page.click('#add-player-btn');
-      await page.waitForTimeout(200);
-      await page.click('#add-player-btn');
-      await page.waitForTimeout(200);
-    },
-    tags: ['basic', 'setup']
-  },
-  
   player_setup_8_players: {
     name: 'player_setup_8_players',
     description: 'Maximum 8 players setup',
