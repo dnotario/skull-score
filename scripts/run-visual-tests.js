@@ -17,11 +17,44 @@ const colors = {
   red: '\x1b[31m'
 };
 
+// Parse command line arguments
+const args = process.argv.slice(2);
+let updateGolden = false;
+const filteredArgs = [];
+
+// Process arguments
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--update-golden' || args[i] === '-u') {
+    updateGolden = true;
+  } else if (args[i] === '--help' || args[i] === '-h') {
+    console.log(`
+${colors.bright}Visual Test Runner - Skull King Score Keeper${colors.reset}
+
+Usage: npm run test:visual [options]
+
+Options:
+  -t, --testNamePattern <pattern>  Run tests matching the pattern
+  --update-golden, -u              Update golden images instead of comparing
+  --help, -h                       Show this help message
+  
+  Additional Jest options are passed through
+
+Examples:
+  npm run test:visual -t landing_page
+  npm run test:visual -t "game_round"              # Runs all game_round scenarios
+  npm run test:visual --update-golden -t game_round_1
+`);
+    process.exit(0);
+  } else {
+    // Keep other arguments to pass to Jest
+    filteredArgs.push(args[i]);
+  }
+}
+
 console.log(`\n${colors.bright}${colors.blue}🏴‍☠️ Visual Test Runner - Skull King Score Keeper${colors.reset}`);
 console.log('=' .repeat(50));
 
-// Check if we should update golden images
-const updateGolden = process.env.UPDATE_GOLDEN === 'true';
+// Show mode
 if (updateGolden) {
   console.log(`${colors.yellow}📸 Mode: UPDATE GOLDEN IMAGES${colors.reset}`);
 } else {
@@ -80,8 +113,13 @@ checkServerRunning((isRunning) => {
       
       // Run Jest visual tests
       const jestArgs = ['--selectProjects', 'visual'];
-      const additionalArgs = process.argv.slice(2);
-      jestArgs.push(...additionalArgs);
+      
+      // Add update golden flag as a Jest global if requested
+      if (updateGolden) {
+        jestArgs.push('--globals', JSON.stringify({ UPDATE_GOLDEN: true }));
+      }
+      
+      jestArgs.push(...filteredArgs);
       
       const jest = spawn('npx', ['jest', ...jestArgs], {
         stdio: 'inherit',

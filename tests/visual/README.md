@@ -92,43 +92,33 @@ If changes are intentional, update golden images:
 npm run test:visual:update
 
 # Update specific tests (using Jest pattern)
-UPDATE_GOLDEN=true npm test -- visual --testNamePattern="iPhone.*landing"
+npm run test:visual --update-golden -t "iPhone.*landing"
 ```
 
 ## Running Specific Tests
 
-### By Device
-```bash
-VISUAL_DEVICES=iPhone_12_Pro npm run test:visual
-VISUAL_DEVICES=iPhone_12_Pro,Desktop_HD npm run test:visual
-```
+Visual tests use Jest's standard test filtering options:
 
-### By Scenario
-```bash
-# By tag
-VISUAL_SCENARIOS=basic npm run test:visual
-VISUAL_SCENARIOS=modal npm run test:visual
-
-# By specific scenario names
-VISUAL_SCENARIOS=landing_page npm run test:visual
-VISUAL_SCENARIOS=landing_page,game_round_1 npm run test:visual
-```
-
-### Using Jest Filters
 ```bash
 # Run tests matching pattern
-npm test -- visual --testNamePattern="iPhone"
-npm test -- visual --testNamePattern="landing"
+npm run test:visual -- -t landing_page
+npm run test:visual -- -t "game_round"  # Runs all game_round scenarios
+npm run test:visual -- -t "iPhone"      # Runs all iPhone device tests
 
 # Run in watch mode
 npm run test:watch -- --selectProjects visual
+
+# Update specific golden images
+npm run test:visual --update-golden -t landing_page
 ```
+
+## Command Line Options
+
+- `--update-golden`, `-u` - Update golden images instead of comparing
+- `-t <pattern>` - Run tests matching the pattern (Jest's testNamePattern)
 
 ## Environment Variables
 
-- `UPDATE_GOLDEN=true` - Update golden images instead of comparing
-- `VISUAL_DEVICES` - Comma-separated device names (default: essential devices)
-- `VISUAL_SCENARIOS` - Comma-separated scenario names or tag (default: all)
 - `VISUAL_BASE_URL` - Base URL for testing (default: http://localhost:8080)
 
 ## Adding New Tests

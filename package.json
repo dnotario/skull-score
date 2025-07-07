@@ -7,7 +7,7 @@
     "test": "jest --selectProjects unit",
     "test:unit": "jest --selectProjects unit",
     "test:visual": "node scripts/run-visual-tests.js",
-    "test:visual:update": "UPDATE_GOLDEN=true node scripts/run-visual-tests.js",
+    "test:visual:update": "node scripts/run-visual-tests.js --update-golden",
     "test:watch": "jest --watch",
     "build:cache-bust": "node scripts/update-cache-bust.js",
     "build:tsc": "tsc",

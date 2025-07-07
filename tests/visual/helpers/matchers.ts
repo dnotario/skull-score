@@ -18,7 +18,8 @@ expect.extend({
     imageName: string
   ): Promise<jest.CustomMatcherResult> {
     const goldenPath = getGoldenPath(imageName);
-    const updateGolden = process.env.UPDATE_GOLDEN === 'true';
+    // Check for update flag in globals (from command line) or environment (legacy)
+    const updateGolden = (global as any).UPDATE_GOLDEN === true || process.env.UPDATE_GOLDEN === 'true';
     
     // Check if golden image exists
     const goldenExists = await goldenImageExists(imageName);
@@ -41,7 +42,7 @@ expect.extend({
         pass: false,
         message: () => 
           `❌ Golden image does not exist: ${imageName}\n` +
-          `   Run with UPDATE_GOLDEN=true to create it.`
+          `   Run with --update-golden to create it.`
       };
     }
     
@@ -65,7 +66,7 @@ expect.extend({
           `   Current image saved to: build/visual-tests/current/${imageName}\n` +
           `   \n` +
           `   To approve this change, run:\n` +
-          `   UPDATE_GOLDEN=true npm test -- --testNamePattern="${imageName}"`
+          `   npm run test:visual --update-golden -t "${imageName}"`
       };
     }
   }
