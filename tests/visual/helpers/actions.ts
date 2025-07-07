@@ -70,20 +70,86 @@ export async function setupGame(page: Page, playerCount: number = 2) {
 }
 
 /**
+ * Fill in bid value for a specific player
+ */
+export async function setBid(page: Page, playerIndex: number, value: number) {
+  const bidInput = await page.$(`#bid-player-${playerIndex}`);
+  if (bidInput) {
+    await bidInput.fill(value.toString());
+  }
+}
+
+/**
+ * Fill in actual/won value for a specific player
+ */
+export async function setWon(page: Page, playerIndex: number, value: number) {
+  const actualInput = await page.$(`#actual-player-${playerIndex}`);
+  if (actualInput) {
+    await actualInput.fill(value.toString());
+  }
+}
+
+/**
+ * Fill in bid and won values for a specific player
+ */
+export async function setPlayerRound(page: Page, playerIndex: number, bid: number, won: number) {
+  await setBid(page, playerIndex, bid);
+  await setWon(page, playerIndex, won);
+}
+
+/**
  * Fill in data for a round
  */
 export async function fillRound(page: Page, roundNumber: number, data: RoundData[]) {
-  const bidInputs = await page.$$('input[placeholder="Bid"]');
-  const actualInputs = await page.$$('input[placeholder="Got"]');
-  const bonusInputs = await page.$$('input[placeholder="Bonus"]');
-  
-  for (let i = 0; i < data.length && i < bidInputs.length; i++) {
-    await bidInputs[i].fill(data[i].bid.toString());
-    await actualInputs[i].fill(data[i].actual.toString());
-    if (data[i].bonus > 0 && bonusInputs[i]) {
-      await bonusInputs[i].fill(data[i].bonus.toString());
+  for (let i = 0; i < data.length; i++) {
+    await setPlayerRound(page, i, data[i].bid, data[i].actual);
+    
+    // Handle bonus if player bid equals actual and has bonus
+    if (data[i].bonus > 0 && data[i].bid === data[i].actual) {
+      await setBonus(page, i, data[i].bonus);
     }
   }
+}
+
+/**
+ * Set bonus for a player using the bonus calculator
+ */
+export async function setBonus(page: Page, playerIndex: number, bonusAmount: number) {
+  const bonusButton = await page.$(`#bonus-player-${playerIndex}`);
+  if (!bonusButton) return;
+  
+  await bonusButton.click();
+  await page.waitForSelector('#bonus-modal-overlay.active', { state: 'visible' });
+  
+  // Clear any existing bonus first
+  await page.evaluate(() => {
+    (window as any).game.clearBonusCalculator();
+  });
+  
+  // Simple approach: use standard14 (yellow/purple/green 14s) which are worth 10 points each
+  if (bonusAmount >= 10) {
+    const standard14Count = Math.min(3, Math.floor(bonusAmount / 10)); // Max 3 standard 14s
+    for (let i = 0; i < standard14Count; i++) {
+      await page.evaluate(() => {
+        (window as any).game.updateBonusCounter('standard14', 1);
+      });
+      await page.waitForTimeout(50);
+    }
+  }
+  
+  // If we need 20 points and have only used 10, add a black14
+  if (bonusAmount === 20) {
+    await page.evaluate(() => {
+      (window as any).game.clearBonusCalculator();
+      (window as any).game.updateBonusCounter('black14', 1); // Black 14 is worth 20
+    });
+  }
+  
+  // Apply the bonus
+  await page.evaluate(() => {
+    (window as any).game.applyBonusCalculator();
+  });
+  await page.waitForSelector('#bonus-modal-overlay.active', { state: 'hidden' });
 }
 
 /**
@@ -140,45 +206,6 @@ export async function openBonusCalculator(page: Page, playerIndex: number) {
 }
 
 /**
- * Play multiple rounds quickly
- */
-export async function playRounds(page: Page, roundCount: number) {
-  for (let round = 1; round <= roundCount; round++) {
-    // Fill in simple valid data for each round
-    const bidInputs = await page.$$('input[placeholder="Bid"]');
-    const gotInputs = await page.$$('input[placeholder="Got"]');
-    const playerCount = bidInputs.length;
-    
-    // Distribute tricks to match round number (cards dealt)
-    let remainingTricks = round;
-    for (let i = 0; i < playerCount; i++) {
-      const bid = Math.min(remainingTricks, Math.floor(round / playerCount) + (i < round % playerCount ? 1 : 0));
-      const got = i === playerCount - 1 ? remainingTricks : bid; // Last player gets remaining
-      
-      await bidInputs[i].fill(bid.toString());
-      await gotInputs[i].fill(got.toString());
-      
-      remainingTricks -= got;
-    }
-    
-    // Add round
-    await page.click('#add-round-btn');
-    await page.waitForTimeout(300);
-  }
-}
-
-export async function addBonusSelections(page: Page, selections: { type: string; count: number }[]) {
-  for (const selection of selections) {
-    for (let i = 0; i < selection.count; i++) {
-      // The bonus calculator uses onclick handlers with specific function names
-      const selector = `button[onclick*="${selection.type}"][onclick*="1)"]`;
-      await page.click(selector);
-      await page.waitForTimeout(100);
-    }
-  }
-}
-
-/**
  * Close any active modal
  */
 export async function closeModal(page: Page) {
@@ -196,4 +223,25 @@ export async function selectScoringMode(page: Page, mode: 'traditional' | 'rasca
   const selector = mode === 'rascal' ? '#scoring-rascal' : '#scoring-traditional';
   await page.click(selector);
   await page.waitForTimeout(200);
+}
+
+/**
+ * Play a specific number of rounds
+ * First player wins equal to round number, others bid/win 0
+ */
+export async function playRounds(page: Page, numberOfRounds: number, playerCount: number): Promise<void> {
+  for (let round = 1; round <= numberOfRounds; round++) {
+    // First player wins equal to round number
+    await setBid(page, 0, round);
+    await setWon(page, 0, round);
+    
+    // Other players bid and win 0
+    for (let p = 1; p < playerCount; p++) {
+      await setBid(page, p, 0);
+      await setWon(page, p, 0);
+    }
+    
+    await page.click('#add-round-btn');
+    await page.waitForTimeout(300);
+  }
 }

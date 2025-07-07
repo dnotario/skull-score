@@ -115,10 +115,16 @@ export const scenarios: Record<string, Scenario> = {
     description: 'First round with bids entered',
     execute: async (page: Page) => {
       await actions.setupGame(page, 2);
-      await actions.fillRound(page, 1, [
-        { bid: 0, actual: 0, bonus: 0 },
-        { bid: 1, actual: 1, bonus: 10 }
-      ]);
+      
+      // Wait for the round inputs to be visible
+      await page.waitForSelector('#bid-player-0', { state: 'visible' });
+      
+      // Use the helper functions to fill round data without bonus
+      await actions.setPlayerRound(page, 0, 0, 0);  // Captain Jack: bid 0, got 0
+      await actions.setPlayerRound(page, 1, 1, 1);  // Anne Bonny: bid 1, got 1
+      
+      // Wait for the values and scores to be visible
+      await page.waitForTimeout(500);
     },
     tags: ['game', 'round']
   },
@@ -127,8 +133,23 @@ export const scenarios: Record<string, Scenario> = {
     name: 'game_round_5',
     description: 'Mid-game round 5',
     execute: async (page: Page) => {
-      // Just show round 1 for now - simpler
       await actions.setupGame(page, 3);
+      
+      // Wait for the round inputs to be visible
+      await page.waitForSelector('#bid-player-0', { state: 'visible' });
+      
+      // Play rounds 1-4
+      await actions.playRounds(page, 4, 3);
+      
+      // Now fill round 5 with interesting data
+      await actions.setPlayerRound(page, 0, 2, 3);  // Captain Jack: bid 2, got 3 (missed)
+      await actions.setPlayerRound(page, 1, 1, 1);  // Anne Bonny: bid 1, got 1 (correct)
+      await actions.setPlayerRound(page, 2, 1, 1);  // Blackbeard: bid 1, got 1 (correct)
+      
+      // Anne Bonny gets bonus
+      await actions.setBonus(page, 1, 20);
+      
+      await page.waitForTimeout(500);
     },
     tags: ['game', 'round']
   },
@@ -137,8 +158,15 @@ export const scenarios: Record<string, Scenario> = {
     name: 'game_round_10',
     description: 'Final round of the game',
     execute: async (page: Page) => {
-      // Just show round 1 for now - simpler
-      await actions.setupGame(page, 3);
+      await actions.setupGame(page, 2);
+      
+      // Wait for the round inputs to be visible
+      await page.waitForSelector('#bid-player-0', { state: 'visible' });
+      
+      // Play all 10 rounds using the helper
+      await actions.playRounds(page, 10, 2);
+      
+      await page.waitForTimeout(500);
     },
     tags: ['game', 'round', 'final']
   },
@@ -147,8 +175,16 @@ export const scenarios: Record<string, Scenario> = {
     name: 'game_complete',
     description: 'Game complete with winner announcement',
     execute: async (page: Page) => {
-      // Just show round 1 for now - simpler
       await actions.setupGame(page, 2);
+      
+      // Wait for the round inputs to be visible
+      await page.waitForSelector('#bid-player-0', { state: 'visible' });
+      
+      // Play all 10 rounds using the helper
+      await actions.playRounds(page, 10, 2);
+      
+      // Should now show winner announcement
+      await page.waitForTimeout(1000);
     },
     tags: ['game', 'complete']
   },
