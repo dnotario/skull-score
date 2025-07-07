@@ -64,6 +64,16 @@ export async function captureScreenshot(
     // Navigate to base URL
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
     
+    // Mock Math.random for deterministic output in tests
+    await page.addInitScript(() => {
+      // Simple linear congruential generator for deterministic "random" numbers
+      let seed = 12345;
+      Math.random = () => {
+        seed = (seed * 1664525 + 1013904223) % 4294967296;
+        return seed / 4294967296;
+      };
+    });
+    
     // Execute scenario steps
     await scenario.execute(page);
     

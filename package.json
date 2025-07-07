@@ -4,7 +4,7 @@
   "description": "A pirate-themed score keeper for the Skull King card game",
   "main": "game.js",
   "scripts": {
-    "test": "jest --selectProjects unit",
+    "test": "npm run test:unit && npm run test:visual",
     "test:unit": "jest --selectProjects unit",
     "test:visual": "node scripts/run-visual-tests.js",
     "test:visual:update": "node scripts/run-visual-tests.js --update-golden",
