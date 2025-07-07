@@ -51,7 +51,7 @@ describe('Visual Regression Tests', () => {
           const imageName = `${device.name}_${scenario.name}.png`;
           
           // Compare with golden image (perfect match required)
-          expect(screenshot).toMatchVisualSnapshot(imageName);
+          await expect(screenshot).toMatchVisualSnapshot(imageName);
         }, 30000); // 30 second timeout per test
       });
     });

@@ -7,7 +7,7 @@
     "test": "npm run test:unit && npm run test:visual",
     "test:unit": "jest --selectProjects unit",
     "test:visual": "node scripts/run-visual-tests.js",
-    "test:visual:update": "node scripts/run-visual-tests.js --update-golden",
+    "test:visual:diff": "node scripts/open-visual-diff.js",
     "test:watch": "jest --watch",
     "build:cache-bust": "node scripts/update-cache-bust.js",
     "build:tsc": "tsc",

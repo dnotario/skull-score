@@ -19,13 +19,16 @@ const colors = {
 
 // Parse command line arguments
 const args = process.argv.slice(2);
-let updateGolden = false;
+let devices = null;
 const filteredArgs = [];
 
 // Process arguments
 for (let i = 0; i < args.length; i++) {
-  if (args[i] === '--update-golden' || args[i] === '-u') {
-    updateGolden = true;
+  if (args[i] === '--devices' || args[i] === '-d') {
+    // Get the next argument as the device list
+    if (i + 1 < args.length) {
+      devices = args[++i];
+    }
   } else if (args[i] === '--help' || args[i] === '-h') {
     console.log(`
 ${colors.bright}Visual Test Runner - Skull King Score Keeper${colors.reset}
@@ -34,15 +37,19 @@ Usage: npm run test:visual [options]
 
 Options:
   -t, --testNamePattern <pattern>  Run tests matching the pattern
-  --update-golden, -u              Update golden images instead of comparing
+  -d, --devices <devices>          Run tests on specific devices (comma-separated)
   --help, -h                       Show this help message
   
   Additional Jest options are passed through
 
+Available devices:
+  iPhone_12_Pro, iPhone_SE, Desktop_HD
+
 Examples:
   npm run test:visual -t landing_page
   npm run test:visual -t "game_round"              # Runs all game_round scenarios
-  npm run test:visual --update-golden -t game_round_1
+  npm run test:visual -d iPhone_SE -t game_complete
+  npm run test:visual -d "iPhone_SE,Desktop_HD" -t game_complete
 `);
     process.exit(0);
   } else {
@@ -55,10 +62,11 @@ console.log(`\n${colors.bright}${colors.blue}🏴‍☠️ Visual Test Runner - 
 console.log('=' .repeat(50));
 
 // Show mode
-if (updateGolden) {
-  console.log(`${colors.yellow}📸 Mode: UPDATE GOLDEN IMAGES${colors.reset}`);
-} else {
-  console.log(`${colors.green}🔍 Mode: COMPARE WITH GOLDEN IMAGES${colors.reset}`);
+console.log(`${colors.green}🔍 Mode: COMPARE WITH GOLDEN IMAGES${colors.reset}`);
+
+// Show devices if specified
+if (devices) {
+  console.log(`${colors.bright}📱 Devices: ${devices}${colors.reset}`);
 }
 
 function checkServerRunning(callback) {
@@ -114,16 +122,17 @@ checkServerRunning((isRunning) => {
       // Run Jest visual tests
       const jestArgs = ['--selectProjects', 'visual'];
       
-      // Add update golden flag as a Jest global if requested
-      if (updateGolden) {
-        jestArgs.push('--globals', JSON.stringify({ UPDATE_GOLDEN: true }));
-      }
-      
       jestArgs.push(...filteredArgs);
+      
+      // Set up environment variables
+      const testEnv = { ...process.env };
+      if (devices) {
+        testEnv.VISUAL_DEVICES = devices;
+      }
       
       const jest = spawn('npx', ['jest', ...jestArgs], {
         stdio: 'inherit',
-        env: { ...process.env }
+        env: testEnv
       });
       
       jest.on('close', (code) => {

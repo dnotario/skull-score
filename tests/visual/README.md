@@ -46,8 +46,8 @@ npm test
 # Run only visual tests (automatically starts dev server)
 npm run test:visual
 
-# Update golden images (when changes are intentional)
-npm run test:visual:update
+# Golden images are updated manually using cp commands
+# (shown in test failure messages)
 ```
 
 **Note**: The visual test commands automatically start and stop the development server. You'll see clear messages about server startup before tests run.
@@ -85,15 +85,14 @@ If visual tests fail, you'll see:
 
 ### 4. Approve Changes
 
-If changes are intentional, update golden images:
+If changes are intentional, the test output will show the exact `cp` command to run:
 
 ```bash
-# Update ALL golden images
-npm run test:visual:update
-
-# Update specific tests (using Jest pattern)
-npm run test:visual --update-golden -t "iPhone.*landing"
+# Example from test output:
+cp build/visual-tests/current/iPhone_SE_game_complete.png tests/visual/goldens/iPhone_SE_game_complete.png
 ```
+
+This directly copies the current test output to become the new golden image.
 
 ## Running Specific Tests
 
@@ -105,21 +104,29 @@ npm run test:visual -- -t landing_page
 npm run test:visual -- -t "game_round"  # Runs all game_round scenarios
 npm run test:visual -- -t "iPhone"      # Runs all iPhone device tests
 
+# Run tests on specific devices
+npm run test:visual -- -d iPhone_SE -t game_complete
+npm run test:visual -- -d "iPhone_SE,Desktop_HD" -t game_complete
+
 # Run in watch mode
 npm run test:watch -- --selectProjects visual
 
 # Update specific golden images
-npm run test:visual --update-golden -t landing_page
+npm run test:visual -- --update-golden -t landing_page
 ```
 
 ## Command Line Options
 
 - `--update-golden`, `-u` - Update golden images instead of comparing
 - `-t <pattern>` - Run tests matching the pattern (Jest's testNamePattern)
+- `-d, --devices <devices>` - Run tests on specific devices (comma-separated)
+
+Available devices: `iPhone_12_Pro`, `iPhone_SE`, `Desktop_HD`
 
 ## Environment Variables
 
 - `VISUAL_BASE_URL` - Base URL for testing (default: http://localhost:8080)
+- `VISUAL_DEVICES` - Comma-separated list of devices (can be overridden by `-d` flag)
 
 ## Adding New Tests
 

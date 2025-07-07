@@ -18,31 +18,18 @@ expect.extend({
     imageName: string
   ): Promise<jest.CustomMatcherResult> {
     const goldenPath = getGoldenPath(imageName);
-    // Check for update flag in globals (from command line) or environment (legacy)
-    const updateGolden = (global as any).UPDATE_GOLDEN === true || process.env.UPDATE_GOLDEN === 'true';
     
     // Check if golden image exists
     const goldenExists = await goldenImageExists(imageName);
     
-    // If UPDATE_GOLDEN is set, update the golden image
-    if (updateGolden) {
-      await updateGoldenImage(received, imageName);
-      
-      return {
-        pass: true,
-        message: () => goldenExists 
-          ? `✅ Updated golden image: ${imageName}`
-          : `✅ Created new golden image: ${imageName}`
-      };
-    }
-    
-    // If golden doesn't exist and we're not updating, fail the test
+    // If golden doesn't exist, fail the test
     if (!goldenExists) {
       return {
         pass: false,
         message: () => 
           `❌ Golden image does not exist: ${imageName}\n` +
-          `   Run with --update-golden to create it.`
+          `   To create it, run:\n` +
+          `   cp build/visual-tests/current/${imageName} tests/visual/goldens/${imageName}`
       };
     }
     
@@ -65,8 +52,11 @@ expect.extend({
           `   Diff image saved to: build/visual-tests/diffs/${imageName}\n` +
           `   Current image saved to: build/visual-tests/current/${imageName}\n` +
           `   \n` +
+          `   To view the differences:\n` +
+          `   node scripts/open-visual-diff.js ${imageName} ${diffPixels} ${totalPixels}\n` +
+          `   \n` +
           `   To approve this change, run:\n` +
-          `   npm run test:visual --update-golden -t "${imageName}"`
+          `   cp build/visual-tests/current/${imageName} tests/visual/goldens/${imageName}`
       };
     }
   }

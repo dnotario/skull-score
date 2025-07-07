@@ -57,22 +57,43 @@ export async function captureScreenshot(
     
     page = await context.newPage();
     
+    // Mock Math.random for deterministic output in tests
+    // MUST be done before navigation to ensure all scripts use the mock
+    await page.addInitScript(() => {
+      // Simple linear congruential generator for deterministic "random" numbers
+      let seed = 12345;
+      let callCount = 0;
+      
+      Math.random = () => {
+        callCount++;
+        seed = (seed * 1664525 + 1013904223) % 4294967296;
+        const result = seed / 4294967296;
+        
+        // Log calls that would select commentary (when result is used with * 3)
+        if (callCount % 10 === 0) {
+          console.log(`[MOCK] Math.random call #${callCount}: ${result} -> index ${Math.floor(result * 3)}`);
+        }
+        
+        return result;
+      };
+      
+      // Also override any use of crypto.getRandomValues if it exists
+      if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        crypto.getRandomValues = (array: any) => {
+          for (let i = 0; i < array.length; i++) {
+            array[i] = Math.floor(Math.random() * 256);
+          }
+          return array;
+        };
+      }
+    });
+    
     // Clear storage before navigating
     await context.clearCookies();
     await context.clearPermissions();
     
     // Navigate to base URL
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
-    
-    // Mock Math.random for deterministic output in tests
-    await page.addInitScript(() => {
-      // Simple linear congruential generator for deterministic "random" numbers
-      let seed = 12345;
-      Math.random = () => {
-        seed = (seed * 1664525 + 1013904223) % 4294967296;
-        return seed / 4294967296;
-      };
-    });
     
     // Execute scenario steps
     await scenario.execute(page);
