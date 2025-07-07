@@ -42,11 +42,15 @@ export async function captureScreenshot(
   device: Device, 
   scenario: Scenario
 ): Promise<Buffer> {
+  const timings: Record<string, number> = {};
+  const startTime = Date.now();
+  
   let context: BrowserContext | null = null;
   let page: Page | null = null;
   
   try {
     // Create browser context with device settings
+    const contextStart = Date.now();
     context = await browser.newContext({
       viewport: device.viewport,
       deviceScaleFactor: device.deviceScaleFactor,
@@ -56,6 +60,7 @@ export async function captureScreenshot(
     });
     
     page = await context.newPage();
+    timings.context = Date.now() - contextStart;
     
     // Mock Math.random for deterministic output in tests
     // MUST be done before navigation to ensure all scripts use the mock
@@ -67,14 +72,7 @@ export async function captureScreenshot(
       Math.random = () => {
         callCount++;
         seed = (seed * 1664525 + 1013904223) % 4294967296;
-        const result = seed / 4294967296;
-        
-        // Log calls that would select commentary (when result is used with * 3)
-        if (callCount % 10 === 0) {
-          console.log(`[MOCK] Math.random call #${callCount}: ${result} -> index ${Math.floor(result * 3)}`);
-        }
-        
-        return result;
+        return seed / 4294967296;
       };
       
       // Also override any use of crypto.getRandomValues if it exists
@@ -88,26 +86,57 @@ export async function captureScreenshot(
       }
     });
     
+    // Add CSS to disable all transitions and animations for faster tests
+    await page.addStyleTag({
+      content: `
+        *, *::before, *::after {
+          transition: none !important;
+          animation: none !important;
+          animation-duration: 0s !important;
+          transition-duration: 0s !important;
+        }
+      `
+    });
+    
     // Clear storage before navigating
     await context.clearCookies();
     await context.clearPermissions();
     
     // Navigate to base URL
+    const navStart = Date.now();
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+    timings.navigation = Date.now() - navStart;
     
     // Execute scenario steps
+    const execStart = Date.now();
     await scenario.execute(page);
+    timings.execution = Date.now() - execStart;
     
     // Capture screenshot immediately - animations are already disabled
+    const screenshotStart = Date.now();
     const screenshot = await page.screenshot({
       fullPage: false,
       animations: 'disabled'
     });
+    timings.screenshot = Date.now() - screenshotStart;
     
     // Save to current directory for debugging
+    const saveStart = Date.now();
     await ensureDirectories();
     const currentPath = path.join(CURRENT_DIR, `${device.name}_${scenario.name}.png`);
     await writeFile(currentPath, screenshot);
+    timings.save = Date.now() - saveStart;
+    
+    // Log timing breakdown for game_complete scenario (only in debug mode)
+    if (scenario.name === 'game_complete' && process.env.DEBUG_TIMING) {
+      console.log('\n📊 Timing breakdown for game_complete:');
+      console.log(`  Context creation: ${timings.context}ms`);
+      console.log(`  Navigation: ${timings.navigation}ms`);
+      console.log(`  Scenario execution: ${timings.execution}ms`);
+      console.log(`  Screenshot capture: ${timings.screenshot}ms`);
+      console.log(`  Save to disk: ${timings.save}ms`);
+      console.log(`  Total: ${Date.now() - startTime}ms\n`);
+    }
     
     return screenshot;
     
