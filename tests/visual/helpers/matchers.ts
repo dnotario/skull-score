@@ -61,8 +61,8 @@ expect.extend({
         message: () => 
           `❌ Visual snapshot does not match: ${imageName}\n` +
           `   Pixels different: ${diffPixels} of ${totalPixels} (${percentage}%)\n` +
-          `   Diff image saved to: visual-tests/diffs/${imageName}\n` +
-          `   Current image saved to: visual-tests/current/${imageName}\n` +
+          `   Diff image saved to: build/visual-tests/diffs/${imageName}\n` +
+          `   Current image saved to: build/visual-tests/current/${imageName}\n` +
           `   \n` +
           `   To approve this change, run:\n` +
           `   UPDATE_GOLDEN=true npm test -- --testNamePattern="${imageName}"`

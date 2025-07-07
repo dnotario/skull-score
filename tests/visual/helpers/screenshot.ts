@@ -17,10 +17,10 @@ const writeFile = promisify(fs.writeFile);
 const mkdir = promisify(fs.mkdir);
 
 // Paths for visual test artifacts
-const VISUAL_TESTS_DIR = path.join(__dirname, '../../../visual-tests');
+const BUILD_DIR = path.join(__dirname, '../../../build/visual-tests');
 const GOLDEN_DIR = path.join(__dirname, '../goldens');
-const CURRENT_DIR = path.join(VISUAL_TESTS_DIR, 'current');
-const DIFFS_DIR = path.join(VISUAL_TESTS_DIR, 'diffs');
+const CURRENT_DIR = path.join(BUILD_DIR, 'current');
+const DIFFS_DIR = path.join(BUILD_DIR, 'diffs');
 
 // Base URL from environment or default
 const BASE_URL = process.env.VISUAL_BASE_URL || 'http://localhost:8080';
