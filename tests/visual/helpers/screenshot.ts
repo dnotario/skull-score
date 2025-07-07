@@ -112,6 +112,9 @@ export async function captureScreenshot(
     await scenario.execute(page);
     timings.execution = Date.now() - execStart;
     
+    // Wait 250ms before taking screenshot to ensure stable rendering
+    await page.waitForTimeout(250);
+    
     // Capture screenshot immediately - animations are already disabled
     const screenshotStart = Date.now();
     const screenshot = await page.screenshot({

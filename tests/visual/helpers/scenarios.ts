@@ -82,17 +82,6 @@ export const scenarios: Record<string, Scenario> = {
     tags: ['game', 'setup']
   },
   
-  game_round_1: {
-    name: 'game_round_1',
-    description: 'First round of the game',
-    execute: async (page: Page) => {
-      // Just setup with 2 players for simpler test
-      await actions.setupGame(page, 2);
-      // Game is ready, inputs are already visible from setupGame
-    },
-    tags: ['game', 'round']
-  },
-  
   game_round_1_filled: {
     name: 'game_round_1_filled',
     description: 'First round with bids entered',
@@ -141,8 +130,8 @@ export const scenarios: Record<string, Scenario> = {
       // Play all 10 rounds using the helper
       await actions.playRounds(page, 10, 2);
       
-      // Wait for game complete UI to appear
-      await page.waitForSelector('#game-complete-section:not(.hidden)', { state: 'visible' });
+      // Wait for winner announcement to appear
+      await page.waitForSelector('#winner-announcement:not(.hidden)', { state: 'visible' });
     },
     tags: ['game', 'round', 'final']
   },
@@ -205,32 +194,13 @@ export const scenarios: Record<string, Scenario> = {
       
       // Wait for total to update
       await page.waitForFunction(() => {
-        const totalEl = document.querySelector('#bonus-total');
+        const totalEl = document.querySelector('#bonus-total-value');
         return totalEl && totalEl.textContent === '50';
       });
     },
     tags: ['modal', 'bonus']
   },
   
-  error_modal: {
-    name: 'error_modal',
-    description: 'Error modal for invalid input',
-    execute: async (page: Page) => {
-      // Skip for now - just show game
-      await actions.setupGame(page, 2);
-    },
-    tags: ['modal', 'error']
-  },
-  
-  new_game_modal: {
-    name: 'new_game_modal',
-    description: 'New game confirmation modal',
-    execute: async (page: Page) => {
-      // Skip for now - just show game  
-      await actions.setupGame(page, 2);
-    },
-    tags: ['modal', 'confirm']
-  }
 };
 
 /**

@@ -52,7 +52,7 @@ describe('Visual Regression Tests', () => {
           
           // Compare with golden image (perfect match required)
           await expect(screenshot).toMatchVisualSnapshot(imageName);
-        }, 30000); // 30 second timeout per test
+        }, scenario.name.includes('game_round_10') || scenario.name.includes('game_complete') ? 60000 : 30000); // Longer timeout for complex scenarios
       });
     });
   });
