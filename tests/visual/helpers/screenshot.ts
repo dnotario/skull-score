@@ -77,10 +77,7 @@ export async function captureScreenshot(
     // Execute scenario steps
     await scenario.execute(page);
     
-    // Wait a short time for any final animations
-    await page.waitForTimeout(200);
-    
-    // Capture screenshot
+    // Capture screenshot immediately - animations are already disabled
     const screenshot = await page.screenshot({
       fullPage: false,
       animations: 'disabled'

@@ -41,7 +41,9 @@ export async function setupGame(page: Page, playerCount: number = 2) {
   // Click new game button
   await page.click('#new-game-btn');
   await page.waitForSelector('#player-names-section:not(.hidden)', { state: 'visible' });
-  await page.waitForTimeout(500); // Give time for JS to generate inputs
+  
+  // Wait for the first player input to be ready
+  await page.waitForSelector('#player-0', { state: 'visible' });
   
   // Check how many players we start with
   const initialPlayerCount = await page.$$eval('input[id^="player-"]', els => els.length);
@@ -49,24 +51,21 @@ export async function setupGame(page: Page, playerCount: number = 2) {
   // Add players if needed (game starts with 1 player)
   for (let i = initialPlayerCount; i < playerCount; i++) {
     await page.click('#add-player-btn');
-    await page.waitForTimeout(300);
+    // Wait for the new player input to appear
+    await page.waitForSelector(`#player-${i}`, { state: 'visible' });
   }
   
   // Fill in player names
   for (let i = 0; i < playerCount; i++) {
     const selector = `#player-${i}`;
-    try {
-      await page.waitForSelector(selector, { state: 'visible', timeout: 1000 });
-      await page.locator(selector).fill(PIRATE_NAMES[i]);
-    } catch (e) {
-      console.warn(`Failed to fill ${selector}:`, (e as Error).message);
-    }
+    await page.locator(selector).fill(PIRATE_NAMES[i]);
   }
   
   // Start the game
   await page.click('#start-game-btn');
   await page.waitForSelector('#game-section:not(.hidden)', { state: 'visible' });
-  await page.waitForTimeout(500);
+  // Wait for first input to be interactive
+  await page.waitForSelector('#bid-player-0', { state: 'visible' });
 }
 
 /**
@@ -121,34 +120,23 @@ export async function setBonus(page: Page, playerIndex: number, bonusAmount: num
   await bonusButton.click();
   await page.waitForSelector('#bonus-modal-overlay.active', { state: 'visible' });
   
-  // Clear any existing bonus first
-  await page.evaluate(() => {
-    (window as any).game.clearBonusCalculator();
-  });
-  
-  // Simple approach: use standard14 (yellow/purple/green 14s) which are worth 10 points each
-  if (bonusAmount >= 10) {
-    const standard14Count = Math.min(3, Math.floor(bonusAmount / 10)); // Max 3 standard 14s
-    for (let i = 0; i < standard14Count; i++) {
-      await page.evaluate(() => {
-        (window as any).game.updateBonusCounter('standard14', 1);
-      });
-      await page.waitForTimeout(50);
+  // Set bonus values directly in one go
+  await page.evaluate((amount) => {
+    const game = (window as any).game;
+    game.clearBonusCalculator();
+    
+    if (amount === 20) {
+      game.updateBonusCounter('black14', 1); // Black 14 is worth 20
+    } else if (amount >= 10) {
+      const standard14Count = Math.min(3, Math.floor(amount / 10));
+      for (let i = 0; i < standard14Count; i++) {
+        game.updateBonusCounter('standard14', 1);
+      }
     }
-  }
+    
+    game.applyBonusCalculator();
+  }, bonusAmount);
   
-  // If we need 20 points and have only used 10, add a black14
-  if (bonusAmount === 20) {
-    await page.evaluate(() => {
-      (window as any).game.clearBonusCalculator();
-      (window as any).game.updateBonusCounter('black14', 1); // Black 14 is worth 20
-    });
-  }
-  
-  // Apply the bonus
-  await page.evaluate(() => {
-    (window as any).game.applyBonusCalculator();
-  });
   await page.waitForSelector('#bonus-modal-overlay.active', { state: 'hidden' });
 }
 
@@ -188,7 +176,10 @@ export async function completeRound(page: Page, roundNumber: number) {
   
   // Record the round
   await page.click('#add-round-btn');
-  await page.waitForTimeout(500);
+  // Wait for the next round's inputs to be ready
+  if (roundNumber < 10) {
+    await page.waitForSelector('#bid-player-0', { state: 'visible' });
+  }
 }
 
 
@@ -201,7 +192,6 @@ export async function openBonusCalculator(page: Page, playerIndex: number) {
   if (bonusButton) {
     await bonusButton.click();
     await page.waitForSelector('.modal-overlay.active', { state: 'visible' });
-    await page.waitForTimeout(200);
   }
 }
 
@@ -222,7 +212,6 @@ export async function closeModal(page: Page) {
 export async function selectScoringMode(page: Page, mode: 'traditional' | 'rascal') {
   const selector = mode === 'rascal' ? '#scoring-rascal' : '#scoring-traditional';
   await page.click(selector);
-  await page.waitForTimeout(200);
 }
 
 /**
@@ -242,6 +231,10 @@ export async function playRounds(page: Page, numberOfRounds: number, playerCount
     }
     
     await page.click('#add-round-btn');
-    await page.waitForTimeout(300);
+    
+    // For rounds before the last, wait for next round inputs
+    if (round < numberOfRounds) {
+      await page.waitForSelector('#bid-player-0', { state: 'visible' });
+    }
   }
 }

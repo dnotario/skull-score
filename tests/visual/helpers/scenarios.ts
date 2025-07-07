@@ -19,7 +19,7 @@ export const scenarios: Record<string, Scenario> = {
     description: 'Landing page with game description',
     execute: async (page: Page) => {
       // Just the landing page, no actions needed
-      await page.waitForTimeout(100);
+      await page.waitForLoadState('domcontentloaded');
     },
     tags: ['basic', 'landing']
   },
@@ -31,7 +31,7 @@ export const scenarios: Record<string, Scenario> = {
     execute: async (page: Page) => {
       await page.click('#new-game-btn');
       await page.waitForSelector('#player-names-section:not(.hidden)');
-      await page.waitForTimeout(100);
+      await page.waitForSelector('#player-0', { state: 'visible' });
     },
     tags: ['basic', 'setup']
   },
@@ -42,7 +42,7 @@ export const scenarios: Record<string, Scenario> = {
     execute: async (page: Page) => {
       await page.click('#new-game-btn');
       await page.waitForSelector('#player-names-section:not(.hidden)');
-      await page.waitForTimeout(200);
+      await page.waitForSelector('#player-0', { state: 'visible' });
       
       // Fill first player
       await page.fill('#player-0', actions.PIRATE_NAMES[0]);
@@ -50,7 +50,7 @@ export const scenarios: Record<string, Scenario> = {
       // Add and fill 7 more players  
       for (let i = 1; i < 8; i++) {
         await page.click('#add-player-btn');
-        await page.waitForTimeout(100);
+        await page.waitForSelector(`#player-${i}`, { state: 'visible' });
         await page.fill(`#player-${i}`, actions.PIRATE_NAMES[i]);
       }
     },
@@ -64,7 +64,7 @@ export const scenarios: Record<string, Scenario> = {
     execute: async (page: Page) => {
       await page.click('#new-game-btn');
       await page.waitForSelector('#player-names-section:not(.hidden)');
-      await page.waitForTimeout(100);
+      await page.waitForSelector('#player-0', { state: 'visible' });
       await actions.selectScoringMode(page, 'rascal');
     },
     tags: ['basic', 'setup', 'scoring']
@@ -88,7 +88,7 @@ export const scenarios: Record<string, Scenario> = {
     execute: async (page: Page) => {
       // Just setup with 2 players for simpler test
       await actions.setupGame(page, 2);
-      await page.waitForTimeout(100);
+      // Game is ready, inputs are already visible from setupGame
     },
     tags: ['game', 'round']
   },
@@ -99,15 +99,15 @@ export const scenarios: Record<string, Scenario> = {
     execute: async (page: Page) => {
       await actions.setupGame(page, 2);
       
-      // Wait for the round inputs to be visible
-      await page.waitForSelector('#bid-player-0', { state: 'visible' });
-      
       // Use the helper functions to fill round data without bonus
       await actions.setPlayerRound(page, 0, 0, 0);  // Captain Jack: bid 0, got 0
       await actions.setPlayerRound(page, 1, 1, 1);  // Anne Bonny: bid 1, got 1
       
-      // Wait for the values and scores to be visible
-      await page.waitForTimeout(500);
+      // Wait for scores to update
+      await page.waitForFunction(() => {
+        const scoreEl = document.querySelector('#score-player-1');
+        return scoreEl && scoreEl.textContent !== '0';
+      });
     },
     tags: ['game', 'round']
   },
@@ -117,9 +117,6 @@ export const scenarios: Record<string, Scenario> = {
     description: 'Mid-game round 5',
     execute: async (page: Page) => {
       await actions.setupGame(page, 3);
-      
-      // Wait for the round inputs to be visible
-      await page.waitForSelector('#bid-player-0', { state: 'visible' });
       
       // Play rounds 1-4
       await actions.playRounds(page, 4, 3);
@@ -131,8 +128,6 @@ export const scenarios: Record<string, Scenario> = {
       
       // Anne Bonny gets bonus
       await actions.setBonus(page, 1, 20);
-      
-      await page.waitForTimeout(500);
     },
     tags: ['game', 'round']
   },
@@ -143,13 +138,11 @@ export const scenarios: Record<string, Scenario> = {
     execute: async (page: Page) => {
       await actions.setupGame(page, 2);
       
-      // Wait for the round inputs to be visible
-      await page.waitForSelector('#bid-player-0', { state: 'visible' });
-      
       // Play all 10 rounds using the helper
       await actions.playRounds(page, 10, 2);
       
-      await page.waitForTimeout(500);
+      // Wait for game complete UI to appear
+      await page.waitForSelector('#game-complete-section:not(.hidden)', { state: 'visible' });
     },
     tags: ['game', 'round', 'final']
   },
@@ -160,14 +153,11 @@ export const scenarios: Record<string, Scenario> = {
     execute: async (page: Page) => {
       await actions.setupGame(page, 2);
       
-      // Wait for the round inputs to be visible
-      await page.waitForSelector('#bid-player-0', { state: 'visible' });
-      
       // Play all 10 rounds using the helper
       await actions.playRounds(page, 10, 2);
       
-      // Should now show winner announcement
-      await page.waitForTimeout(1000);
+      // Wait for winner announcement to appear
+      await page.waitForSelector('#winner-announcement', { state: 'visible' });
     },
     tags: ['game', 'complete']
   },
@@ -179,9 +169,6 @@ export const scenarios: Record<string, Scenario> = {
     execute: async (page: Page) => {
       await actions.setupGame(page, 2);
       
-      // Wait for the round inputs to be visible
-      await page.waitForSelector('#bid-player-0', { state: 'visible' });
-      
       // Player 0 bids and wins 1 (so they can add bonus)
       await actions.setPlayerRound(page, 0, 1, 1);
       // Player 1 bids and wins 0
@@ -190,7 +177,6 @@ export const scenarios: Record<string, Scenario> = {
       // Click bonus button for player 0 to open calculator
       await page.click('#bonus-player-0');
       await page.waitForSelector('#bonus-modal-overlay.active', { state: 'visible' });
-      await page.waitForTimeout(500);
     },
     tags: ['modal', 'bonus']
   },
@@ -201,9 +187,6 @@ export const scenarios: Record<string, Scenario> = {
     execute: async (page: Page) => {
       await actions.setupGame(page, 2);
       
-      // Wait for the round inputs to be visible
-      await page.waitForSelector('#bid-player-0', { state: 'visible' });
-      
       // Player 0 bids and wins 1 (so they can add bonus)
       await actions.setPlayerRound(page, 0, 1, 1);
       // Player 1 bids and wins 0
@@ -212,20 +195,19 @@ export const scenarios: Record<string, Scenario> = {
       // Click bonus button for player 0 to open calculator
       await page.click('#bonus-player-0');
       await page.waitForSelector('#bonus-modal-overlay.active', { state: 'visible' });
-      await page.waitForTimeout(300);
       
-      // Add some bonus values using the calculator
-      // Click standard14 twice (2 x 10 = 20 points)
-      await page.click('#standard14-plus');
-      await page.waitForTimeout(100);
-      await page.click('#standard14-plus');
-      await page.waitForTimeout(100);
+      // Add bonus values in one go
+      await page.evaluate(() => {
+        const game = (window as any).game;
+        game.updateBonusCounter('standard14', 2); // 2 x 10 = 20
+        game.updateBonusCounter('skullPirate', 1); // 1 x 30 = 30
+      });
       
-      // Click skullPirate once (1 x 30 = 30 points)
-      await page.click('#skullPirate-plus');
-      await page.waitForTimeout(500);
-      
-      // Total should show 50 points
+      // Wait for total to update
+      await page.waitForFunction(() => {
+        const totalEl = document.querySelector('#bonus-total');
+        return totalEl && totalEl.textContent === '50';
+      });
     },
     tags: ['modal', 'bonus']
   },
