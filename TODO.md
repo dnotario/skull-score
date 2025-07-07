@@ -1,0 +1,4 @@
+- Remove player_setup_filled
+- Remove tags from tests
+- Currently, the way you specify a test for visual tests is via environment variable. Can you make it via command line argument to be consistent with the other tests?
+- Organize directory structure a bit better. I want goldens under tests/visual/goldens and everything else in visual_tests top directory seems temporary and that it belongs inside build.
