@@ -94,6 +94,7 @@ export async function captureScreenshot(
           animation: none !important;
           animation-duration: 0s !important;
           transition-duration: 0s !important;
+          scroll-behavior: auto !important;
         }
       `
     });
