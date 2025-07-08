@@ -1203,7 +1203,7 @@ class SkullKingGame {
             <div class="round-display parchment">
                 <div class="round-header">
                     <h3>${this.t('round_display', { round: round.roundNumber.toString() })}</h3>
-                    ${index === 0 ? `<button class="btn btn-secondary" onclick="game.handleUpdateLastRound()">${this.t('edit_round_button')}</button>` : ''}
+                    ${index === 0 ? `<button class="btn btn-secondary" onclick="game.handleUpdateLastRound()">${this.t('edit_round_button', { round: round.roundNumber.toString() })}</button>` : ''}
                 </div>
                 <div class="round-data">
                     <div class="round-data-header">

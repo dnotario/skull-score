@@ -1485,6 +1485,9 @@ body.game-active .landing-only {
     font-weight: bold;
     flex: 1;
     font-size: 0.9rem;
+    max-width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .bonus-counter {
