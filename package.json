@@ -4,7 +4,10 @@
   "description": "A pirate-themed score keeper for the Skull King card game",
   "main": "game.js",
   "scripts": {
-    "test": "jest",
+    "test": "npm run test:unit && npm run test:visual",
+    "test:unit": "jest --selectProjects unit",
+    "test:visual": "node scripts/run-visual-tests.js",
+    "test:visual:diff": "node scripts/open-visual-diff.js",
     "test:watch": "jest --watch",
     "build:cache-bust": "node scripts/update-cache-bust.js",
     "build:tsc": "tsc",
@@ -15,26 +18,59 @@
     "rebuild": "npm run clean && npm run build"
   },
   "devDependencies": {
+    "@playwright/test": "^1.53.2",
     "@types/jest": "^30.0.0",
+    "@types/node": "^20.0.0",
+    "@types/pixelmatch": "^5.2.6",
+    "@types/pngjs": "^6.0.5",
     "jest": "^29.5.0",
     "jest-environment-jsdom": "^29.5.0",
+    "pixelmatch": "^5.3.0",
+    "playwright": "^1.40.0",
+    "pngjs": "^7.0.0",
     "ts-jest": "^29.1.0",
+    "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   },
   "jest": {
     "preset": "ts-jest",
-    "testEnvironment": "jsdom",
-    "roots": [
-      "<rootDir>/tests"
-    ],
-    "testMatch": [
-      "**/__tests__/**/*.ts",
-      "**/?(*.)+(spec|test).ts"
-    ],
-    "collectCoverageFrom": [
-      "**/*.ts",
-      "!**/*.d.ts",
-      "!**/node_modules/**"
+    "projects": [
+      {
+        "displayName": "unit",
+        "preset": "ts-jest",
+        "testEnvironment": "jsdom",
+        "testMatch": [
+          "<rootDir>/tests/unit/**/*.test.ts"
+        ],
+        "collectCoverageFrom": [
+          "**/*.ts",
+          "!**/*.d.ts",
+          "!**/node_modules/**",
+          "!**/tests/**"
+        ],
+        "globals": {
+          "ts-jest": {
+            "tsconfig": "tsconfig.test.json"
+          }
+        }
+      },
+      {
+        "displayName": "visual",
+        "preset": "ts-jest",
+        "testEnvironment": "node",
+        "testMatch": [
+          "<rootDir>/tests/visual/**/*.test.ts"
+        ],
+        "setupFilesAfterEnv": [
+          "<rootDir>/tests/visual/helpers/matchers.ts"
+        ],
+        "globals": {
+          "ts-jest": {
+            "tsconfig": "tsconfig.test.json"
+          }
+        },
+        "maxWorkers": 4
+      }
     ]
   }
 }
