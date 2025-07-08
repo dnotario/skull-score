@@ -95,7 +95,7 @@ checkServerRunning((isRunning) => {
   const serverPath = path.join(__dirname, 'dev-server.py');
   const server = spawn('python3', [serverPath, '--no-browser'], {
     stdio: 'inherit',  // Show server output directly
-    detached: false,
+    detached: process.platform !== 'win32',  // Detach on Unix for better process group handling
     cwd: path.join(__dirname, '..')
   });
 
@@ -137,25 +137,86 @@ checkServerRunning((isRunning) => {
       
       jest.on('close', (code) => {
         console.log(`\n${colors.bright}Shutting down development server...${colors.reset}`);
-        server.kill('SIGTERM');
         
-        // Give server time to shut down
+        // Kill the entire process group on Unix
+        if (process.platform !== 'win32') {
+          try {
+            process.kill(-server.pid, 'SIGTERM');
+          } catch (e) {
+            // Fallback to regular kill
+            server.kill('SIGTERM');
+          }
+        } else {
+          server.kill('SIGTERM');
+        }
+        
+        // Force kill after 1 second if still running
+        const forceKillTimeout = setTimeout(() => {
+          try {
+            if (process.platform !== 'win32') {
+              process.kill(-server.pid, 'SIGKILL');
+            } else {
+              server.kill('SIGKILL');
+            }
+          } catch (e) {
+            // Process already dead
+          }
+        }, 1000);
+        
+        // Check if server actually stopped
+        const checkInterval = setInterval(() => {
+          checkServerRunning((isRunning) => {
+            if (!isRunning) {
+              clearInterval(checkInterval);
+              clearTimeout(forceKillTimeout);
+              process.exit(code);
+            }
+          });
+        }, 100);
+        
+        // Ultimate timeout - exit anyway after 2 seconds
         setTimeout(() => {
+          clearInterval(checkInterval);
+          clearTimeout(forceKillTimeout);
           process.exit(code);
-        }, 500);
+        }, 2000);
       });
     });
   }, 2000);
 
   // Handle script termination
-  process.on('SIGINT', () => {
+  let cleanupDone = false;
+  const cleanup = (exitCode = 0) => {
+    if (cleanupDone) return;
+    cleanupDone = true;
+    
     console.log(`\n${colors.yellow}Interrupted - shutting down...${colors.reset}`);
-    server.kill('SIGTERM');
-    setTimeout(() => process.exit(0), 500);
-  });
-
-  process.on('SIGTERM', () => {
-    server.kill('SIGTERM');
-    setTimeout(() => process.exit(0), 500);
+    
+    // Kill the entire process group on Unix
+    if (process.platform !== 'win32') {
+      try {
+        process.kill(-server.pid, 'SIGKILL'); // Use SIGKILL for immediate termination
+      } catch (e) {
+        // Fallback to regular kill
+        server.kill('SIGKILL');
+      }
+    } else {
+      server.kill('SIGKILL');
+    }
+    
+    // Exit immediately if not already exiting
+    if (typeof exitCode === 'number') {
+      process.exit(exitCode);
+    }
+  };
+  
+  process.on('SIGINT', () => cleanup(0));
+  process.on('SIGTERM', () => cleanup(0));
+  process.on('exit', cleanup);
+  
+  // Also handle uncaught exceptions
+  process.on('uncaughtException', (err) => {
+    console.error(`${colors.red}Uncaught exception:${colors.reset}`, err);
+    cleanup(1);
   });
 });
