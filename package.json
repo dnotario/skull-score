@@ -5,6 +5,7 @@
   "main": "game.js",
   "scripts": {
     "test": "npm run test:unit && npm run test:visual",
+    "test:ci": "npm run test:unit",
     "test:unit": "jest --selectProjects unit",
     "test:visual": "node scripts/run-visual-tests.js",
     "test:visual:diff": "node scripts/open-visual-diff.js",
