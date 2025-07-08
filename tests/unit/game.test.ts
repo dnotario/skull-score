@@ -57,7 +57,7 @@ beforeEach(() => {
 });
 
 // Import the class after DOM setup
-import '../build/runFiles/game.js';
+import '../../build/runFiles/game.js';
 
 // Declare the SkullKingGame class and i18n
 declare global {

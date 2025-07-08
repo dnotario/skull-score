@@ -93,6 +93,8 @@ Note: While we don't track cards, we do provide an interactive bonus calculator 
 
 ## Development Guidelines
 
+- TODO.md is a source of tasks to be done. When commanded, take tasks from there, ask for permission before committing
+  and tag them as DONE.
 - Always refer to README.md for current deployment procedures
 - Use `/project:push_staging` and `/project:push_prod` commands for deployments
 - Run `npm test` and `npm run build` before any deployments

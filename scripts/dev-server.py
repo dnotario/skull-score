@@ -14,7 +14,18 @@ import socket
 
 class DevServer(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=os.path.dirname(os.path.dirname(os.path.abspath(__file__))), **kwargs)
+        # Check if we should serve from build/runFiles or root
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(script_dir)
+        build_dir = os.path.join(project_root, 'build', 'runFiles')
+        
+        # Use build/runFiles if it exists and contains index.html
+        if os.path.exists(os.path.join(build_dir, 'index.html')):
+            serve_dir = build_dir
+        else:
+            serve_dir = project_root
+            
+        super().__init__(*args, directory=serve_dir, **kwargs)
     
     def end_headers(self):
         # Add cache control headers to prevent caching during development
@@ -34,15 +45,28 @@ def get_local_ip():
     except:
         return "localhost"
 
-def start_server(port=8080):
+def start_server(port=8080, open_path="", open_browser=True):
     """Start the development server"""
     local_ip = get_local_ip()
+    
+    # Determine which directory we're serving
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+    build_dir = os.path.join(project_root, 'build', 'runFiles')
+    
+    if os.path.exists(os.path.join(build_dir, 'index.html')):
+        serve_dir = build_dir
+        serve_msg = "📁 Serving from: build/runFiles (built files)"
+    else:
+        serve_dir = project_root
+        serve_msg = "📁 Serving from: project root (source files)"
     
     with socketserver.TCPServer(("", port), DevServer) as httpd:
         print(f"\n🏴‍☠️ Skull King Score Keeper Development Server")
         print(f"=" * 50)
         print(f"🌐 Local URL: http://localhost:{port}")
         print(f"📱 Network URL: http://{local_ip}:{port}")
+        print(f"{serve_msg}")
         print(f"\n💡 Tips:")
         print(f"   - Use the Network URL to test on mobile devices")
         print(f"   - Make sure your mobile is on the same network")
@@ -50,8 +74,12 @@ def start_server(port=8080):
         print(f"\n⚡ Server is running... Press Ctrl+C to stop")
         print(f"=" * 50 + "\n")
         
-        # Open in default browser
-        webbrowser.open(f'http://localhost:{port}')
+        # Open in default browser if requested
+        if open_browser:
+            url = f'http://localhost:{port}'
+            if open_path:
+                url = f'{url}/{open_path}'
+            webbrowser.open(url)
         
         try:
             httpd.serve_forever()
@@ -60,5 +88,16 @@ def start_server(port=8080):
             sys.exit(0)
 
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
-    start_server(port)
+    # Check for --no-browser flag
+    open_browser = "--no-browser" not in sys.argv
+    args = [arg for arg in sys.argv[1:] if arg != "--no-browser"]
+    
+    # Check if a specific path was provided
+    if len(args) > 0 and not args[0].isdigit():
+        open_path = args[0]
+        port = int(args[1]) if len(args) > 1 else 8080
+    else:
+        port = int(args[0]) if len(args) > 0 else 8080
+        open_path = ""
+    
+    start_server(port, open_path, open_browser)
