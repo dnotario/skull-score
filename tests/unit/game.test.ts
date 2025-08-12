@@ -11,6 +11,17 @@ const createMockElement = (id: string) => {
 
 // Setup DOM mocks
 beforeEach(() => {
+    // Mock console.warn and console.log to suppress analytics logging in tests
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    jest.spyOn(console, 'log').mockImplementation((message) => {
+        // Only suppress analytics event logs
+        if (typeof message === 'string' && message.includes('Analytics Event')) {
+            return;
+        }
+        // Let other console.log calls through for debugging
+        console.info(message);
+    });
+    
     document.body.innerHTML = `
         <div id="landing-section"></div>
         <div id="player-names-section"></div>
@@ -54,6 +65,11 @@ beforeEach(() => {
             writable: true
         });
     }
+});
+
+afterEach(() => {
+    // Restore all mocks after each test
+    jest.restoreAllMocks();
 });
 
 // Import the class after DOM setup
@@ -1060,8 +1076,8 @@ describe('SkullKingGame Modal Error Display', () => {
     });
 
     test('should use showErrorModal instead of alert', () => {
-        // Mock the showErrorModal method
-        const showErrorSpy = jest.spyOn(gameInstance, 'showErrorModal').mockImplementation(() => {});
+        // Mock the showErrorModal method (access private method via bracket notation)
+        const showErrorSpy = jest.spyOn(gameInstance as any, 'showErrorModal').mockImplementation(() => {});
         
         // Call showError directly
         gameInstance.showError('Test error message');
@@ -1081,8 +1097,8 @@ describe('SkullKingGame Modal Error Display', () => {
         const originalSpeechSynthesisUtterance = (window as any).SpeechSynthesisUtterance;
         delete (window as any).SpeechSynthesisUtterance;
         
-        // Mock the showErrorModal method
-        const showErrorSpy = jest.spyOn(gameInstance, 'showErrorModal').mockImplementation(() => {});
+        // Mock the showErrorModal method (access private method via bracket notation)
+        const showErrorSpy = jest.spyOn(gameInstance as any, 'showErrorModal').mockImplementation(() => {});
         
         // Try to read scores (should trigger error modal)
         gameInstance.readScores();
@@ -1102,8 +1118,8 @@ describe('SkullKingGame Modal Error Display', () => {
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
         gameInstance.viewModel.validateAndStartGame();
         
-        // Mock the showErrorModal method
-        const showErrorSpy = jest.spyOn(gameInstance, 'showErrorModal').mockImplementation(() => {});
+        // Mock the showErrorModal method (access private method via bracket notation)
+        const showErrorSpy = jest.spyOn(gameInstance as any, 'showErrorModal').mockImplementation(() => {});
         
         // Mock the handleAddRound method to trigger an error
         const invalidRoundData = {
@@ -1122,6 +1138,78 @@ describe('SkullKingGame Modal Error Display', () => {
         expect(showErrorSpy).toHaveBeenCalledWith("Alice's bid (5) can't exceed 1 tricks in round 1!");
         
         showErrorSpy.mockRestore();
+    });
+    
+    test('should call showErrorModal when opening bonus modal with bid != actual in Traditional mode', () => {
+        // Setup a game with players
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Mock the showModal method (access private method via bracket notation)
+        const showModalSpy = jest.spyOn(gameInstance as any, 'showModal').mockImplementation(() => {});
+        
+        // Add DOM elements for the bid and actual inputs
+        document.body.innerHTML += `
+            <input type="number" id="bid-player-0" value="2" />
+            <input type="number" id="actual-player-0" value="1" />
+            <div id="bonus-modal-overlay"></div>
+        `;
+        
+        // Set to Traditional mode
+        gameInstance.viewModel.setScoringMode('normal');
+        
+        // Try to open bonus modal with bid != actual
+        gameInstance.openBonusModal(0);
+        
+        // Verify showModal was called with correct message
+        expect(showModalSpy).toHaveBeenCalledWith(
+            expect.any(String),
+            'Arrr! Bonus only be allowed when yer bid equals actual tricks won!'
+        );
+        
+        // Verify bonus modal did not open
+        const bonusModal = document.getElementById('bonus-modal-overlay');
+        expect(bonusModal).toBeTruthy();
+        expect(bonusModal!.classList.contains('active')).toBe(false);
+        
+        showModalSpy.mockRestore();
+    });
+    
+    test('should call showErrorModal when opening bonus modal with bid off by 2+ in Rascal mode', () => {
+        // Setup a game with players
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Mock the showModal method (access private method via bracket notation)
+        const showModalSpy = jest.spyOn(gameInstance as any, 'showModal').mockImplementation(() => {});
+        
+        // Add DOM elements for the bid and actual inputs
+        document.body.innerHTML += `
+            <input type="number" id="bid-player-0" value="5" />
+            <input type="number" id="actual-player-0" value="2" />
+            <div id="bonus-modal-overlay"></div>
+        `;
+        
+        // Set to Rascal mode
+        gameInstance.viewModel.setScoringMode('rascal');
+        
+        // Try to open bonus modal with bid off by 3
+        gameInstance.openBonusModal(0);
+        
+        // Verify showModal was called with correct message
+        expect(showModalSpy).toHaveBeenCalledWith(
+            expect.any(String),
+            'Shiver me timbers! No bonus when ye be off by 2 or more!'
+        );
+        
+        // Verify bonus modal did not open
+        const bonusModal = document.getElementById('bonus-modal-overlay');
+        expect(bonusModal).toBeTruthy();
+        expect(bonusModal!.classList.contains('active')).toBe(false);
+        
+        showModalSpy.mockRestore();
     });
 });
 
@@ -1639,91 +1727,6 @@ describe('SkullKingGame New Game Flow', () => {
         `;
     });
 
-    test.skip('should skip player setup when using same players with valid names - OLD FLOW', () => {
-        // Setup: Start with an existing game with players
-        gameInstance.viewModel.startNewGame(false);
-        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
-        gameInstance.viewModel.validateAndStartGame();
-        
-        // Verify we have an active game
-        expect(gameInstance.viewModel.isGameActive()).toBe(true);
-        expect(gameInstance.viewModel.state.players.length).toBe(3);
-        
-        // Mock updateUI to track if it's called
-        const updateUISpy = jest.spyOn(gameInstance, 'updateUI');
-        
-        // Mock showPlayerSetup to ensure it's NOT called
-        const showPlayerSetupSpy = jest.spyOn(gameInstance, 'showPlayerSetup');
-        
-        // Test: Call handleSamePlayersNewGame
-        gameInstance.handleSamePlayersNewGame();
-        
-        // Verify: Should have started a new game with same players
-        expect(gameInstance.viewModel.isGameActive()).toBe(true);
-        expect(gameInstance.viewModel.state.players.length).toBe(3);
-        expect(gameInstance.viewModel.state.players[0].name).toBe('Alice');
-        expect(gameInstance.viewModel.state.players[1].name).toBe('Bob');
-        expect(gameInstance.viewModel.state.players[2].name).toBe('Charlie');
-        
-        // Verify: Should have called updateUI (goes to game) but NOT showPlayerSetup
-        expect(updateUISpy).toHaveBeenCalled();
-        expect(showPlayerSetupSpy).not.toHaveBeenCalled();
-        
-        // Verify: Game should be reset (round 1, no previous rounds)
-        expect(gameInstance.viewModel.getCurrentRoundNumber()).toBe(1);
-        expect(gameInstance.viewModel.state.rounds.length).toBe(0);
-        
-        updateUISpy.mockRestore();
-        showPlayerSetupSpy.mockRestore();
-    });
-
-    test.skip('should go to player setup when same players has insufficient valid names - OLD FLOW', () => {
-        // Setup: Start with a game that has only 1 player (invalid for new game)
-        gameInstance.viewModel.startNewGame(false);
-        gameInstance.viewModel.setTempPlayers(['Alice']);
-        gameInstance.viewModel.validateAndStartGame(); // This should fail but we force it for testing
-        gameInstance.viewModel.state.players = [{ name: 'Alice', score: 0 }]; // Force invalid state
-        
-        // Mock showPlayerSetup to track if it's called
-        const showPlayerSetupSpy = jest.spyOn(gameInstance, 'showPlayerSetup').mockImplementation(() => {});
-        
-        // Mock updateUI to ensure it's NOT called for direct game start
-        const updateUISpy = jest.spyOn(gameInstance, 'updateUI');
-        
-        // Test: Call handleSamePlayersNewGame with insufficient players
-        gameInstance.handleSamePlayersNewGame();
-        
-        // Verify: Should have gone to player setup since we don't have enough valid players
-        expect(showPlayerSetupSpy).toHaveBeenCalled();
-        expect(updateUISpy).not.toHaveBeenCalled(); // Should not start game directly
-        
-        showPlayerSetupSpy.mockRestore();
-        updateUISpy.mockRestore();
-    });
-
-    test.skip('should handle new players flow correctly - OLD FLOW', () => {
-        // Setup: Start with an existing game
-        gameInstance.viewModel.startNewGame(false);
-        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
-        gameInstance.viewModel.validateAndStartGame();
-        
-        // Mock showPlayerSetup to track if it's called
-        const showPlayerSetupSpy = jest.spyOn(gameInstance, 'showPlayerSetup').mockImplementation(() => {});
-        
-        // Test: Call handleNewPlayersNewGame
-        gameInstance.handleNewPlayersNewGame();
-        
-        // Verify: Should clear state and go to player setup
-        expect(gameInstance.viewModel.isGameActive()).toBe(false);
-        expect(showPlayerSetupSpy).toHaveBeenCalled();
-        
-        // Verify: Temp players should be reset
-        const tempPlayers = gameInstance.viewModel.getTempPlayers();
-        expect(tempPlayers).toEqual(['']); // Should have one empty slot
-        
-        showPlayerSetupSpy.mockRestore();
-    });
-
     test('should preserve player names when starting new game with keepNames=true', () => {
         // Setup: Start with an existing game
         gameInstance.viewModel.startNewGame(false);
@@ -1771,23 +1774,6 @@ describe('SkullKingGame New Game Flow', () => {
         expect(gameInstance.viewModel.state.rounds.length).toBe(0);
     });
 
-    test.skip('should handle edge case when same players flow fails validation - OLD FLOW', () => {
-        // Setup: Create a scenario where keeping names might fail validation
-        gameInstance.viewModel.startNewGame(false);
-        // Manually set invalid temp players that would fail validation
-        gameInstance.viewModel.tempPlayers = ['', '', '']; // All empty names
-        
-        // Mock showPlayerSetup
-        const showPlayerSetupSpy = jest.spyOn(gameInstance, 'showPlayerSetup').mockImplementation(() => {});
-        
-        // Test: Call handleSamePlayersNewGame with invalid names
-        gameInstance.handleSamePlayersNewGame();
-        
-        // Verify: Should fall back to player setup
-        expect(showPlayerSetupSpy).toHaveBeenCalled();
-        
-        showPlayerSetupSpy.mockRestore();
-    });
 });
 
 describe('SkullKingGame Real-time Score Calculation', () => {
@@ -2542,5 +2528,160 @@ describe('GameViewModel Player Reordering', () => {
         
         const players = viewModel.getTempPlayers();
         expect(players).toEqual(['P1', 'P2', 'P5', 'P3', 'P4', 'P6', 'P7', 'P8']);
+    });
+});
+
+describe('Expansion Card Support', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        gameInstance = new (window as any).SkullKingGame();
+        gameInstance.viewModel = new (window as any).GameViewModel();
+    });
+    
+    test('should allow destroyed tricks when Kraken played', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Round 1: 1 trick total (1 card per player, but only 1 trick total)
+        const roundData = {
+            'Alice': { bid: 0, actual: 0, bonus: 10 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 },
+            'Charlie': { bid: 0, actual: 0, bonus: 0 }
+        };
+        
+        // Without Kraken: should fail (0 tricks vs 1 expected)
+        let error = gameInstance.viewModel.validateRoundData(roundData);
+        expect(error).toContain('must equal');
+        
+        // With Kraken: should pass (0 tricks + 1 destroyed = 1)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true, false);
+        expect(error).toBeNull();
+    });
+    
+    test('should allow destroyed tricks when Whale played', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Round 1: 1 trick total (1 card per player, but only 1 trick total)
+        const roundData = {
+            'Alice': { bid: 0, actual: 0, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 10 }
+        };
+        
+        // Without Whale: should fail (0 tricks vs 1 expected)
+        let error = gameInstance.viewModel.validateRoundData(roundData);
+        expect(error).toContain('must equal');
+        
+        // With Whale: should pass (0 tricks + 1 destroyed = 1)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, false, true);
+        expect(error).toBeNull();
+    });
+    
+    test('should allow both Kraken and Whale in same round', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Round 2: 2 tricks total (2 cards per player, but only 2 tricks total)
+        gameInstance.viewModel.state.currentRound = 2;
+        const roundData = {
+            'Alice': { bid: 0, actual: 0, bonus: 10 },
+            'Bob': { bid: 0, actual: 0, bonus: 10 },
+            'Charlie': { bid: 0, actual: 0, bonus: 0 }
+        };
+        
+        // Without expansion cards: should fail (0 tricks vs 2 expected)
+        let error = gameInstance.viewModel.validateRoundData(roundData);
+        expect(error).toContain('must equal');
+        
+        // With both Kraken and Whale: should pass (0 tricks + 2 destroyed = 2)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true, true);
+        expect(error).toBeNull();
+    });
+    
+    test('should store expansion card flags in round data', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Round 2: 2 tricks total
+        gameInstance.viewModel.state.currentRound = 2;
+        const roundData = {
+            'Alice': { bid: 0, actual: 0, bonus: 10 },
+            'Bob': { bid: 0, actual: 0, bonus: 10 }
+        };
+        
+        // Add round with Kraken and Whale played (0 tricks + 2 destroyed = 2 expected)
+        const error = gameInstance.viewModel.addRound(roundData, true, true);
+        expect(error).toBeNull();
+        
+        const gameState = gameInstance.viewModel.getGameState();
+        const lastRound = gameState.rounds[gameState.rounds.length - 1];
+        
+        expect(lastRound.krakenPlayed).toBe(true);
+        expect(lastRound.whalePlayed).toBe(true);
+    });
+    
+    test('should calculate Loot bonuses correctly', () => {
+        // Test through the UI bonus counter mechanism
+        gameInstance.bonusCounters = { 
+            standard14: 0,
+            black14: 0,
+            mermaidPirate: 0,
+            skullPirate: 0,
+            mermaidSkull: 0,
+            loot: 0
+        };
+        
+        // Calculate bonus for 0 loot
+        expect(gameInstance.calculateBonusPoints('loot', 0)).toBe(0);
+        
+        // Calculate bonus for 1 loot
+        expect(gameInstance.calculateBonusPoints('loot', 1)).toBe(20);
+        
+        // Calculate bonus for 2 loot
+        expect(gameInstance.calculateBonusPoints('loot', 2)).toBe(40);
+    });
+    
+    test('should enforce max 2 Loot bonuses', () => {
+        // Set up bonus counters
+        gameInstance.bonusCounters = { loot: 0 };
+        
+        // Add first loot
+        gameInstance.updateBonusCounter('loot', 1);
+        expect(gameInstance.bonusCounters.loot).toBe(1);
+        
+        // Add second loot
+        gameInstance.updateBonusCounter('loot', 1);
+        expect(gameInstance.bonusCounters.loot).toBe(2);
+        
+        // Try to add third loot - should stay at 2
+        gameInstance.updateBonusCounter('loot', 1);
+        expect(gameInstance.bonusCounters.loot).toBe(2);
+    });
+    
+    test('should not allow more than 2 destroyed tricks', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Round 3: 3 total tricks
+        gameInstance.viewModel.state.currentRound = 3;
+        const roundData = {
+            'Alice': { bid: 0, actual: 0, bonus: 10 },
+            'Bob': { bid: 0, actual: 0, bonus: 10 }
+        };
+        
+        // Without expansion cards: should fail (0 tricks vs 3 expected)
+        let error = gameInstance.viewModel.validateRoundData(roundData);
+        expect(error).toContain('must equal');
+        
+        // With both Kraken and Whale: still should fail (0 tricks + 2 destroyed = 2, but need 3)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true, true);
+        expect(error).toContain('must equal');
+        expect(error).toContain('1'); // Expected 1 with 2 destroyed (3-2=1), but got 0
     });
 });

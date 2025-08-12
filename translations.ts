@@ -178,7 +178,10 @@ interface Translation {
     bonus_label_mermaid_pirate: string;
     bonus_label_sk_pirate: string;
     bonus_label_mermaid_sk: string;
+    bonus_label_loot: string;
     bonus_total_label: string;
+    kraken_played: string;
+    whale_played: string;
     bonus_clear_btn: string;
     bonus_apply_btn: string;
     bonus_error_bid_mismatch: string;
@@ -367,7 +370,10 @@ const enTranslation: Translation = {
     bonus_label_mermaid_pirate: "Mermaids captured by Pirates",
     bonus_label_sk_pirate: "Pirates captured by Skull King",
     bonus_label_mermaid_sk: "Skull King captured by Mermaid",
+    bonus_label_loot: "Loot Alliances",
     bonus_total_label: "Total Bonus:",
+    kraken_played: "🐙 Kraken played",
+    whale_played: "🐋 White Whale played",
     bonus_clear_btn: "Clear",
     bonus_apply_btn: "Apply Bonus",
     bonus_error_bid_mismatch: "Arrr! Bonus only be allowed when yer bid equals actual tricks won!",
@@ -556,7 +562,10 @@ const deTranslation: Translation = {
     bonus_label_mermaid_pirate: "Meerjungfrauen von Piraten gefangen",
     bonus_label_sk_pirate: "Piraten vom Skull King gefangen",
     bonus_label_mermaid_sk: "Skull King von Meerjungfrau gefangen",
+    bonus_label_loot: "Beute-Allianzen",
     bonus_total_label: "Gesamt-Bonus:",
+    kraken_played: "🐙 Kraken gespielt",
+    whale_played: "🐋 Weißer Wal gespielt",
     bonus_clear_btn: "Löschen",
     bonus_apply_btn: "Bonus Anwenden",
     bonus_error_bid_mismatch: "Arrr! Bonus nur erlaubt, wenn Gebot gleich gewonnene Stiche!",
@@ -745,7 +754,10 @@ const esTranslation: Translation = {
     bonus_label_mermaid_pirate: "Sirenas capturadas por Piratas",
     bonus_label_sk_pirate: "Piratas capturados por Rey Calavera",
     bonus_label_mermaid_sk: "Rey Calavera capturado por Sirena",
+    bonus_label_loot: "Alianzas de Botín",
     bonus_total_label: "Bonus Total:",
+    kraken_played: "🐙 Kraken jugado",
+    whale_played: "🐋 Ballena Blanca jugada",
     bonus_clear_btn: "Borrar",
     bonus_apply_btn: "Aplicar Bonus",
     bonus_error_bid_mismatch: "¡Arrr! ¡Bonus solo permitido cuando apuesta igual a bazas ganadas!",

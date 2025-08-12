@@ -121,6 +121,67 @@ export const scenarios: Record<string, Scenario> = {
     tags: ['game', 'round']
   },
   
+  bonus_error_traditional: {
+    name: 'bonus_error_traditional',
+    description: 'Bonus modal error when bid != actual in Traditional mode',
+    execute: async (page: Page) => {
+      await actions.setupGame(page, 2);
+      
+      // Set bid != actual for first player
+      await page.fill('#bid-player-0', '2');
+      await page.fill('#actual-player-0', '1');
+      
+      // Try to open bonus modal - should show error
+      await page.click('#bonus-player-0');
+      
+      // Wait for error modal to appear
+      await page.waitForSelector('#modal:not(.hidden)');
+      await page.waitForSelector('#modal-title');
+      
+      // Ensure the error message is visible
+      await page.waitForFunction(() => {
+        const modalMessage = document.querySelector('#modal-message');
+        return modalMessage && modalMessage.textContent?.includes('Bonus only allowed');
+      });
+    },
+    tags: ['game', 'modal', 'error']
+  },
+  
+  bonus_error_rascal: {
+    name: 'bonus_error_rascal',
+    description: 'Bonus modal error when off by 2+ in Rascal mode',
+    execute: async (page: Page) => {
+      await actions.setupGame(page, 2);
+      
+      // Switch to Rascal scoring mode
+      await page.click('#new-game-btn');
+      await page.waitForSelector('#player-names-section:not(.hidden)');
+      await page.click('#scoring-rascal');
+      await page.fill('#player-0', 'Captain Jack');
+      await page.fill('#player-1', 'Anne Bonny');
+      await page.click('#start-game-btn');
+      await page.waitForSelector('#game-section:not(.hidden)');
+      
+      // Set bid off by 3 for first player
+      await page.fill('#bid-player-0', '5');
+      await page.fill('#actual-player-0', '2');
+      
+      // Try to open bonus modal - should show error
+      await page.click('#bonus-player-0');
+      
+      // Wait for error modal to appear
+      await page.waitForSelector('#modal:not(.hidden)');
+      await page.waitForSelector('#modal-title');
+      
+      // Ensure the error message is visible
+      await page.waitForFunction(() => {
+        const modalMessage = document.querySelector('#modal-message');
+        return modalMessage && modalMessage.textContent?.includes('off by 2 or more');
+      });
+    },
+    tags: ['game', 'modal', 'error', 'rascal']
+  },
+  
   game_round_10: {
     name: 'game_round_10',
     description: 'Final round of the game',
@@ -199,6 +260,105 @@ export const scenarios: Record<string, Scenario> = {
       });
     },
     tags: ['modal', 'bonus']
+  },
+
+  // Expansion card scenarios
+  expansion_cards_round_entry: {
+    name: 'expansion_cards_round_entry',
+    description: 'Round entry with Kraken and Whale checkboxes',
+    execute: async (page: Page) => {
+      await actions.setupGame(page, 3);
+      await actions.fillRound(page, 1, [
+        { bid: 1, actual: 0, bonus: 0 },
+        { bid: 0, actual: 1, bonus: 0 },
+        { bid: 0, actual: 0, bonus: 10 }
+      ]);
+      
+      // Check the expansion card checkboxes
+      await page.check('#kraken-played');
+      await page.check('#whale-played');
+      
+      // Wait for UI to update
+      await page.waitForTimeout(100);
+    },
+    tags: ['expansion', 'round_entry']
+  },
+
+  bonus_calculator_with_loot: {
+    name: 'bonus_calculator_with_loot',
+    description: 'Bonus calculator showing Loot alliance option',
+    execute: async (page: Page) => {
+      await actions.setupGame(page, 2);
+      
+      // Player 0 bids and wins 1 (so they can add bonus)
+      await actions.setPlayerRound(page, 0, 1, 1);
+      // Player 1 bids and wins 0
+      await actions.setPlayerRound(page, 1, 0, 0);
+      
+      // Click bonus button for player 0 to open calculator
+      await page.click('#bonus-player-0');
+      await page.waitForSelector('#bonus-modal-overlay.active', { state: 'visible' });
+      
+      // Set some loot bonuses using JavaScript evaluation
+      await page.evaluate(() => {
+        const game = (window as any).game;
+        game.updateBonusCounter('loot', 2); // 2 x 20 = 40
+        game.updateBonusCounter('standard14', 1); // 1 x 10 = 10
+        game.updateBonusCounter('mermaidPirate', 1); // 1 x 20 = 20
+      });
+      
+      // Wait for total to update
+      await page.waitForFunction(() => {
+        const totalEl = document.querySelector('#bonus-total-value');
+        return totalEl && totalEl.textContent === '70';
+      });
+    },
+    tags: ['expansion', 'bonus', 'modal']
+  },
+
+  round_history_with_expansion: {
+    name: 'round_history_with_expansion',
+    description: 'Past rounds showing Kraken/Whale icons',
+    execute: async (page: Page) => {
+      await actions.setupGame(page, 3);
+      
+      // Round 1: Normal round
+      await actions.fillRound(page, 1, [
+        { bid: 1, actual: 1, bonus: 0 },
+        { bid: 0, actual: 0, bonus: 10 },
+        { bid: 0, actual: 0, bonus: 0 }
+      ]);
+      await page.click('#add-round-btn');
+      await page.waitForTimeout(100);
+      
+      // Round 2: Kraken played (2 tricks destroyed)
+      await actions.fillRound(page, 2, [
+        { bid: 1, actual: 1, bonus: 0 },
+        { bid: 1, actual: 0, bonus: 0 },
+        { bid: 0, actual: 1, bonus: 0 }
+      ]);
+      await page.check('#kraken-played');
+      await page.click('#add-round-btn');
+      await page.waitForTimeout(100);
+      
+      // Round 3: Both Kraken and Whale
+      await actions.fillRound(page, 3, [
+        { bid: 2, actual: 1, bonus: 0 },
+        { bid: 0, actual: 0, bonus: 0 },
+        { bid: 1, actual: 0, bonus: 0 }
+      ]);
+      await page.check('#kraken-played');
+      await page.check('#whale-played');
+      await page.click('#add-round-btn');
+      
+      // Scroll to show history
+      await page.evaluate(() => {
+        document.getElementById('previous-rounds')?.scrollIntoView();
+      });
+      
+      await page.waitForTimeout(100);
+    },
+    tags: ['expansion', 'history']
   },
   
 };

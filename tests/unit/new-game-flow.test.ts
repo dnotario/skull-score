@@ -30,6 +30,17 @@ describe('New Game Flow', () => {
     let viewModel: any;
 
     beforeEach(() => {
+        // Mock console.warn and console.log to suppress analytics logging in tests
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+        jest.spyOn(console, 'log').mockImplementation((message) => {
+            // Only suppress analytics event logs
+            if (typeof message === 'string' && message.includes('Analytics Event')) {
+                return;
+            }
+            // Let other console.log calls through for debugging
+            console.info(message);
+        });
+        
         // Clear localStorage
         localStorageMock.clear();
         
@@ -53,7 +64,11 @@ describe('New Game Flow', () => {
         game = new (window as any).SkullKingGame();
         viewModel = game.getViewModel();
     });
-
+    
+    afterEach(() => {
+        // Restore all mocks after each test
+        jest.restoreAllMocks();
+    });
 
     describe('Simplified New Game Modal', () => {
         it('should show simple Yes/No modal', () => {
