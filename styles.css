@@ -601,6 +601,44 @@ input[type="text"]:focus {
     gap: 1.5rem;
 }
 
+/* Expansion Cards */
+.expansion-indicators {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin: 1rem 0;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.expansion-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+    color: #8B4513;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.expansion-checkbox input[type="checkbox"] {
+    width: 1.3rem;
+    height: 1.3rem;
+    cursor: pointer;
+    accent-color: #8B4513;
+}
+
+.expansion-checkbox span {
+    user-select: none;
+}
+
+.round-expansion-icons {
+    display: inline-block;
+    margin-left: 0.5rem;
+    font-size: 0.9em;
+}
+
 .record-round-container {
     display: flex;
     justify-content: flex-end;
@@ -1398,7 +1436,7 @@ body.game-active .landing-only {
     padding: 0;
     max-width: 500px;
     width: 90%;
-    max-height: 85vh;
+    max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
     position: relative;

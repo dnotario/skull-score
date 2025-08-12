@@ -111,15 +111,15 @@ npm run test:visual -- -d "iPhone_SE,Desktop_HD" -t game_complete
 # Run in watch mode
 npm run test:watch -- --selectProjects visual
 
-# Update specific golden images
-npm run test:visual -- --update-golden -t landing_page
+# Note: The --update-golden flag is planned but not yet implemented
+# To update golden images, use the cp command shown in test failure messages
 ```
 
 ## Command Line Options
 
-- `--update-golden`, `-u` - Update golden images instead of comparing
 - `-t <pattern>` - Run tests matching the pattern (Jest's testNamePattern)
 - `-d, --devices <devices>` - Run tests on specific devices (comma-separated)
+- `--update-golden` - (Planned feature, not yet implemented)
 
 Available devices: `iPhone_12_Pro`, `iPhone_SE`, `Desktop_HD`
 
