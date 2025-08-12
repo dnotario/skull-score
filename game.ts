@@ -37,6 +37,8 @@ interface RoundData {
         index: number;
         playerName?: string;
     };
+    krakenPlayed?: boolean;
+    whalePlayed?: boolean;
 }
 
 interface GameStateData {
@@ -430,7 +432,7 @@ class GameViewModel {
         return this.getCardsPerRound(this.state.currentRound, this.state.players.length);
     }
 
-    validateRoundData(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, roundNumber?: number): string | null {
+    validateRoundData(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, roundNumber?: number, krakenPlayed = false, whalePlayed = false): string | null {
         const targetRound = roundNumber || this.state.currentRound;
         
         // Validate each player's input
@@ -442,14 +444,17 @@ class GameViewModel {
             }
         }
 
-        // Validate that total actual wins equals the number of tricks available
-        const maxTricks = this.getCardsPerRound(targetRound, this.state.players.length);
+        // Validate that total actual wins equals the number of tricks available (minus destroyed tricks)
+        // getCardsPerRound returns cards per player, which equals total tricks in the round
+        const totalTricks = this.getCardsPerRound(targetRound, this.state.players.length);
+        const destroyedTricks = (krakenPlayed ? 1 : 0) + (whalePlayed ? 1 : 0);
+        const expectedTricks = totalTricks - destroyedTricks;
         const totalActualWins = Object.values(data).reduce((sum, playerData) => sum + playerData.actual, 0);
         
-        if (totalActualWins !== maxTricks) {
+        if (totalActualWins !== expectedTricks) {
             return this.t('total_tricks_mismatch_error', {
                 totalActual: totalActualWins.toString(),
-                maxTricks: maxTricks.toString(),
+                maxTricks: expectedTricks.toString(),
                 round: targetRound.toString(),
                 playerCount: this.state.players.length.toString()
             });
@@ -458,8 +463,8 @@ class GameViewModel {
         return null; // Valid
     }
 
-    addRound(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }): string | null {
-        const validationError = this.validateRoundData(data);
+    addRound(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, krakenPlayed = false, whalePlayed = false): string | null {
+        const validationError = this.validateRoundData(data, undefined, krakenPlayed, whalePlayed);
         if (validationError) {
             return validationError;
         }
@@ -467,7 +472,9 @@ class GameViewModel {
         const roundData: RoundData = {
             roundNumber: this.state.currentRound,
             playerData: [],
-            commentary: ''
+            commentary: '',
+            krakenPlayed,
+            whalePlayed
         };
 
         // Process each player's data
@@ -974,7 +981,13 @@ class SkullKingGame {
         const gameState = this.viewModel.getGameState();
         const roundData = this.collectRoundData(gameState.players);
         
-        const error = this.viewModel.addRound(roundData);
+        // Get expansion card checkbox states
+        const krakenCheckbox = document.getElementById('kraken-played') as HTMLInputElement;
+        const whaleCheckbox = document.getElementById('whale-played') as HTMLInputElement;
+        const krakenPlayed = krakenCheckbox?.checked || false;
+        const whalePlayed = whaleCheckbox?.checked || false;
+        
+        const error = this.viewModel.addRound(roundData, krakenPlayed, whalePlayed);
         
         if (error) {
             this.showError(error);
@@ -983,6 +996,10 @@ class SkullKingGame {
 
         this.updateUI();
         this.clearRoundInputs();
+        
+        // Clear expansion checkboxes
+        if (krakenCheckbox) krakenCheckbox.checked = false;
+        if (whaleCheckbox) whaleCheckbox.checked = false;
         this.showCommentary();
         
         // Scroll to the scores section after recording round
@@ -1199,10 +1216,20 @@ class SkullKingGame {
         // Display rounds in reverse order (newest first)
         const sortedRounds = [...rounds].reverse();
         
-        container.innerHTML = sortedRounds.map((round, index) => `
+        container.innerHTML = sortedRounds.map((round, index) => {
+            // Build expansion icons string
+            let expansionIcons = '';
+            if (round.krakenPlayed || round.whalePlayed) {
+                const icons = [];
+                if (round.krakenPlayed) icons.push('🐙');
+                if (round.whalePlayed) icons.push('🐋');
+                expansionIcons = `<span class="round-expansion-icons">${icons.join('')}</span>`;
+            }
+            
+            return `
             <div class="round-display parchment">
                 <div class="round-header">
-                    <h3>${this.t('round_display', { round: round.roundNumber.toString() })}</h3>
+                    <h3>${this.t('round_display', { round: round.roundNumber.toString() })}${expansionIcons}</h3>
                     ${index === 0 ? `<button class="btn btn-secondary" onclick="game.handleUpdateLastRound()">${this.t('edit_round_button', { round: round.roundNumber.toString() })}</button>` : ''}
                 </div>
                 <div class="round-data">
@@ -1224,7 +1251,7 @@ class SkullKingGame {
                     `).join('')}
                 </div>
             </div>
-        `).join('');
+        `;}).join('');
     }
 
     private collectRoundData(players: Player[]): { [playerName: string]: { bid: number; actual: number; bonus: number } } {
@@ -2003,7 +2030,8 @@ class SkullKingGame {
         black14: 0,
         mermaidPirate: 0,
         skullPirate: 0,
-        mermaidSkull: 0
+        mermaidSkull: 0,
+        loot: 0
     };
     private playerBonusData: { [key: number]: {
         standard14: number;
@@ -2011,6 +2039,7 @@ class SkullKingGame {
         mermaidPirate: number;
         skullPirate: number;
         mermaidSkull: number;
+        loot: number;
     } } = {};
 
     public openBonusModal(playerIndex: number): void {
@@ -2055,7 +2084,8 @@ class SkullKingGame {
                 black14: 0,
                 mermaidPirate: 0,
                 skullPirate: 0,
-                mermaidSkull: 0
+                mermaidSkull: 0,
+                loot: 0
             };
         }
         
@@ -2093,13 +2123,14 @@ class SkullKingGame {
         this.updateBonusTotal();
     }
     
-    private calculateBonusPoints(type: keyof typeof this.bonusCounters, count: number): number {
+    public calculateBonusPoints(type: keyof typeof this.bonusCounters, count: number): number {
         const pointsMap = {
             standard14: 10,
             black14: 20,
             mermaidPirate: 20,
             skullPirate: 30,
-            mermaidSkull: 40
+            mermaidSkull: 40,
+            loot: 20
         };
         return count * pointsMap[type];
     }
@@ -2119,7 +2150,8 @@ class SkullKingGame {
             black14: 1,         // Jolly Roger 14
             mermaidPirate: 6,   // Pirates captured by Mermaid
             skullPirate: 6,     // Pirates captured by Skull King
-            mermaidSkull: 1     // Skull King captured by Mermaid
+            mermaidSkull: 1,    // Skull King captured by Mermaid
+            loot: 2             // Loot cards (max 2 in deck)
         };
         
         // Update counter value with min/max constraints
@@ -2140,7 +2172,8 @@ class SkullKingGame {
                 black14: 20,
                 mermaidPirate: 20,
                 skullPirate: 30,
-                mermaidSkull: 40
+                mermaidSkull: 40,
+                loot: 20
             };
             pointsEl.textContent = (this.bonusCounters[type] * multipliers[type]).toString();
         }
@@ -2158,7 +2191,8 @@ class SkullKingGame {
             black14: 1,
             mermaidPirate: 6,
             skullPirate: 6,
-            mermaidSkull: 1
+            mermaidSkull: 1,
+            loot: 2
         };
         
         // Update button states for each bonus type
@@ -2187,7 +2221,8 @@ class SkullKingGame {
             this.bonusCounters.black14 * 20 +
             this.bonusCounters.mermaidPirate * 20 +
             this.bonusCounters.skullPirate * 30 +
-            this.bonusCounters.mermaidSkull * 40;
+            this.bonusCounters.mermaidSkull * 40 +
+            this.bonusCounters.loot * 20;
             
         const totalEl = document.getElementById('bonus-total-value');
         if (totalEl) {
@@ -2225,7 +2260,8 @@ class SkullKingGame {
             this.bonusCounters.black14 * 20 +
             this.bonusCounters.mermaidPirate * 20 +
             this.bonusCounters.skullPirate * 30 +
-            this.bonusCounters.mermaidSkull * 40;
+            this.bonusCounters.mermaidSkull * 40 +
+            this.bonusCounters.loot * 20;
         
         // Update the bonus value display
         const bonusValueEl = document.getElementById(`bonus-value-${this.currentBonusPlayerIndex}`);
