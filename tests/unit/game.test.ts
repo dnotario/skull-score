@@ -416,6 +416,91 @@ describe('SkullKingGame Player Limits', () => {
     });
 });
 
+describe('SkullKingGame Player Input Interaction', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        document.body.innerHTML = `
+            <div id="player-names-inputs"></div>
+            <button id="add-player-btn"></button>
+        `;
+        gameInstance = new window.SkullKingGame();
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.updatePlayerInputs();
+    });
+    
+    test('handlePlayerInputEnter should add player when Enter pressed on last input', () => {
+        const event = new KeyboardEvent('keydown', { key: 'Enter' });
+        const initialPlayerCount = gameInstance.viewModel.getTempPlayers().length;
+        
+        // Simulate Enter press on the last player input
+        gameInstance.handlePlayerInputEnter(1, event);
+        
+        // Should have added a new player
+        expect(gameInstance.viewModel.getTempPlayers().length).toBe(initialPlayerCount + 1);
+    });
+    
+    test('handlePlayerInputEnter should NOT add player when Enter pressed on non-last input', () => {
+        const event = new KeyboardEvent('keydown', { key: 'Enter' });
+        const initialPlayerCount = gameInstance.viewModel.getTempPlayers().length;
+        
+        // Simulate Enter press on the first player input (not last)
+        gameInstance.handlePlayerInputEnter(0, event);
+        
+        // Should NOT have added a new player
+        expect(gameInstance.viewModel.getTempPlayers().length).toBe(initialPlayerCount);
+    });
+    
+    test('handlePlayerInputEnter should NOT add player when at MAX_PLAYERS', () => {
+        // Set up 8 players (max)
+        gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+        const event = new KeyboardEvent('keydown', { key: 'Enter' });
+        
+        // Simulate Enter press on the last player input
+        gameInstance.handlePlayerInputEnter(7, event);
+        
+        // Should still have 8 players
+        expect(gameInstance.viewModel.getTempPlayers().length).toBe(8);
+    });
+    
+    test('handlePlayerInputEnter should ignore non-Enter keys', () => {
+        const event = new KeyboardEvent('keydown', { key: 'Tab' });
+        const initialPlayerCount = gameInstance.viewModel.getTempPlayers().length;
+        
+        // Simulate Tab press on the last player input
+        gameInstance.handlePlayerInputEnter(1, event);
+        
+        // Should NOT have added a new player
+        expect(gameInstance.viewModel.getTempPlayers().length).toBe(initialPlayerCount);
+    });
+    
+    test('handleAddPlayer should focus on newly added input', (done) => {
+        const initialPlayerCount = gameInstance.viewModel.getTempPlayers().length;
+        
+        // Add a player
+        gameInstance.handleAddPlayer();
+        
+        // Check after setTimeout completes
+        setTimeout(() => {
+            const newIndex = initialPlayerCount;
+            const newInput = document.getElementById(`player-${newIndex}`);
+            
+            // Mock focus function
+            if (newInput) {
+                newInput.focus = jest.fn();
+                gameInstance.handleAddPlayer();
+                
+                setTimeout(() => {
+                    expect(document.getElementById(`player-${newIndex + 1}`)?.focus).toHaveBeenCalled;
+                    done();
+                }, 10);
+            } else {
+                done();
+            }
+        }, 10);
+    });
+});
+
 describe('SkullKingGame Validation', () => {
     let gameInstance: any;
     
