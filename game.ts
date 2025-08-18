@@ -1205,7 +1205,7 @@ class SkullKingGame {
                     </div>
                     <div class="input-group">
                         <label for="actual-player-${index}" class="input-label">${this.t('won_label')}</label>
-                        <input type="number" id="actual-player-${index}" placeholder="0" min="0" max="${maxTricks}" oninput="game.updateRoundScoreByIndex(${index})">
+                        <input type="number" id="actual-player-${index}" placeholder="0" min="0" max="${maxTricks}" oninput="game.handleActualInput(${index})">
                     </div>
                     <div class="input-group">
                         <label for="bonus-player-${index}" class="input-label">${this.t('bonus_label')}</label>
@@ -1711,6 +1711,20 @@ class SkullKingGame {
         if (playerIndex >= 0 && playerIndex < players.length) {
             this.updateRoundScoreInternalByIndex(playerIndex);
         }
+    }
+
+    public handleActualInput(playerIndex: number): void {
+        const bidInput = document.getElementById(`bid-player-${playerIndex}`) as HTMLInputElement;
+        const actualInput = document.getElementById(`actual-player-${playerIndex}`) as HTMLInputElement;
+        
+        // If actual has value but bid is empty, auto-fill bid with 0
+        if (actualInput?.value && actualInput.value.trim() !== '' && 
+            bidInput && bidInput.value.trim() === '') {
+            bidInput.value = '0';
+        }
+        
+        // Continue with normal score update
+        this.updateRoundScoreByIndex(playerIndex);
     }
 
     public handleUpdateLastRound(): void {
