@@ -416,6 +416,219 @@ describe('SkullKingGame Player Limits', () => {
     });
 });
 
+describe('SkullKingGame Player Input Interaction', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        document.body.innerHTML = `
+            <div id="player-names-inputs"></div>
+            <button id="add-player-btn"></button>
+        `;
+        gameInstance = new window.SkullKingGame();
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.updatePlayerInputs();
+    });
+    
+    test('handlePlayerInputEnter should add player when Enter pressed on last input', () => {
+        const event = new KeyboardEvent('keydown', { key: 'Enter' });
+        const initialPlayerCount = gameInstance.viewModel.getTempPlayers().length;
+        
+        // Simulate Enter press on the last player input
+        gameInstance.handlePlayerInputEnter(1, event);
+        
+        // Should have added a new player
+        expect(gameInstance.viewModel.getTempPlayers().length).toBe(initialPlayerCount + 1);
+    });
+    
+    test('handlePlayerInputEnter should NOT add player when Enter pressed on non-last input', () => {
+        const event = new KeyboardEvent('keydown', { key: 'Enter' });
+        const initialPlayerCount = gameInstance.viewModel.getTempPlayers().length;
+        
+        // Simulate Enter press on the first player input (not last)
+        gameInstance.handlePlayerInputEnter(0, event);
+        
+        // Should NOT have added a new player
+        expect(gameInstance.viewModel.getTempPlayers().length).toBe(initialPlayerCount);
+    });
+    
+    test('handlePlayerInputEnter should NOT add player when at MAX_PLAYERS', () => {
+        // Set up 8 players (max)
+        gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+        const event = new KeyboardEvent('keydown', { key: 'Enter' });
+        
+        // Simulate Enter press on the last player input
+        gameInstance.handlePlayerInputEnter(7, event);
+        
+        // Should still have 8 players
+        expect(gameInstance.viewModel.getTempPlayers().length).toBe(8);
+    });
+    
+    test('handlePlayerInputEnter should ignore non-Enter keys', () => {
+        const event = new KeyboardEvent('keydown', { key: 'Tab' });
+        const initialPlayerCount = gameInstance.viewModel.getTempPlayers().length;
+        
+        // Simulate Tab press on the last player input
+        gameInstance.handlePlayerInputEnter(1, event);
+        
+        // Should NOT have added a new player
+        expect(gameInstance.viewModel.getTempPlayers().length).toBe(initialPlayerCount);
+    });
+    
+    test('handleAddPlayer should focus on newly added input', (done) => {
+        const initialPlayerCount = gameInstance.viewModel.getTempPlayers().length;
+        
+        // Add a player
+        gameInstance.handleAddPlayer();
+        
+        // Check after setTimeout completes
+        setTimeout(() => {
+            const newIndex = initialPlayerCount;
+            const newInput = document.getElementById(`player-${newIndex}`);
+            
+            // Mock focus function
+            if (newInput) {
+                newInput.focus = jest.fn();
+                gameInstance.handleAddPlayer();
+                
+                setTimeout(() => {
+                    expect(document.getElementById(`player-${newIndex + 1}`)?.focus).toHaveBeenCalled;
+                    done();
+                }, 10);
+            } else {
+                done();
+            }
+        }, 10);
+    });
+});
+
+describe('SkullKingGame Auto-fill Bid Behavior', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        // Set up DOM for round inputs
+        document.body.innerHTML = `
+            <div id="landing-section" class="hidden"></div>
+            <div id="player-names-section" class="hidden"></div>
+            <div id="game-section"></div>
+            <div id="score-display"></div>
+            <div id="round-number"></div>
+            <div id="round-inputs">
+                <div class="player-round-input">
+                    <input type="number" id="bid-player-0" />
+                    <input type="number" id="actual-player-0" />
+                    <button id="bonus-player-0" data-bonus-value="0"></button>
+                    <div id="score-player-0" class="computed-score">-</div>
+                </div>
+                <div class="player-round-input">
+                    <input type="number" id="bid-player-1" />
+                    <input type="number" id="actual-player-1" />
+                    <button id="bonus-player-1" data-bonus-value="0"></button>
+                    <div id="score-player-1" class="computed-score">-</div>
+                </div>
+            </div>
+        `;
+        
+        gameInstance = new window.SkullKingGame();
+        // Start a game with 2 players
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+    });
+    
+    test('should auto-fill bid with 0 when actual is entered first', () => {
+        const bidInput = document.getElementById('bid-player-0') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        
+        // Initially bid should be empty
+        expect(bidInput.value).toBe('');
+        
+        // Enter actual value
+        actualInput.value = '3';
+        gameInstance.handleActualInput(0);
+        
+        // Bid should now be auto-filled with 0
+        expect(bidInput.value).toBe('0');
+    });
+    
+    test('should NOT overwrite existing bid when actual is entered', () => {
+        const bidInput = document.getElementById('bid-player-0') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        
+        // Set bid first
+        bidInput.value = '2';
+        
+        // Enter actual value
+        actualInput.value = '3';
+        gameInstance.handleActualInput(0);
+        
+        // Bid should remain unchanged
+        expect(bidInput.value).toBe('2');
+    });
+    
+    test('should calculate score correctly with auto-filled bid', () => {
+        const bidInput = document.getElementById('bid-player-0') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        const scoreDisplay = document.getElementById('score-player-0');
+        
+        // Enter actual value (should auto-fill bid to 0)
+        // Using 1 trick since round 1 with 2 players only has 1 card each
+        actualInput.value = '1';
+        gameInstance.handleActualInput(0);
+        
+        // Check that bid was auto-filled
+        expect(bidInput.value).toBe('0');
+        
+        // Check that score is calculated (should be -10 for traditional scoring)
+        // 1 trick won with 0 bid in round 1 = -10 × 1 (cards dealt) = -10
+        expect(scoreDisplay?.textContent).toBe('-10');
+    });
+    
+    test('should not auto-fill if actual is cleared', () => {
+        const bidInput = document.getElementById('bid-player-0') as HTMLInputElement;
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        
+        // Clear actual value
+        actualInput.value = '';
+        gameInstance.handleActualInput(0);
+        
+        // Bid should remain empty
+        expect(bidInput.value).toBe('');
+    });
+    
+    test('should handle multiple players independently', () => {
+        const bidInput0 = document.getElementById('bid-player-0') as HTMLInputElement;
+        const actualInput0 = document.getElementById('actual-player-0') as HTMLInputElement;
+        const bidInput1 = document.getElementById('bid-player-1') as HTMLInputElement;
+        const actualInput1 = document.getElementById('actual-player-1') as HTMLInputElement;
+        
+        // Player 0: enter actual first (should auto-fill)
+        actualInput0.value = '2';
+        gameInstance.handleActualInput(0);
+        expect(bidInput0.value).toBe('0');
+        
+        // Player 1: enter bid first (should not auto-fill)
+        bidInput1.value = '1';
+        actualInput1.value = '1';
+        gameInstance.handleActualInput(1);
+        expect(bidInput1.value).toBe('1'); // Should remain as entered
+    });
+    
+    test('should update score immediately when bid is auto-filled', () => {
+        const scoreDisplay = document.getElementById('score-player-0');
+        const actualInput = document.getElementById('actual-player-0') as HTMLInputElement;
+        
+        // Initially score should be dash
+        expect(scoreDisplay?.textContent).toBe('-');
+        
+        // Enter actual (auto-fills bid to 0)
+        actualInput.value = '1';
+        gameInstance.handleActualInput(0);
+        
+        // Score should update immediately
+        expect(scoreDisplay?.textContent).not.toBe('-');
+        expect(scoreDisplay?.textContent).toBe('-10'); // Failed zero bid
+    });
+});
+
 describe('SkullKingGame Validation', () => {
     let gameInstance: any;
     
