@@ -2898,3 +2898,169 @@ describe('Expansion Card Support', () => {
         expect(error).toContain('1'); // Expected 1 with 2 destroyed (3-2=1), but got 0
     });
 });
+
+describe('Speech Speed Control', () => {
+    let gameInstance: any;
+    let mockSpeechSynthesis: any;
+    let mockUtterance: any;
+
+    beforeEach(() => {
+        // Mock speechSynthesis API
+        mockUtterance = {
+            rate: 1.0,
+            pitch: 1.0,
+            volume: 1.0,
+            lang: 'en-US',
+            text: ''
+        };
+
+        mockSpeechSynthesis = {
+            cancel: jest.fn(),
+            speak: jest.fn(),
+            getVoices: jest.fn(() => [
+                { name: 'English Voice', lang: 'en-US' }
+            ])
+        };
+
+        (global as any).SpeechSynthesisUtterance = jest.fn(() => mockUtterance);
+        (global as any).speechSynthesis = mockSpeechSynthesis;
+
+        // Add read scores button with speed link to DOM
+        const readScoresBtn = document.createElement('button');
+        readScoresBtn.id = 'read-scores-btn';
+        readScoresBtn.innerHTML = '🔊 Read Scores (<a href="#" id="speed-toggle-link" class="speed-link">1x</a>)';
+        document.body.appendChild(readScoresBtn);
+
+        localStorage.clear();
+        gameInstance = new (window as any).SkullKingGame();
+    });
+
+    test('should initialize with default speed of 1x', () => {
+        expect(gameInstance.speechSpeed).toBe(1.0);
+        const speedLink = document.getElementById('speed-toggle-link');
+        expect(speedLink?.textContent).toBe('1x');
+    });
+
+    test('should cycle through speeds: NORMAL -> MEDIUM -> FAST -> NORMAL', () => {
+        const speedLink = document.getElementById('speed-toggle-link');
+        
+        // Start at 1.0x
+        expect(gameInstance.speechSpeed).toBe(1.0);
+        
+        // Toggle to 1.5x
+        gameInstance.toggleSpeechSpeed();
+        expect(gameInstance.speechSpeed).toBe(1.5);
+        expect(speedLink?.textContent).toBe('1.5x');
+        
+        // Toggle to 2.0x
+        gameInstance.toggleSpeechSpeed();
+        expect(gameInstance.speechSpeed).toBe(2.0);
+        expect(speedLink?.textContent).toBe('2x');
+        
+        // Toggle back to 1.0x
+        gameInstance.toggleSpeechSpeed();
+        expect(gameInstance.speechSpeed).toBe(1.0);
+        expect(speedLink?.textContent).toBe('1x');
+    });
+
+    test('should save speed preference to localStorage', () => {
+        gameInstance.toggleSpeechSpeed(); // Change to 1.5x
+        expect(localStorage.setItem).toHaveBeenCalledWith('skull-king-speech-speed', '1.5');
+        
+        gameInstance.toggleSpeechSpeed(); // Change to 2.0x
+        expect(localStorage.setItem).toHaveBeenCalledWith('skull-king-speech-speed', '2');
+    });
+
+    test('should load saved speed from localStorage on initialization', () => {
+        // Set a saved speed
+        localStorage.getItem = jest.fn((key) => {
+            if (key === 'skull-king-speech-speed') return '1.5';
+            return null;
+        });
+        
+        // Create new instance
+        const newGameInstance = new (window as any).SkullKingGame();
+        expect(newGameInstance.speechSpeed).toBe(1.5);
+        
+        const speedLink = document.getElementById('speed-toggle-link');
+        expect(speedLink?.textContent).toBe('1.5x');
+    });
+
+    test('should handle invalid localStorage values gracefully', () => {
+        // Set invalid speed
+        localStorage.getItem = jest.fn((key) => {
+            if (key === 'skull-king-speech-speed') return '3.5'; // Invalid value
+            return null;
+        });
+        
+        // Create new instance - should default to 1.0
+        const newGameInstance = new (window as any).SkullKingGame();
+        expect(newGameInstance.speechSpeed).toBe(1.0);
+    });
+
+    test('should apply speed multiplier to speech synthesis rate', () => {
+        // Setup game with players
+        gameInstance.viewModel.state.players = [
+            { name: 'Jack', score: 100 },
+            { name: 'Anne', score: 80 }
+        ];
+        gameInstance.viewModel.state.rounds = [
+            {
+                roundNumber: 1,
+                playerData: [
+                    { playerName: 'Jack', bid: 1, actual: 1, bonus: 0, roundScore: 20 },
+                    { playerName: 'Anne', bid: 0, actual: 0, bonus: 0, roundScore: 10 }
+                ],
+                commentary: 'Test round'
+            }
+        ];
+
+        // Test at 1.0x speed
+        gameInstance.readScores();
+        // Base rate for English is 0.7, multiplied by 1.0 = 0.7
+        expect(mockUtterance.rate).toBe(0.7);
+
+        // Test at 1.5x speed
+        gameInstance.toggleSpeechSpeed(); // Change to 1.5x
+        gameInstance.readScores();
+        // Base rate 0.7 * 1.5 = 1.05
+        expect(mockUtterance.rate).toBeCloseTo(1.05, 2);
+
+        // Test at 2.0x speed
+        gameInstance.toggleSpeechSpeed(); // Change to 2.0x
+        gameInstance.readScores();
+        // Base rate 0.7 * 2.0 = 1.4
+        expect(mockUtterance.rate).toBe(1.4);
+    });
+
+    test('should update link text when speed changes', () => {
+        const speedLink = document.getElementById('speed-toggle-link') as HTMLAnchorElement;
+        
+        // Click event should trigger toggle
+        speedLink?.click();
+        expect(speedLink?.textContent).toBe('1.5x');
+        
+        speedLink?.click();
+        expect(speedLink?.textContent).toBe('2x');
+        
+        speedLink?.click();
+        expect(speedLink?.textContent).toBe('1x');
+    });
+
+    test('should maintain language-specific base rates with speed multiplier', () => {
+        // Set German language
+        (window as any).i18n.setLanguage('de');
+        
+        gameInstance.viewModel.state.players = [
+            { name: 'Hans', score: 100 }
+        ];
+        gameInstance.viewModel.state.rounds = [];
+
+        // German base rate is 0.65
+        gameInstance.speechSpeed = 2.0;
+        gameInstance.readScores();
+        
+        // Base rate 0.65 * 2.0 = 1.3
+        expect(mockUtterance.rate).toBe(1.3);
+    });
+});
