@@ -511,6 +511,22 @@ input[type="text"]:focus {
     margin-bottom: 0;
 }
 
+.speed-link {
+    color: #f4e4c1;
+    text-decoration: underline;
+    font-weight: normal;
+    transition: color 0.2s;
+}
+
+.speed-link:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.speed-link:active {
+    color: #d4c4a1;
+}
+
 .score-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
