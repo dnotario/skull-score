@@ -55,6 +55,13 @@ interface Translation {
     bonus_label: string;
     score_label: string;
     
+    // Graybeard (2-player mode)
+    graybeard_name: string;
+    graybeard_tricks_label: string;
+    graybeard_negative_tricks_error: string;
+    graybeard_exceeds_tricks_error: string;
+    total_tricks_mismatch_with_graybeard_error: string;
+    
     // Modal
     confirm_action_title: string;
     keep_names_label: string;
@@ -246,6 +253,13 @@ const enTranslation: Translation = {
     won_label: "Won",
     bonus_label: "Bonus",
     score_label: "Score",
+    
+    // Graybeard (2-player mode)
+    graybeard_name: "Graybeard 👻",
+    graybeard_tricks_label: "Tricks Won",
+    graybeard_negative_tricks_error: "Graybeard's tricks cannot be negative!",
+    graybeard_exceeds_tricks_error: "Graybeard cannot win more than {maxTricks} tricks!",
+    total_tricks_mismatch_with_graybeard_error: "Total tricks won ({totalActual} including Graybeard) must equal {maxTricks} for round {round}!",
     
     // Modal
     confirm_action_title: "Confirm Action",
@@ -439,6 +453,13 @@ const deTranslation: Translation = {
     bonus_label: "Bonus",
     score_label: "Punkte",
     
+    // Graybeard (2-player mode)
+    graybeard_name: "Graubart 👻",
+    graybeard_tricks_label: "Gewonnene Stiche",
+    graybeard_negative_tricks_error: "Graubarts Stiche können nicht negativ sein!",
+    graybeard_exceeds_tricks_error: "Graubart kann nicht mehr als {maxTricks} Stiche gewinnen!",
+    total_tricks_mismatch_with_graybeard_error: "Gesamtstiche ({totalActual} mit Graubart) müssen {maxTricks} für Runde {round} sein!",
+    
     // Modal
     confirm_action_title: "Aktion Bestätigen",
     keep_names_label: "Spielernamen behalten",
@@ -630,6 +651,13 @@ const esTranslation: Translation = {
     won_label: "Ganadas",
     bonus_label: "Bonus",
     score_label: "Puntos",
+    
+    // Graybeard (2-player mode)
+    graybeard_name: "Barba Gris 👻",
+    graybeard_tricks_label: "Bazas Ganadas",
+    graybeard_negative_tricks_error: "¡Las bazas de Barba Gris no pueden ser negativas!",
+    graybeard_exceeds_tricks_error: "¡Barba Gris no puede ganar más de {maxTricks} bazas!",
+    total_tricks_mismatch_with_graybeard_error: "¡Total de bazas ganadas ({totalActual} con Barba Gris) debe ser {maxTricks} para ronda {round}!",
     
     // Modal
     confirm_action_title: "Confirmar Acción",

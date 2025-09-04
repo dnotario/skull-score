@@ -3064,3 +3064,345 @@ describe('Speech Speed Control', () => {
         expect(mockUtterance.rate).toBe(1.3);
     });
 });
+/**
+ * Tests for Graybeard functionality in 2-player mode
+ */
+describe('Graybeard 2-Player Mode', () => {
+    let gameInstance: any;
+    let viewModel: any;
+
+    beforeEach(() => {
+        // Mock localStorage
+        const localStorageMock = {
+            getItem: jest.fn(),
+            setItem: jest.fn(),
+            removeItem: jest.fn(),
+            clear: jest.fn()
+        };
+        Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+        
+        // Reset DOM
+        document.body.innerHTML = `
+            <div id="landing-section"></div>
+            <div id="player-names-section"></div>
+            <div id="game-section"></div>
+            <div id="player-names-inputs"></div>
+            <div id="score-display"></div>
+            <div id="previous-rounds"></div>
+            <div id="new-round"></div>
+            <div id="round-inputs"></div>
+            <div id="round-number"></div>
+            <div id="pirate-commentary"></div>
+            <div id="commentary-text"></div>
+            <div id="winner-announcement"></div>
+            <div id="winner-text"></div>
+        `;
+        
+        // Import the game module
+        require('../../build/runFiles/game.js');
+        
+        // Set language to English for consistent test messages
+        (global as any).i18n.setLanguage('en');
+        
+        // Create a new game instance
+        gameInstance = new (window as any).SkullKingGame();
+        viewModel = gameInstance.viewModel;
+    });
+
+    describe('Graybeard Activation', () => {
+        test('should activate Graybeard for exactly 2 players', () => {
+            viewModel.setTempPlayers(['Alice', 'Bob']);
+            const error = viewModel.validateAndStartGame();
+            
+            expect(error).toBeNull();
+            expect(viewModel.isGraybeardActive()).toBe(true);
+        });
+
+        test('should NOT activate Graybeard for 3 players', () => {
+            viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+            const error = viewModel.validateAndStartGame();
+            
+            expect(error).toBeNull();
+            expect(viewModel.isGraybeardActive()).toBe(false);
+        });
+
+        test('should NOT activate Graybeard for 4+ players', () => {
+            viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'David']);
+            const error = viewModel.validateAndStartGame();
+            
+            expect(error).toBeNull();
+            expect(viewModel.isGraybeardActive()).toBe(false);
+        });
+    });
+
+    describe('Graybeard Round Validation', () => {
+        beforeEach(() => {
+            viewModel.setTempPlayers(['Alice', 'Bob']);
+            viewModel.validateAndStartGame();
+        });
+
+        test('should validate total tricks including Graybeard', () => {
+            const roundData = {
+                'Alice': { bid: 0, actual: 0, bonus: 0 },
+                'Bob': { bid: 1, actual: 1, bonus: 0 }
+            };
+            
+            // Round 1: 1 card dealt, so total tricks must be 1
+            // Alice: 0, Bob: 1, Graybeard: 0 = 1 total (valid)
+            let error = viewModel.validateRoundData(roundData, 1, false, false, 0);
+            expect(error).toBeNull();
+            
+            // Alice: 0, Bob: 0, Graybeard: 1 = 1 total (valid)
+            roundData['Bob'].actual = 0;
+            error = viewModel.validateRoundData(roundData, 1, false, false, 1);
+            expect(error).toBeNull();
+            
+            // Alice: 0, Bob: 1, Graybeard: 1 = 2 total (invalid)
+            roundData['Bob'].actual = 1;
+            error = viewModel.validateRoundData(roundData, 1, false, false, 1);
+            expect(error).toContain('Total tricks won (2 including Graybeard) must equal 1');
+        });
+
+        test('should reject negative Graybeard tricks', () => {
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const error = viewModel.validateRoundData(roundData, 1, false, false, -1);
+            expect(error).toContain("Graybeard's tricks cannot be negative");
+        });
+
+        test('should reject Graybeard tricks exceeding round maximum', () => {
+            const roundData = {
+                'Alice': { bid: 0, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            // Round 2: 2 cards dealt, Graybeard tries to win 3
+            const error = viewModel.validateRoundData(roundData, 2, false, false, 3);
+            expect(error).toContain('Graybeard cannot win more than 2 tricks');
+        });
+
+        test('should store Graybeard tricks in round data', () => {
+            const roundData = {
+                'Alice': { bid: 0, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            const error = viewModel.addRound(roundData, false, false, 1);
+            expect(error).toBeNull();
+            
+            const gameState = viewModel.getGameState();
+            expect(gameState.rounds[0].graybeardTricksWon).toBe(1);
+        });
+    });
+
+    describe('Graybeard with Expansion Cards', () => {
+        beforeEach(() => {
+            viewModel.setTempPlayers(['Alice', 'Bob']);
+            viewModel.validateAndStartGame();
+        });
+
+        test('should handle Graybeard with Kraken', () => {
+            const roundData = {
+                'Alice': { bid: 0, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            // Round 3: 3 cards, Kraken destroys 1, so 2 tricks total
+            // Graybeard wins 2
+            const error = viewModel.validateRoundData(roundData, 3, true, false, 2);
+            expect(error).toBeNull();
+        });
+
+        test('should handle Graybeard with White Whale', () => {
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            // Round 4: 4 cards, Whale destroys 1, so 3 tricks total
+            // Alice: 1, Bob: 0, Graybeard: 2 = 3 total
+            const error = viewModel.validateRoundData(roundData, 4, false, true, 2);
+            expect(error).toBeNull();
+        });
+    });
+
+    describe('Player Persistence with Graybeard', () => {
+        test('should preserve only real player names when starting new game', () => {
+            // Start a 2-player game (Graybeard active)
+            viewModel.setTempPlayers(['Alice', 'Bob']);
+            viewModel.validateAndStartGame();
+            expect(viewModel.isGraybeardActive()).toBe(true);
+            
+            // Start a new game keeping names
+            viewModel.startNewGame(true);
+            const tempPlayers = viewModel.getTempPlayers();
+            
+            // Should have exactly 2 players (no Graybeard in temp players)
+            expect(tempPlayers).toEqual(['Alice', 'Bob']);
+            expect(tempPlayers.length).toBe(2);
+        });
+
+        test('should deactivate Graybeard when adding a third player', () => {
+            // Start with 2 players
+            viewModel.setTempPlayers(['Alice', 'Bob']);
+            viewModel.validateAndStartGame();
+            expect(viewModel.isGraybeardActive()).toBe(true);
+            
+            // Start new game, keep names, add third player
+            viewModel.startNewGame(true);
+            viewModel.addTempPlayer();
+            viewModel.updateTempPlayer(2, 'Charlie');
+            viewModel.validateAndStartGame();
+            
+            // Graybeard should be deactivated
+            expect(viewModel.isGraybeardActive()).toBe(false);
+            expect(viewModel.getPlayerCount()).toBe(3);
+        });
+
+        test('should activate Graybeard when reducing to 2 players', () => {
+            // Start with 3 players
+            viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+            viewModel.validateAndStartGame();
+            expect(viewModel.isGraybeardActive()).toBe(false);
+            
+            // Start new game with only 2 players
+            viewModel.setTempPlayers(['Alice', 'Bob']);
+            viewModel.validateAndStartGame();
+            
+            // Graybeard should be activated
+            expect(viewModel.isGraybeardActive()).toBe(true);
+            expect(viewModel.getPlayerCount()).toBe(2);
+        });
+    });
+
+    describe('Graybeard UI Rendering', () => {
+        beforeEach(() => {
+            viewModel.setTempPlayers(['Alice', 'Bob']);
+            viewModel.validateAndStartGame();
+        });
+
+        test('should render Graybeard input in round inputs', () => {
+            gameInstance.updateUI();
+            
+            const graybeardInput = document.getElementById('graybeard-tricks');
+            expect(graybeardInput).toBeTruthy();
+            expect(graybeardInput?.getAttribute('type')).toBe('number');
+            expect(graybeardInput?.getAttribute('min')).toBe('0');
+            expect(graybeardInput?.getAttribute('max')).toBe('1'); // Round 1
+        });
+
+        test('should NOT render Graybeard for 3+ players', () => {
+            viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+            viewModel.validateAndStartGame();
+            gameInstance.updateUI();
+            
+            const graybeardInput = document.getElementById('graybeard-tricks');
+            expect(graybeardInput).toBeFalsy();
+        });
+
+        test('should display Graybeard in previous rounds', () => {
+            const roundData = {
+                'Alice': { bid: 0, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            viewModel.addRound(roundData, false, false, 1);
+            gameInstance.updateUI();
+            
+            const previousRounds = document.getElementById('previous-rounds');
+            // Check for the ghost emoji which is consistent across languages
+            expect(previousRounds?.innerHTML).toContain('👻');
+            // Also check that the Graybeard data row exists
+            expect(previousRounds?.innerHTML).toContain('graybeard-round-data');
+        });
+    });
+
+    describe('Graybeard Score Calculation', () => {
+        beforeEach(() => {
+            viewModel.setTempPlayers(['Alice', 'Bob']);
+            viewModel.validateAndStartGame();
+        });
+
+        test('should not affect player scores directly', () => {
+            const roundData = {
+                'Alice': { bid: 0, actual: 0, bonus: 0 },
+                'Bob': { bid: 1, actual: 0, bonus: 0 } // Failed bid
+            };
+            
+            // Graybeard won the trick that Bob needed
+            viewModel.addRound(roundData, false, false, 1);
+            
+            const gameState = viewModel.getGameState();
+            const alice = gameState.players.find((p: any) => p.name === 'Alice');
+            const bob = gameState.players.find((p: any) => p.name === 'Bob');
+            
+            // Alice gets 10 points for successful zero bid in round 1
+            expect(alice.score).toBe(10);
+            // Bob loses 10 points for missing by 1
+            expect(bob.score).toBe(-10);
+        });
+
+        test('should allow players to succeed despite Graybeard', () => {
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 20 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            // Round 2: 2 tricks total
+            // Alice: 1, Bob: 0, Graybeard: 1
+            viewModel.state.currentRound = 2;
+            viewModel.addRound(roundData, false, false, 1);
+            
+            const gameState = viewModel.getGameState();
+            const alice = gameState.players.find((p: any) => p.name === 'Alice');
+            const bob = gameState.players.find((p: any) => p.name === 'Bob');
+            
+            // Alice gets 20 for 1 trick + 20 bonus
+            expect(alice.score).toBe(40);
+            // Bob gets 20 for zero bid in round 2 (10 × 2)
+            expect(bob.score).toBe(20);
+        });
+    });
+
+    describe('Edge Cases', () => {
+        test('should handle Graybeard winning all tricks', () => {
+            viewModel.setTempPlayers(['Alice', 'Bob']);
+            viewModel.validateAndStartGame();
+            
+            const roundData = {
+                'Alice': { bid: 0, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            
+            // Round 1: Graybeard wins the only trick
+            const error = viewModel.addRound(roundData, false, false, 1);
+            expect(error).toBeNull();
+            
+            // Both players should get points for zero bid
+            const gameState = viewModel.getGameState();
+            expect(gameState.players[0].score).toBe(10); // Alice
+            expect(gameState.players[1].score).toBe(10); // Bob
+        });
+
+        test('should handle Graybeard winning no tricks', () => {
+            viewModel.setTempPlayers(['Alice', 'Bob']);
+            viewModel.validateAndStartGame();
+            viewModel.state.currentRound = 5;
+            
+            const roundData = {
+                'Alice': { bid: 3, actual: 3, bonus: 0 },
+                'Bob': { bid: 2, actual: 2, bonus: 0 }
+            };
+            
+            // Round 5: 5 tricks, all won by players
+            const error = viewModel.addRound(roundData, false, false, 0);
+            expect(error).toBeNull();
+            
+            const gameState = viewModel.getGameState();
+            expect(gameState.rounds[0].graybeardTricksWon).toBe(0);
+        });
+    });
+});
