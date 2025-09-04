@@ -42,6 +42,7 @@ interface RoundData {
     };
     krakenPlayed?: boolean;
     whalePlayed?: boolean;
+    graybeardTricksWon?: number;
 }
 
 interface GameStateData {
@@ -49,6 +50,7 @@ interface GameStateData {
     rounds: RoundData[];
     currentRound: number;
     scoringMode: ScoringMode;
+    graybeardActive?: boolean;
 }
 
 // Google Analytics gtag function declaration
@@ -206,6 +208,11 @@ class GameViewModel {
         localStorage.setItem('skull-king-scoring-mode', mode);
     }
 
+    // Graybeard Management
+    isGraybeardActive(): boolean {
+        return this.state.graybeardActive === true;
+    }
+
     // Player Management
     getTempPlayers(): string[] {
         return [...this.tempPlayers];
@@ -275,6 +282,8 @@ class GameViewModel {
         this.state.players = validNames.map(name => ({ name: name.trim(), score: 0 }));
         this.state.rounds = [];
         this.state.currentRound = 1;
+        // Automatically activate Graybeard for 2-player games
+        this.state.graybeardActive = validNames.length === 2;
         this.saveState();
 
         // Track analytics
@@ -435,7 +444,7 @@ class GameViewModel {
         return this.getCardsPerRound(this.state.currentRound, this.state.players.length);
     }
 
-    validateRoundData(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, roundNumber?: number, krakenPlayed = false, whalePlayed = false): string | null {
+    validateRoundData(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, roundNumber?: number, krakenPlayed = false, whalePlayed = false, graybeardTricks = 0): string | null {
         const targetRound = roundNumber || this.state.currentRound;
         
         // Validate each player's input
@@ -447,6 +456,20 @@ class GameViewModel {
             }
         }
 
+        // Validate Graybeard's tricks if active
+        if (this.isGraybeardActive()) {
+            if (graybeardTricks < 0) {
+                return this.t('graybeard_negative_tricks_error', { fallback: "Graybeard's tricks cannot be negative!" });
+            }
+            const maxTricks = this.getCardsPerRound(targetRound, this.state.players.length);
+            if (graybeardTricks > maxTricks) {
+                return this.t('graybeard_exceeds_tricks_error', { 
+                    fallback: "Graybeard cannot win more than {maxTricks} tricks!",
+                    maxTricks: maxTricks.toString()
+                });
+            }
+        }
+
         // Validate that total actual wins equals the number of tricks available (minus destroyed tricks)
         // getCardsPerRound returns cards per player, which equals total tricks in the round
         const totalTricks = this.getCardsPerRound(targetRound, this.state.players.length);
@@ -454,20 +477,27 @@ class GameViewModel {
         const expectedTricks = totalTricks - destroyedTricks;
         const totalActualWins = Object.values(data).reduce((sum, playerData) => sum + playerData.actual, 0);
         
-        if (totalActualWins !== expectedTricks) {
-            return this.t('total_tricks_mismatch_error', {
-                totalActual: totalActualWins.toString(),
+        // Include Graybeard's tricks in the total if active
+        const totalWinsIncludingGraybeard = totalActualWins + (this.isGraybeardActive() ? graybeardTricks : 0);
+        
+        if (totalWinsIncludingGraybeard !== expectedTricks) {
+            const errorKey = this.isGraybeardActive() ? 'total_tricks_mismatch_with_graybeard_error' : 'total_tricks_mismatch_error';
+            return this.t(errorKey, {
+                totalActual: totalWinsIncludingGraybeard.toString(),
                 maxTricks: expectedTricks.toString(),
                 round: targetRound.toString(),
-                playerCount: this.state.players.length.toString()
+                playerCount: this.state.players.length.toString(),
+                fallback: this.isGraybeardActive() ? 
+                    `Total tricks won (${totalWinsIncludingGraybeard} including Graybeard) must equal ${expectedTricks} for round ${targetRound}!` :
+                    `Total tricks won (${totalWinsIncludingGraybeard}) must equal ${expectedTricks} for round ${targetRound} with ${this.state.players.length} players!`
             });
         }
 
         return null; // Valid
     }
 
-    addRound(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, krakenPlayed = false, whalePlayed = false): string | null {
-        const validationError = this.validateRoundData(data, undefined, krakenPlayed, whalePlayed);
+    addRound(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, krakenPlayed = false, whalePlayed = false, graybeardTricks = 0): string | null {
+        const validationError = this.validateRoundData(data, undefined, krakenPlayed, whalePlayed, graybeardTricks);
         if (validationError) {
             return validationError;
         }
@@ -477,7 +507,8 @@ class GameViewModel {
             playerData: [],
             commentary: '',
             krakenPlayed,
-            whalePlayed
+            whalePlayed,
+            graybeardTricksWon: this.isGraybeardActive() ? graybeardTricks : 0
         };
 
         // Process each player's data
@@ -1041,7 +1072,15 @@ class SkullKingGame {
         const krakenPlayed = krakenCheckbox?.checked || false;
         const whalePlayed = whaleCheckbox?.checked || false;
         
-        const error = this.viewModel.addRound(roundData, krakenPlayed, whalePlayed);
+        // Get Graybeard's tricks if active
+        let graybeardTricks = 0;
+        if (this.viewModel.isGraybeardActive()) {
+            const graybeardInput = document.getElementById('graybeard-tricks') as HTMLInputElement;
+            const graybeardValue = graybeardInput?.value?.trim() || '0';
+            graybeardTricks = parseInt(graybeardValue);
+        }
+        
+        const error = this.viewModel.addRound(roundData, krakenPlayed, whalePlayed, graybeardTricks);
         
         if (error) {
             this.showError(error);
@@ -1233,7 +1272,7 @@ class SkullKingGame {
             roundNumberEl.textContent = roundDisplay;
         }
 
-        container.innerHTML = players.map((player, index) => `
+        let html = players.map((player, index) => `
             <div class="player-round-input">
                 <h4>${player.name}</h4>
                 <div class="round-input-row">
@@ -1260,6 +1299,24 @@ class SkullKingGame {
                 </div>
             </div>
         `).join('');
+
+        // Add Graybeard input if active (2-player game)
+        if (this.viewModel.isGraybeardActive()) {
+            html += `
+                <div class="player-round-input graybeard-row">
+                    <h4>${this.t('graybeard_name', { fallback: 'Graybeard 👻' })}</h4>
+                    <div class="round-input-row">
+                        <div class="input-group">
+                            <label for="graybeard-tricks" class="input-label">${this.t('graybeard_tricks_label', { fallback: 'Tricks Won' })}</label>
+                            <input type="number" id="graybeard-tricks" placeholder="0" min="0" max="${maxTricks}">
+                        </div>
+                        <div class="graybeard-spacer"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
         
         // Initialize computed scores for all players
         players.forEach((player, index) => this.updateRoundScoreInternalByIndex(index));
@@ -1310,6 +1367,15 @@ class SkullKingGame {
                             <span>${data.roundScore > 0 ? '+' : ''}${data.roundScore}</span>
                         </div>
                     `).join('')}
+                    ${round.graybeardTricksWon !== undefined ? `
+                        <div class="player-round-data graybeard-round-data">
+                            <strong>${this.t('graybeard_name', { fallback: 'Graybeard 👻' })}</strong>
+                            <span>-</span>
+                            <span>${round.graybeardTricksWon}</span>
+                            <span>-</span>
+                            <span>-</span>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;}).join('');

@@ -674,6 +674,49 @@ input[type="text"]:focus {
     margin-bottom: 0.5rem;
 }
 
+/* Graybeard Ghost Styles */
+.graybeard-row {
+    background: rgba(139, 69, 19, 0.05);
+    border: 1px solid #d4af37;
+    opacity: 0.9;
+    position: relative;
+}
+
+.graybeard-row h4 {
+    color: #654321;
+    font-style: italic;
+}
+
+.graybeard-row .round-input-row {
+    grid-template-columns: 1fr 3fr;
+}
+
+.graybeard-row input {
+    /* Inherit default input styles instead of overriding background */
+    border-color: #d4af37;
+}
+
+.graybeard-row input:focus {
+    /* Use same focus styles as regular inputs */
+    border-color: rgba(212, 175, 55, 0.6);
+    box-shadow: 0 0 3px rgba(212, 175, 55, 0.2);
+}
+
+.graybeard-spacer {
+    grid-column: span 3;
+}
+
+/* Graybeard in round display */
+.graybeard-round-data {
+    background: rgba(255, 255, 255, 0.1);
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.graybeard-round-data strong {
+    color: rgba(101, 67, 33, 0.8);
+}
+
 .round-input-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
