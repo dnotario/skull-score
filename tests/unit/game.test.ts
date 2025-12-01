@@ -3573,6 +3573,99 @@ describe('Expansion Pack - Mode Toggle', () => {
         });
     });
 
+    describe('Cards Per Round with Expansion Mode', () => {
+        test('base game should use 70 cards total', () => {
+            gameInstance.viewModel.setExpansionMode(false);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            // With 8 players and 70 cards, round 10 should give 8 cards each (80 needed, only 70 available)
+            const cardsRound10 = gameInstance.viewModel.getCardsPerRound(10, 8);
+            expect(cardsRound10).toBe(8); // floor(70/8) = 8
+            
+            // Round 8 should give 8 cards each (64 needed, 70 available)
+            const cardsRound8 = gameInstance.viewModel.getCardsPerRound(8, 8);
+            expect(cardsRound8).toBe(8);
+        });
+
+        test('expansion mode should use 89 cards total', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            // With 8 players and 89 cards, round 10 should give 10 cards each (80 needed, 89 available)
+            const cardsRound10 = gameInstance.viewModel.getCardsPerRound(10, 8);
+            expect(cardsRound10).toBe(10);
+            
+            // Round 9 should also give full 9 cards
+            const cardsRound9 = gameInstance.viewModel.getCardsPerRound(9, 8);
+            expect(cardsRound9).toBe(9);
+        });
+
+        test('expansion mode with 9 players should allow full 10 rounds', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            // With 9 players and 89 cards, round 10 needs 90 cards but only 89 available
+            // So round 10 should give 9 cards each (floor(89/9) = 9)
+            const cardsRound10 = gameInstance.viewModel.getCardsPerRound(10, 9);
+            expect(cardsRound10).toBe(9);
+            
+            // Round 9 should give full 9 cards (81 needed, 89 available)
+            const cardsRound9 = gameInstance.viewModel.getCardsPerRound(9, 9);
+            expect(cardsRound9).toBe(9);
+        });
+
+        test('base game with 8 players round 9 should be limited', () => {
+            gameInstance.viewModel.setExpansionMode(false);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            // 8 players, round 9 needs 72 cards but only 70 available
+            const cardsRound9 = gameInstance.viewModel.getCardsPerRound(9, 8);
+            expect(cardsRound9).toBe(8); // floor(70/8) = 8
+        });
+
+        test('expansion mode with 8 players should allow full 10 cards in round 10', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            // 8 players, round 10 needs 80 cards, 89 available - should work
+            const cardsRound10 = gameInstance.viewModel.getCardsPerRound(10, 8);
+            expect(cardsRound10).toBe(10);
+        });
+
+        test('trick validation should account for expansion card count', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            // Advance to round 10
+            for (let i = 1; i < 10; i++) {
+                const roundData: { [key: string]: { bid: number; actual: number; bonus: number } } = {};
+                const cardsThisRound = gameInstance.viewModel.getCardsPerRound(i, 8);
+                for (let p = 0; p < 7; p++) {
+                    roundData[`P${p + 1}`] = { bid: 0, actual: 0, bonus: 0 };
+                }
+                // Last player gets all tricks
+                roundData['P8'] = { bid: cardsThisRound, actual: cardsThisRound, bonus: 0 };
+                gameInstance.viewModel.addRound(roundData);
+            }
+            
+            // Round 10 with expansion should expect 10 tricks (not 8 like base game)
+            const round10Data: { [key: string]: { bid: number; actual: number; bonus: number } } = {};
+            for (let p = 0; p < 7; p++) {
+                round10Data[`P${p + 1}`] = { bid: 0, actual: 0, bonus: 0 };
+            }
+            round10Data['P8'] = { bid: 10, actual: 10, bonus: 0 };
+            
+            const error = gameInstance.viewModel.addRound(round10Data);
+            expect(error).toBeNull(); // Should succeed with 10 tricks in expansion mode
+        });
+    });
+
     describe('Expansion Mode Persistence', () => {
         test('should preserve expansion mode when starting new game', () => {
             gameInstance.viewModel.setExpansionMode(true);

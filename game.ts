@@ -467,7 +467,8 @@ class GameViewModel {
             throw new Error(`Invalid player count: ${playerCount}. Must have at least 1 player.`);
         }
         
-        const totalCards = 70;
+        // Base game: 70 cards, Expansion: 89 cards (adds 19 cards)
+        const totalCards = this.state.expansionMode ? 89 : 70;
         const idealCards = roundNumber;
         const cardsNeeded = idealCards * playerCount;
         
