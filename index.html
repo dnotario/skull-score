@@ -420,6 +420,47 @@
                     </div>
                 </div>
                 
+                <!-- Expansion Pack Bonuses (hidden when not in expansion mode) -->
+                <div id="expansion-bonus-section" class="bonus-category expansion-bonuses hidden">
+                    <div class="expansion-header" id="expansion-bonuses-header" data-i18n="expansion_bonuses_header">⚓ Expansion Bonuses</div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-seven" data-i18n="bonus_label_seven">7s Captured (Penalty)</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('sevenCaptured', -1)">−</button>
+                            <span class="counter-value" id="counter-sevenCaptured">0</span>
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('sevenCaptured', 1)">+</button>
+                        </div>
+                        <span class="bonus-points penalty"><span id="points-sevenCaptured">0</span></span>
+                    </div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-eight" data-i18n="bonus_label_eight">8s Captured (Bonus)</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('eightCaptured', -1)">−</button>
+                            <span class="counter-value" id="counter-eightCaptured">0</span>
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('eightCaptured', 1)">+</button>
+                        </div>
+                        <span class="bonus-points"><span id="points-eightCaptured">+0</span></span>
+                    </div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-firstmate" data-i18n="bonus_label_firstmate">First Mate Con Captured</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('firstMateCon', -1)">−</button>
+                            <span class="counter-value" id="counter-firstMateCon">0</span>
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('firstMateCon', 1)">+</button>
+                        </div>
+                        <span class="bonus-points"><span id="points-firstMateCon">+0</span></span>
+                    </div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-davyjones" data-i18n="bonus_label_davyjones">Davy Jones Sea Monsters</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('davyJonesMonsters', -1)">−</button>
+                            <span class="counter-value" id="counter-davyJonesMonsters">0</span>
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('davyJonesMonsters', 1)">+</button>
+                        </div>
+                        <span class="bonus-points"><span id="points-davyJonesMonsters">+0</span></span>
+                    </div>
+                </div>
+                
                 <!-- Total -->
                 <div class="bonus-total">
                     <span class="bonus-total-label" id="bonus-total-label" data-i18n="bonus_total_label">Total Bonus:</span>

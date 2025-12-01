@@ -1580,6 +1580,21 @@ body.game-active .landing-only {
     border-radius: 4px;
 }
 
+.bonus-category.expansion-bonuses {
+    background: rgba(0, 100, 150, 0.08);
+    border-color: #2a9d8f;
+}
+
+.expansion-header {
+    color: #2a9d8f;
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 0.75rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(42, 157, 143, 0.3);
+    padding-bottom: 0.5rem;
+}
+
 .bonus-category h4 {
     color: #654321;
     font-size: 1.1rem;
@@ -1657,6 +1672,10 @@ body.game-active .landing-only {
     min-width: 60px;
     text-align: right;
     font-size: 0.9rem;
+}
+
+.bonus-points.penalty {
+    color: #dc3545;
 }
 
 .bonus-total {

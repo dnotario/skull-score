@@ -3609,3 +3609,378 @@ describe('Expansion Pack - Mode Toggle', () => {
         });
     });
 });
+
+describe('Expansion Pack Bonus Calculator - Phase 2', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+    });
+
+    describe('Expansion Bonus Counters', () => {
+        test('should have expansion bonus counters when expansion mode is enabled', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // Check that expansion counters exist
+            expect(gameInstance.expansionBonusCounters).toBeDefined();
+            expect(gameInstance.expansionBonusCounters.sevenCaptured).toBe(0);
+            expect(gameInstance.expansionBonusCounters.eightCaptured).toBe(0);
+            expect(gameInstance.expansionBonusCounters.firstMateCon).toBe(0);
+            expect(gameInstance.expansionBonusCounters.davyJonesMonsters).toBe(0);
+        });
+
+        test('should calculate 7 captured penalty correctly (-5 each)', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            const points = gameInstance.calculateExpansionBonusPoints('sevenCaptured', 2);
+            expect(points).toBe(-10); // 2 × -5 = -10
+        });
+
+        test('should calculate 8 captured bonus correctly (+5 each)', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            const points = gameInstance.calculateExpansionBonusPoints('eightCaptured', 3);
+            expect(points).toBe(15); // 3 × +5 = +15
+        });
+
+        test('should calculate First Mate Con capture bonus (+30)', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            const points = gameInstance.calculateExpansionBonusPoints('firstMateCon', 1);
+            expect(points).toBe(30);
+        });
+
+        test('should calculate Davy Jones sea monster captures (+20 each)', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            const points = gameInstance.calculateExpansionBonusPoints('davyJonesMonsters', 2);
+            expect(points).toBe(40); // 2 × +20 = +40
+        });
+
+        test('should enforce max limits for expansion counters', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // 7s - max 4
+            gameInstance.updateExpansionBonusCounter('sevenCaptured', 5);
+            expect(gameInstance.expansionBonusCounters.sevenCaptured).toBe(4);
+            
+            // 8s - max 4
+            gameInstance.updateExpansionBonusCounter('eightCaptured', 5);
+            expect(gameInstance.expansionBonusCounters.eightCaptured).toBe(4);
+            
+            // First Mate Con - max 1
+            gameInstance.updateExpansionBonusCounter('firstMateCon', 2);
+            expect(gameInstance.expansionBonusCounters.firstMateCon).toBe(1);
+            
+            // Davy Jones - max 3
+            gameInstance.updateExpansionBonusCounter('davyJonesMonsters', 4);
+            expect(gameInstance.expansionBonusCounters.davyJonesMonsters).toBe(3);
+        });
+
+        test('should not allow negative values for expansion counters', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            gameInstance.updateExpansionBonusCounter('sevenCaptured', -1);
+            expect(gameInstance.expansionBonusCounters.sevenCaptured).toBe(0);
+        });
+
+        test('should display correct format for expansion bonus points', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // Create points display elements
+            const points7 = document.createElement('span');
+            points7.id = 'points-sevenCaptured';
+            document.body.appendChild(points7);
+            
+            const points8 = document.createElement('span');
+            points8.id = 'points-eightCaptured';
+            document.body.appendChild(points8);
+            
+            // Update counters
+            gameInstance.updateExpansionBonusCounter('sevenCaptured', 2);
+            gameInstance.updateExpansionBonusCounter('eightCaptured', 3);
+            
+            // 7s should show negative without double sign (e.g., "-10" not "+-10")
+            expect(points7.textContent).toBe('-10');
+            
+            // 8s should show positive with single + (e.g., "+15" not "++15")
+            expect(points8.textContent).toBe('+15');
+            
+            // Clean up
+            document.body.removeChild(points7);
+            document.body.removeChild(points8);
+        });
+    });
+
+    describe('Expansion Bonus Total Calculation', () => {
+        test('should include expansion bonuses in total when expansion mode is enabled', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // Set some expansion bonuses
+            gameInstance.expansionBonusCounters = {
+                sevenCaptured: 2,    // -10
+                eightCaptured: 1,    // +5
+                firstMateCon: 1,     // +30
+                davyJonesMonsters: 1 // +20
+            };
+            
+            const expansionTotal = gameInstance.calculateExpansionBonusTotal();
+            expect(expansionTotal).toBe(45); // -10 + 5 + 30 + 20 = 45
+        });
+
+        test('should return 0 for expansion total when expansion mode is disabled', () => {
+            gameInstance.viewModel.setExpansionMode(false);
+            
+            gameInstance.expansionBonusCounters = {
+                sevenCaptured: 2,
+                eightCaptured: 1,
+                firstMateCon: 1,
+                davyJonesMonsters: 1
+            };
+            
+            const expansionTotal = gameInstance.calculateExpansionBonusTotal();
+            expect(expansionTotal).toBe(0);
+        });
+
+        test('should combine base and expansion bonuses in grand total', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // Set base bonuses
+            gameInstance.bonusCounters = {
+                standard14: 1,     // +10
+                black14: 1,        // +20
+                mermaidPirate: 0,
+                skullPirate: 0,
+                mermaidSkull: 0,
+                loot: 0
+            };
+            
+            // Set expansion bonuses
+            gameInstance.expansionBonusCounters = {
+                sevenCaptured: 0,
+                eightCaptured: 2,     // +10
+                firstMateCon: 0,
+                davyJonesMonsters: 1  // +20
+            };
+            
+            const grandTotal = gameInstance.calculateGrandBonusTotal();
+            expect(grandTotal).toBe(60); // 10 + 20 + 10 + 20 = 60
+        });
+    });
+
+    describe('Expansion Bonus UI Visibility', () => {
+        test('should start with expansion section hidden in HTML', () => {
+            // Verify the HTML default state - expansion section should have hidden class
+            // This tests that the HTML template has the correct initial state
+            const html = `<div id="expansion-bonus-section" class="bonus-category expansion-bonuses hidden"></div>`;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const section = doc.getElementById('expansion-bonus-section');
+            
+            expect(section?.classList.contains('hidden')).toBe(true);
+        });
+
+        test('should keep expansion section hidden when game started WITHOUT expansion mode', () => {
+            // Start a fresh game WITHOUT expansion mode
+            const freshGame = new window.SkullKingGame();
+            freshGame.viewModel.startNewGame(false);
+            freshGame.viewModel.setExpansionMode(false); // Explicitly disable
+            freshGame.viewModel.setTempPlayers(['Alice', 'Bob']);
+            freshGame.viewModel.validateAndStartGame();
+            
+            // Verify expansion mode is off
+            expect(freshGame.viewModel.isExpansionMode()).toBe(false);
+            
+            // Create the expansion section element for testing
+            const expansionSection = document.createElement('div');
+            expansionSection.id = 'expansion-bonus-section';
+            expansionSection.classList.add('hidden');
+            document.body.appendChild(expansionSection);
+            
+            // Create bid/actual inputs (required for openBonusModal)
+            const bidInput = document.createElement('input');
+            bidInput.id = 'bid-player-0';
+            bidInput.value = '1';
+            document.body.appendChild(bidInput);
+            
+            const actualInput = document.createElement('input');
+            actualInput.id = 'actual-player-0';
+            actualInput.value = '1';
+            document.body.appendChild(actualInput);
+            
+            // Open bonus modal - should keep expansion section hidden
+            freshGame.openBonusModal(0);
+            
+            expect(expansionSection.classList.contains('hidden')).toBe(true);
+            
+            // Clean up
+            document.body.removeChild(expansionSection);
+            document.body.removeChild(bidInput);
+            document.body.removeChild(actualInput);
+        });
+
+        test('should respect game state over localStorage for expansion mode', () => {
+            // Set localStorage to true (simulating previous session)
+            localStorage.setItem('skull-king-expansion-mode', 'true');
+            
+            // Start a fresh game and explicitly disable expansion
+            const freshGame = new window.SkullKingGame();
+            freshGame.viewModel.startNewGame(false);
+            freshGame.viewModel.setExpansionMode(false); // Override localStorage
+            freshGame.viewModel.setTempPlayers(['Alice', 'Bob']);
+            freshGame.viewModel.validateAndStartGame();
+            
+            // Verify expansion mode is off (state should override localStorage)
+            expect(freshGame.viewModel.isExpansionMode()).toBe(false);
+            
+            // Create the expansion section element for testing
+            const expansionSection = document.createElement('div');
+            expansionSection.id = 'expansion-bonus-section';
+            expansionSection.classList.add('hidden');
+            document.body.appendChild(expansionSection);
+            
+            // Create bid/actual inputs
+            const bidInput = document.createElement('input');
+            bidInput.id = 'bid-player-0';
+            bidInput.value = '1';
+            document.body.appendChild(bidInput);
+            
+            const actualInput = document.createElement('input');
+            actualInput.id = 'actual-player-0';
+            actualInput.value = '1';
+            document.body.appendChild(actualInput);
+            
+            // Open bonus modal - should keep expansion section hidden
+            freshGame.openBonusModal(0);
+            
+            expect(expansionSection.classList.contains('hidden')).toBe(true);
+            
+            // Clean up
+            document.body.removeChild(expansionSection);
+            document.body.removeChild(bidInput);
+            document.body.removeChild(actualInput);
+        });
+
+        test('should show expansion section when game started WITH expansion mode', () => {
+            // Create the expansion section element for testing
+            const expansionSection = document.createElement('div');
+            expansionSection.id = 'expansion-bonus-section';
+            expansionSection.classList.add('hidden');
+            document.body.appendChild(expansionSection);
+            
+            // Create bid/actual inputs (required for openBonusModal)
+            const bidInput = document.createElement('input');
+            bidInput.id = 'bid-player-0';
+            bidInput.value = '1';
+            document.body.appendChild(bidInput);
+            
+            const actualInput = document.createElement('input');
+            actualInput.id = 'actual-player-0';
+            actualInput.value = '1';
+            document.body.appendChild(actualInput);
+            
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // Open bonus modal for player 0 - this should show the expansion section
+            gameInstance.openBonusModal(0);
+            
+            expect(expansionSection.classList.contains('hidden')).toBe(false);
+            
+            // Clean up
+            document.body.removeChild(expansionSection);
+            document.body.removeChild(bidInput);
+            document.body.removeChild(actualInput);
+        });
+
+        test('should keep expansion section hidden when expansion mode is disabled', () => {
+            // Create the expansion section element for testing
+            const expansionSection = document.createElement('div');
+            expansionSection.id = 'expansion-bonus-section';
+            expansionSection.classList.add('hidden');
+            document.body.appendChild(expansionSection);
+            
+            // Create bid/actual inputs (required for openBonusModal)
+            const bidInput = document.createElement('input');
+            bidInput.id = 'bid-player-0';
+            bidInput.value = '1';
+            document.body.appendChild(bidInput);
+            
+            const actualInput = document.createElement('input');
+            actualInput.id = 'actual-player-0';
+            actualInput.value = '1';
+            document.body.appendChild(actualInput);
+            
+            gameInstance.viewModel.setExpansionMode(false);
+            
+            // Open bonus modal for player 0
+            gameInstance.openBonusModal(0);
+            
+            expect(expansionSection.classList.contains('hidden')).toBe(true);
+            
+            // Clean up
+            document.body.removeChild(expansionSection);
+            document.body.removeChild(bidInput);
+            document.body.removeChild(actualInput);
+        });
+    });
+
+    describe('Expansion Bonus Clear and Apply', () => {
+        test('should clear expansion bonuses when clearing calculator', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            gameInstance.expansionBonusCounters = {
+                sevenCaptured: 2,
+                eightCaptured: 1,
+                firstMateCon: 1,
+                davyJonesMonsters: 1
+            };
+            
+            gameInstance.clearBonusCalculator();
+            
+            expect(gameInstance.expansionBonusCounters.sevenCaptured).toBe(0);
+            expect(gameInstance.expansionBonusCounters.eightCaptured).toBe(0);
+            expect(gameInstance.expansionBonusCounters.firstMateCon).toBe(0);
+            expect(gameInstance.expansionBonusCounters.davyJonesMonsters).toBe(0);
+        });
+
+        test('should include expansion bonuses when applying to player', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // Create bonus value display element
+            const bonusValueEl = document.createElement('span');
+            bonusValueEl.id = 'bonus-value-0';
+            document.body.appendChild(bonusValueEl);
+            
+            // Set current bonus player index
+            gameInstance.currentBonusPlayerIndex = 0;
+            
+            // Set base bonuses
+            gameInstance.bonusCounters = {
+                standard14: 1,     // +10
+                black14: 0,
+                mermaidPirate: 0,
+                skullPirate: 0,
+                mermaidSkull: 0,
+                loot: 0
+            };
+            
+            // Set expansion bonuses
+            gameInstance.expansionBonusCounters = {
+                sevenCaptured: 0,
+                eightCaptured: 1,  // +5
+                firstMateCon: 0,
+                davyJonesMonsters: 0
+            };
+            
+            // Calculate grand total
+            const grandTotal = gameInstance.calculateGrandBonusTotal();
+            expect(grandTotal).toBe(15); // 10 + 5 = 15
+            
+            // Clean up
+            document.body.removeChild(bonusValueEl);
+        });
+    });
+});

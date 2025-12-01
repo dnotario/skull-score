@@ -240,6 +240,10 @@ class GameViewModel {
     }
 
     isExpansionMode(): boolean {
+        // During active game, use state; otherwise use localStorage preference
+        if (this.state.expansionMode !== undefined) {
+            return this.state.expansionMode;
+        }
         return this.getExpansionMode();
     }
 
@@ -2262,7 +2266,7 @@ class SkullKingGame {
     }
 
     // Bonus Calculator Modal Methods
-    private currentBonusPlayerIndex: number = -1;
+    public currentBonusPlayerIndex: number = -1;
     private bonusCounters = {
         standard14: 0,
         black14: 0,
@@ -2271,6 +2275,15 @@ class SkullKingGame {
         mermaidSkull: 0,
         loot: 0
     };
+    
+    // Expansion pack bonus counters
+    public expansionBonusCounters = {
+        sevenCaptured: 0,      // -5 each, max 4
+        eightCaptured: 0,      // +5 each, max 4
+        firstMateCon: 0,       // +30, max 1
+        davyJonesMonsters: 0   // +20 each, max 3
+    };
+    
     private playerBonusData: { [key: number]: {
         standard14: number;
         black14: number;
@@ -2278,6 +2291,13 @@ class SkullKingGame {
         skullPirate: number;
         mermaidSkull: number;
         loot: number;
+    } } = {};
+    
+    private playerExpansionBonusData: { [key: number]: {
+        sevenCaptured: number;
+        eightCaptured: number;
+        firstMateCon: number;
+        davyJonesMonsters: number;
     } } = {};
 
     public openBonusModal(playerIndex: number): void {
@@ -2327,8 +2347,31 @@ class SkullKingGame {
             };
         }
         
+        // Restore or reset expansion bonuses
+        if (this.playerExpansionBonusData[playerIndex]) {
+            this.expansionBonusCounters = { ...this.playerExpansionBonusData[playerIndex] };
+        } else {
+            this.expansionBonusCounters = {
+                sevenCaptured: 0,
+                eightCaptured: 0,
+                firstMateCon: 0,
+                davyJonesMonsters: 0
+            };
+        }
+        
         // Update UI with restored or reset values
         this.updateBonusCountersUI();
+        this.updateExpansionBonusCountersUI();
+        
+        // Show/hide expansion section based on mode
+        const expansionSection = document.getElementById('expansion-bonus-section');
+        if (expansionSection) {
+            if (this.viewModel.isExpansionMode()) {
+                expansionSection.classList.remove('hidden');
+            } else {
+                expansionSection.classList.add('hidden');
+            }
+        }
         
         // Show modal
         const modal = document.getElementById('bonus-modal-overlay');
@@ -2379,6 +2422,112 @@ class SkullKingGame {
             modal.classList.remove('active');
         }
         // Don't clear counters on close - keep them for persistence
+    }
+
+    // Expansion bonus calculation methods
+    public calculateExpansionBonusPoints(type: keyof typeof this.expansionBonusCounters, count: number): number {
+        const pointsMap = {
+            sevenCaptured: -5,      // Penalty
+            eightCaptured: 5,       // Bonus
+            firstMateCon: 30,       // Fixed bonus
+            davyJonesMonsters: 20   // Per monster
+        };
+        return count * pointsMap[type];
+    }
+
+    public updateExpansionBonusCounter(type: keyof typeof this.expansionBonusCounters, delta: number): void {
+        const maxLimits = {
+            sevenCaptured: 4,
+            eightCaptured: 4,
+            firstMateCon: 1,
+            davyJonesMonsters: 3
+        };
+        
+        const newValue = this.expansionBonusCounters[type] + delta;
+        this.expansionBonusCounters[type] = Math.max(0, Math.min(maxLimits[type], newValue));
+        
+        // Update UI
+        const counterEl = document.getElementById(`counter-${type}`);
+        if (counterEl) {
+            counterEl.textContent = this.expansionBonusCounters[type].toString();
+        }
+        
+        // Update points display
+        const pointsEl = document.getElementById(`points-${type}`);
+        if (pointsEl) {
+            const points = this.calculateExpansionBonusPoints(type, this.expansionBonusCounters[type]);
+            pointsEl.textContent = (points >= 0 ? '+' : '') + points.toString();
+        }
+        
+        // Update button states and total
+        this.updateExpansionBonusButtonStates();
+        this.updateBonusTotal();
+    }
+
+    public calculateExpansionBonusTotal(): number {
+        if (!this.viewModel.isExpansionMode()) {
+            return 0;
+        }
+        return this.calculateExpansionBonusPoints('sevenCaptured', this.expansionBonusCounters.sevenCaptured) +
+               this.calculateExpansionBonusPoints('eightCaptured', this.expansionBonusCounters.eightCaptured) +
+               this.calculateExpansionBonusPoints('firstMateCon', this.expansionBonusCounters.firstMateCon) +
+               this.calculateExpansionBonusPoints('davyJonesMonsters', this.expansionBonusCounters.davyJonesMonsters);
+    }
+
+    public calculateGrandBonusTotal(): number {
+        const baseTotal = 
+            this.bonusCounters.standard14 * 10 +
+            this.bonusCounters.black14 * 20 +
+            this.bonusCounters.mermaidPirate * 20 +
+            this.bonusCounters.skullPirate * 30 +
+            this.bonusCounters.mermaidSkull * 40 +
+            this.bonusCounters.loot * 20;
+        
+        const expansionTotal = this.calculateExpansionBonusTotal();
+        
+        return baseTotal + expansionTotal;
+    }
+
+    private updateExpansionBonusButtonStates(): void {
+        const maxLimits = {
+            sevenCaptured: 4,
+            eightCaptured: 4,
+            firstMateCon: 1,
+            davyJonesMonsters: 3
+        };
+        
+        Object.keys(this.expansionBonusCounters).forEach(key => {
+            const type = key as keyof typeof this.expansionBonusCounters;
+            const count = this.expansionBonusCounters[type];
+            const max = maxLimits[type];
+            
+            const incrementBtn = document.querySelector(`button[onclick="game.updateExpansionBonusCounter('${type}', 1)"]`) as HTMLButtonElement;
+            const decrementBtn = document.querySelector(`button[onclick="game.updateExpansionBonusCounter('${type}', -1)"]`) as HTMLButtonElement;
+            
+            if (incrementBtn) {
+                incrementBtn.disabled = count >= max;
+            }
+            if (decrementBtn) {
+                decrementBtn.disabled = count <= 0;
+            }
+        });
+    }
+
+    private updateExpansionBonusCountersUI(): void {
+        Object.keys(this.expansionBonusCounters).forEach(key => {
+            const type = key as keyof typeof this.expansionBonusCounters;
+            const counterEl = document.getElementById(`counter-${type}`);
+            if (counterEl) {
+                counterEl.textContent = this.expansionBonusCounters[type].toString();
+            }
+            
+            const pointsEl = document.getElementById(`points-${type}`);
+            if (pointsEl) {
+                const points = this.calculateExpansionBonusPoints(type, this.expansionBonusCounters[type]);
+                pointsEl.textContent = (points >= 0 ? '+' : '') + points.toString();
+            }
+        });
+        this.updateExpansionBonusButtonStates();
     }
 
     public updateBonusCounter(type: keyof typeof this.bonusCounters, delta: number): void {
@@ -2454,13 +2603,7 @@ class SkullKingGame {
     }
 
     private updateBonusTotal(): void {
-        const total = 
-            this.bonusCounters.standard14 * 10 +
-            this.bonusCounters.black14 * 20 +
-            this.bonusCounters.mermaidPirate * 20 +
-            this.bonusCounters.skullPirate * 30 +
-            this.bonusCounters.mermaidSkull * 40 +
-            this.bonusCounters.loot * 20;
+        const total = this.calculateGrandBonusTotal();
             
         const totalEl = document.getElementById('bonus-total-value');
         if (totalEl) {
@@ -2470,7 +2613,9 @@ class SkullKingGame {
 
     public clearBonusCalculator(): void {
         this.clearBonusCounters();
+        this.clearExpansionBonusCounters();
         this.updateBonusButtonStates();
+        this.updateExpansionBonusButtonStates();
         this.updateBonusTotal();
     }
 
@@ -2489,17 +2634,26 @@ class SkullKingGame {
         }
     }
 
+    private clearExpansionBonusCounters(): void {
+        // Reset all expansion counters
+        for (const key in this.expansionBonusCounters) {
+            this.expansionBonusCounters[key as keyof typeof this.expansionBonusCounters] = 0;
+            const counterEl = document.getElementById(`counter-${key}`);
+            if (counterEl) {
+                counterEl.textContent = '0';
+            }
+            const pointsEl = document.getElementById(`points-${key}`);
+            if (pointsEl) {
+                pointsEl.textContent = '+0';
+            }
+        }
+    }
+
     public applyBonusCalculator(): void {
         if (this.currentBonusPlayerIndex === -1) return;
         
-        // Calculate total bonus
-        const total = 
-            this.bonusCounters.standard14 * 10 +
-            this.bonusCounters.black14 * 20 +
-            this.bonusCounters.mermaidPirate * 20 +
-            this.bonusCounters.skullPirate * 30 +
-            this.bonusCounters.mermaidSkull * 40 +
-            this.bonusCounters.loot * 20;
+        // Calculate total bonus including expansion
+        const total = this.calculateGrandBonusTotal();
         
         // Update the bonus value display
         const bonusValueEl = document.getElementById(`bonus-value-${this.currentBonusPlayerIndex}`);
@@ -2524,6 +2678,12 @@ class SkullKingGame {
             this.playerBonusData = {};
         }
         this.playerBonusData[this.currentBonusPlayerIndex] = { ...this.bonusCounters };
+        
+        // Store expansion counters too
+        if (!this.playerExpansionBonusData) {
+            this.playerExpansionBonusData = {};
+        }
+        this.playerExpansionBonusData[this.currentBonusPlayerIndex] = { ...this.expansionBonusCounters };
         
         // Trigger the update with the new bonus value
         this.updateRoundScoreByIndex(this.currentBonusPlayerIndex);

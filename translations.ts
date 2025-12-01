@@ -193,6 +193,14 @@ interface Translation {
     bonus_label_mermaid_sk: string;
     bonus_label_loot: string;
     bonus_total_label: string;
+    
+    // Expansion bonus labels
+    expansion_bonuses_header: string;
+    bonus_label_seven: string;
+    bonus_label_eight: string;
+    bonus_label_firstmate: string;
+    bonus_label_davyjones: string;
+    
     kraken_played: string;
     whale_played: string;
     bonus_clear_btn: string;
@@ -398,6 +406,14 @@ const enTranslation: Translation = {
     bonus_label_mermaid_sk: "Skull King captured by Mermaid",
     bonus_label_loot: "Loot Alliances",
     bonus_total_label: "Total Bonus:",
+    
+    // Expansion bonus labels
+    expansion_bonuses_header: "⚓ Expansion Bonuses",
+    bonus_label_seven: "7s Captured (Penalty)",
+    bonus_label_eight: "8s Captured (Bonus)",
+    bonus_label_firstmate: "First Mate Con Captured",
+    bonus_label_davyjones: "Davy Jones Sea Monsters",
+    
     kraken_played: "🐙 Kraken played",
     whale_played: "🐋 White Whale played",
     bonus_clear_btn: "Clear",
@@ -603,6 +619,14 @@ const deTranslation: Translation = {
     bonus_label_mermaid_sk: "Skull King von Meerjungfrau gefangen",
     bonus_label_loot: "Beute-Allianzen",
     bonus_total_label: "Gesamt-Bonus:",
+    
+    // Expansion bonus labels
+    expansion_bonuses_header: "⚓ Erweiterungs-Boni",
+    bonus_label_seven: "7er Gefangen (Strafe)",
+    bonus_label_eight: "8er Gefangen (Bonus)",
+    bonus_label_firstmate: "Erster Maat Con Gefangen",
+    bonus_label_davyjones: "Davy Jones Seemonster",
+    
     kraken_played: "🐙 Kraken gespielt",
     whale_played: "🐋 Weißer Wal gespielt",
     bonus_clear_btn: "Löschen",
@@ -808,6 +832,14 @@ const esTranslation: Translation = {
     bonus_label_mermaid_sk: "Rey Calavera capturado por Sirena",
     bonus_label_loot: "Alianzas de Botín",
     bonus_total_label: "Bonus Total:",
+    
+    // Expansion bonus labels
+    expansion_bonuses_header: "⚓ Bonos de Expansión",
+    bonus_label_seven: "7s Capturados (Penalización)",
+    bonus_label_eight: "8s Capturados (Bonus)",
+    bonus_label_firstmate: "Primer Oficial Con Capturado",
+    bonus_label_davyjones: "Monstruos Marinos Davy Jones",
+    
     kraken_played: "🐙 Kraken jugado",
     whale_played: "🐋 Ballena Blanca jugada",
     bonus_clear_btn: "Borrar",
