@@ -659,7 +659,6 @@ input[type="text"]:focus {
     color: #8B4513;
     font-size: 0.75rem;
     font-weight: 600;
-    white-space: nowrap;
 }
 
 .expansion-checkbox input[type="checkbox"] {
@@ -667,10 +666,13 @@ input[type="text"]:focus {
     height: 1.3rem;
     cursor: pointer;
     accent-color: #8B4513;
+    flex-shrink: 0;
 }
 
 .expansion-checkbox span {
     user-select: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .round-expansion-icons {
