@@ -550,7 +550,7 @@ class GameViewModel {
             commentary: '',
             krakenPlayed,
             trickDiscarded,
-            graybeardTricksWon: this.isGraybeardActive() ? graybeardTricks : 0
+            graybeardTricksWon: this.isGraybeardActive() ? graybeardTricks : undefined
         };
 
         // Process each player's data

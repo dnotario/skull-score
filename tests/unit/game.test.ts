@@ -4039,3 +4039,176 @@ describe('Expansion Pack Bonus Calculator - Phase 2', () => {
         });
     });
 });
+
+describe('Graybeard State Bug', () => {
+    test('graybeardActive should be false for 3+ player games after loading 2-player game state', () => {
+        // First simulate a 2-player game with graybeardActive true
+        const oldGameState = {
+            players: [{ name: 'Alice', score: 0 }, { name: 'Bob', score: 0 }],
+            rounds: [],
+            currentRound: 1,
+            scoringMode: 'normal',
+            graybeardActive: true
+        };
+        
+        (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+            if (key === 'skullKingGameState') return JSON.stringify(oldGameState);
+            return null;
+        });
+        
+        // Load the game (simulates page refresh after 2-player game)
+        const game = new window.SkullKingGame();
+        
+        // Verify graybeardActive is true for the 2-player game
+        expect(game.viewModel.isGraybeardActive()).toBe(true);
+        
+        // Now start a new 3-player game
+        game.viewModel.startNewGame(false);
+        game.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        game.viewModel.validateAndStartGame();
+        
+        // Graybeard should NOT be active for 3 players
+        expect(game.viewModel.isGraybeardActive()).toBe(false);
+    });
+});
+
+describe('Graybeard UI Bug - Continuing Game', () => {
+    test('graybeardActive should be correctly loaded for 3+ player game', () => {
+        // Simulate a 3-player game state that was saved
+        const threePlayerState = {
+            players: [
+                { name: 'Alice', score: 20 }, 
+                { name: 'Bob', score: 10 },
+                { name: 'Charlie', score: 30 }
+            ],
+            rounds: [{
+                roundNumber: 1,
+                playerData: [
+                    { playerName: 'Alice', bid: 1, actual: 1, bonus: 0, roundScore: 20 },
+                    { playerName: 'Bob', bid: 0, actual: 0, bonus: 0, roundScore: 10 },
+                    { playerName: 'Charlie', bid: 0, actual: 0, bonus: 0, roundScore: 30 }
+                ],
+                commentary: 'Test'
+            }],
+            currentRound: 2,
+            scoringMode: 'normal',
+            graybeardActive: false  // Should be false for 3 players
+        };
+        
+        (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+            if (key === 'skullKingGameState') return JSON.stringify(threePlayerState);
+            return null;
+        });
+        
+        // Load the game (simulates page refresh)
+        const game = new window.SkullKingGame();
+        
+        // Verify graybeardActive is false for the 3-player game
+        expect(game.viewModel.isGraybeardActive()).toBe(false);
+        expect(game.viewModel.getPlayerCount()).toBe(3);
+    });
+    
+    test('graybeardActive should NOT be true if loaded state has undefined graybeardActive and 3 players', () => {
+        // Simulate an older 3-player game state without graybeardActive field
+        const oldThreePlayerState = {
+            players: [
+                { name: 'Alice', score: 20 }, 
+                { name: 'Bob', score: 10 },
+                { name: 'Charlie', score: 30 }
+            ],
+            rounds: [],
+            currentRound: 1,
+            scoringMode: 'normal'
+            // Note: no graybeardActive field - simulates old saved state
+        };
+        
+        (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+            if (key === 'skullKingGameState') return JSON.stringify(oldThreePlayerState);
+            return null;
+        });
+        
+        // Load the game
+        const game = new window.SkullKingGame();
+        
+        // isGraybeardActive checks if graybeardActive === true, so undefined should return false
+        expect(game.viewModel.isGraybeardActive()).toBe(false);
+    });
+});
+
+describe('Graybeard Round History Bug', () => {
+    test('graybeardTricksWon should be undefined for 3+ player games', () => {
+        // Setup a 3-player game
+        const threePlayerState = {
+            players: [
+                { name: 'Alice', score: 0 }, 
+                { name: 'Bob', score: 0 },
+                { name: 'Charlie', score: 0 }
+            ],
+            rounds: [],
+            currentRound: 1,
+            scoringMode: 'normal',
+            graybeardActive: false
+        };
+        
+        (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+            if (key === 'skullKingGameState') return JSON.stringify(threePlayerState);
+            return null;
+        });
+        
+        const game = new window.SkullKingGame();
+        
+        // Simulate round data
+        const roundData = {
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 },
+            'Charlie': { bid: 0, actual: 0, bonus: 0 }
+        };
+        
+        // Add round using the exposed addRound method
+        const result = game.viewModel.addRound(roundData, false, false, 0);
+        
+        expect(result).toBeNull(); // No error
+        
+        // Get the state and check the round
+        const state = game.viewModel.getGameState();
+        expect(state.rounds.length).toBe(1);
+        expect(state.rounds[0].graybeardTricksWon).toBeUndefined();
+    });
+    
+    test('graybeardTricksWon should be set for 2-player games', () => {
+        // Setup a 2-player game
+        const twoPlayerState = {
+            players: [
+                { name: 'Alice', score: 0 }, 
+                { name: 'Bob', score: 0 }
+            ],
+            rounds: [],
+            currentRound: 1,
+            scoringMode: 'normal',
+            graybeardActive: true
+        };
+        
+        (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+            if (key === 'skullKingGameState') return JSON.stringify(twoPlayerState);
+            return null;
+        });
+        
+        const game = new window.SkullKingGame();
+        
+        // Simulate round data
+        const roundData = {
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        };
+        
+        // Add round with graybeard tricks = 0
+        const result = game.viewModel.addRound(roundData, false, false, 0);
+        
+        expect(result).toBeNull(); // No error
+        
+        // Get the state and check the round
+        const state = game.viewModel.getGameState();
+        expect(state.rounds.length).toBe(1);
+        expect(state.rounds[0].graybeardTricksWon).toBe(0);
+    });
+});
