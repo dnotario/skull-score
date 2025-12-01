@@ -2775,7 +2775,7 @@ describe('Expansion Card Support', () => {
         expect(error).toBeNull();
     });
     
-    test('should allow destroyed tricks when Whale played', () => {
+    test('should allow destroyed tricks when trick discarded', () => {
         gameInstance.viewModel.startNewGame(false);
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
         gameInstance.viewModel.validateAndStartGame();
@@ -2783,19 +2783,19 @@ describe('Expansion Card Support', () => {
         // Round 1: 1 trick total (1 card per player, but only 1 trick total)
         const roundData = {
             'Alice': { bid: 0, actual: 0, bonus: 0 },
-            'Bob': { bid: 0, actual: 0, bonus: 10 }
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
         };
         
-        // Without Whale: should fail (0 tricks vs 1 expected)
+        // Without trick discarded: should fail (0 tricks vs 1 expected)
         let error = gameInstance.viewModel.validateRoundData(roundData);
         expect(error).toContain('must equal');
         
-        // With Whale: should pass (0 tricks + 1 destroyed = 1)
+        // With trick discarded: should pass (Whale/Stingray can discard trick)
         error = gameInstance.viewModel.validateRoundData(roundData, undefined, false, true);
         expect(error).toBeNull();
     });
     
-    test('should allow both Kraken and Whale in same round', () => {
+    test('should allow both Kraken and trick discarded in same round', () => {
         gameInstance.viewModel.startNewGame(false);
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
         gameInstance.viewModel.validateAndStartGame();
@@ -2803,8 +2803,8 @@ describe('Expansion Card Support', () => {
         // Round 2: 2 tricks total (2 cards per player, but only 2 tricks total)
         gameInstance.viewModel.state.currentRound = 2;
         const roundData = {
-            'Alice': { bid: 0, actual: 0, bonus: 10 },
-            'Bob': { bid: 0, actual: 0, bonus: 10 },
+            'Alice': { bid: 0, actual: 0, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 },
             'Charlie': { bid: 0, actual: 0, bonus: 0 }
         };
         
@@ -2812,7 +2812,15 @@ describe('Expansion Card Support', () => {
         let error = gameInstance.viewModel.validateRoundData(roundData);
         expect(error).toContain('must equal');
         
-        // With both Kraken and Whale: should pass (0 tricks + 2 destroyed = 2)
+        // With trick discarded only: should still fail (0 tricks + 1 destroyed = 1, but need 2)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, false, true);
+        expect(error).toContain('must equal');
+        
+        // With Kraken only: should still fail (0 tricks + 1 destroyed = 1, but need 2)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true, false);
+        expect(error).toContain('must equal');
+        
+        // With both Kraken and trick discarded: should pass (2 tricks destroyed)
         error = gameInstance.viewModel.validateRoundData(roundData, undefined, true, true);
         expect(error).toBeNull();
     });
@@ -2822,14 +2830,14 @@ describe('Expansion Card Support', () => {
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
         gameInstance.viewModel.validateAndStartGame();
         
-        // Round 2: 2 tricks total
+        // Round 2: 2 tricks total (need at least 2 to destroy with both Kraken and trick discarded)
         gameInstance.viewModel.state.currentRound = 2;
         const roundData = {
-            'Alice': { bid: 0, actual: 0, bonus: 10 },
-            'Bob': { bid: 0, actual: 0, bonus: 10 }
+            'Alice': { bid: 0, actual: 0, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
         };
         
-        // Add round with Kraken and Whale played (0 tricks + 2 destroyed = 2 expected)
+        // Add round with both Kraken and trick discarded (0 tricks + 2 destroyed = 2 expected)
         const error = gameInstance.viewModel.addRound(roundData, true, true);
         expect(error).toBeNull();
         
@@ -2837,7 +2845,7 @@ describe('Expansion Card Support', () => {
         const lastRound = gameState.rounds[gameState.rounds.length - 1];
         
         expect(lastRound.krakenPlayed).toBe(true);
-        expect(lastRound.whalePlayed).toBe(true);
+        expect(lastRound.trickDiscarded).toBe(true);
     });
     
     test('should calculate Loot bonuses correctly', () => {
@@ -2878,7 +2886,40 @@ describe('Expansion Card Support', () => {
         expect(gameInstance.bonusCounters.loot).toBe(2);
     });
     
-    test('should not allow more than 2 destroyed tricks', () => {
+    test('should validate correctly with Kraken and trick discarded', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+        
+        // Round 2: 2 total tricks
+        gameInstance.viewModel.state.currentRound = 2;
+        const roundData = {
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        };
+        
+        // Without expansion cards: should fail (1 trick vs 2 expected)
+        let error = gameInstance.viewModel.validateRoundData(roundData);
+        expect(error).toContain('must equal');
+        
+        // With Kraken: should pass (1 trick + 1 destroyed = 2)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true, false);
+        expect(error).toBeNull();
+        
+        // With trick discarded only: should also pass (1 trick + 1 discarded = 2)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, false, true);
+        expect(error).toBeNull();
+        
+        // With both: 0 tricks should pass (2 destroyed = 2)
+        const zeroTricksData = {
+            'Alice': { bid: 0, actual: 0, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        };
+        error = gameInstance.viewModel.validateRoundData(zeroTricksData, undefined, true, true);
+        expect(error).toBeNull();
+    });
+    
+    test('should allow up to 2 destroyed tricks with Kraken and trick discarded', () => {
         gameInstance.viewModel.startNewGame(false);
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
         gameInstance.viewModel.validateAndStartGame();
@@ -2886,18 +2927,33 @@ describe('Expansion Card Support', () => {
         // Round 3: 3 total tricks
         gameInstance.viewModel.state.currentRound = 3;
         const roundData = {
-            'Alice': { bid: 0, actual: 0, bonus: 10 },
-            'Bob': { bid: 0, actual: 0, bonus: 10 }
+            'Alice': { bid: 0, actual: 0, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
         };
         
         // Without expansion cards: should fail (0 tricks vs 3 expected)
         let error = gameInstance.viewModel.validateRoundData(roundData);
         expect(error).toContain('must equal');
         
-        // With both Kraken and Whale: still should fail (0 tricks + 2 destroyed = 2, but need 3)
+        // With Kraken only: still should fail (0 tricks + 1 destroyed = 1, but need 3)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true, false);
+        expect(error).toContain('must equal');
+        
+        // With trick discarded only: still should fail (0 tricks + 1 destroyed = 1, but need 3)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, false, true);
+        expect(error).toContain('must equal');
+        
+        // With both: still should fail (0 tricks + 2 destroyed = 2, but need 3)
         error = gameInstance.viewModel.validateRoundData(roundData, undefined, true, true);
         expect(error).toContain('must equal');
-        expect(error).toContain('1'); // Expected 1 with 2 destroyed (3-2=1), but got 0
+        
+        // With 1 trick and both: should pass (1 + 2 destroyed = 3)
+        const oneTrickData = {
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        };
+        error = gameInstance.viewModel.validateRoundData(oneTrickData, undefined, true, true);
+        expect(error).toBeNull();
     });
 });
 
@@ -3218,13 +3274,13 @@ describe('Graybeard 2-Player Mode', () => {
             expect(error).toBeNull();
         });
 
-        test('should handle Graybeard with White Whale', () => {
+        test('should handle Graybeard with trick discarded', () => {
             const roundData = {
                 'Alice': { bid: 1, actual: 1, bonus: 0 },
                 'Bob': { bid: 0, actual: 0, bonus: 0 }
             };
             
-            // Round 4: 4 cards, Whale destroys 1, so 3 tricks total
+            // Round 4: 4 cards, trick discarded (Whale/Stingray), so 3 tricks total
             // Alice: 1, Bob: 0, Graybeard: 2 = 3 total
             const error = viewModel.validateRoundData(roundData, 4, false, true, 2);
             expect(error).toBeNull();
@@ -3586,9 +3642,8 @@ describe('Expansion Pack - Mode Toggle', () => {
                         { playerName: 'Bob', bid: 0, actual: 0, bonus: 0, roundScore: 10 }
                     ],
                     commentary: 'Test',
-                    krakenPlayed: false,
-                    whalePlayed: false
-                    // No stingrayPlayed or davyJonesMonsters
+                    krakenPlayed: false
+                    // No trickDiscarded or davyJonesMonsters
                 }],
                 currentRound: 2,
                 scoringMode: 'normal'
@@ -3604,7 +3659,7 @@ describe('Expansion Pack - Mode Toggle', () => {
             
             // Should load successfully without errors
             expect(gameState.rounds.length).toBe(1);
-            expect(gameState.rounds[0].stingrayPlayed).toBeUndefined();
+            expect(gameState.rounds[0].trickDiscarded).toBeUndefined();
             expect(gameState.rounds[0].davyJonesMonsters).toBeUndefined();
         });
     });

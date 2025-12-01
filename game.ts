@@ -42,8 +42,7 @@ interface RoundData {
         playerName?: string;
     };
     krakenPlayed?: boolean;
-    whalePlayed?: boolean;
-    stingrayPlayed?: boolean;
+    trickDiscarded?: boolean;  // Whale/Stingray caused a trick to be discarded (no winner)
     davyJonesMonsters?: number;
     graybeardTricksWon?: number;
 }
@@ -486,7 +485,7 @@ class GameViewModel {
         return this.getCardsPerRound(this.state.currentRound, this.state.players.length);
     }
 
-    validateRoundData(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, roundNumber?: number, krakenPlayed = false, whalePlayed = false, graybeardTricks = 0): string | null {
+    validateRoundData(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, roundNumber?: number, krakenPlayed = false, trickDiscarded = false, graybeardTricks = 0): string | null {
         const targetRound = roundNumber || this.state.currentRound;
         
         // Validate each player's input
@@ -515,7 +514,8 @@ class GameViewModel {
         // Validate that total actual wins equals the number of tricks available (minus destroyed tricks)
         // getCardsPerRound returns cards per player, which equals total tricks in the round
         const totalTricks = this.getCardsPerRound(targetRound, this.state.players.length);
-        const destroyedTricks = (krakenPlayed ? 1 : 0) + (whalePlayed ? 1 : 0);
+        // Kraken always destroys a trick; trickDiscarded covers Whale/Stingray no-winner scenarios
+        const destroyedTricks = (krakenPlayed ? 1 : 0) + (trickDiscarded ? 1 : 0);
         const expectedTricks = totalTricks - destroyedTricks;
         const totalActualWins = Object.values(data).reduce((sum, playerData) => sum + playerData.actual, 0);
         
@@ -538,8 +538,8 @@ class GameViewModel {
         return null; // Valid
     }
 
-    addRound(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, krakenPlayed = false, whalePlayed = false, graybeardTricks = 0): string | null {
-        const validationError = this.validateRoundData(data, undefined, krakenPlayed, whalePlayed, graybeardTricks);
+    addRound(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, krakenPlayed = false, trickDiscarded = false, graybeardTricks = 0): string | null {
+        const validationError = this.validateRoundData(data, undefined, krakenPlayed, trickDiscarded, graybeardTricks);
         if (validationError) {
             return validationError;
         }
@@ -549,7 +549,7 @@ class GameViewModel {
             playerData: [],
             commentary: '',
             krakenPlayed,
-            whalePlayed,
+            trickDiscarded,
             graybeardTricksWon: this.isGraybeardActive() ? graybeardTricks : 0
         };
 
@@ -1113,9 +1113,9 @@ class SkullKingGame {
         
         // Get expansion card checkbox states
         const krakenCheckbox = document.getElementById('kraken-played') as HTMLInputElement;
-        const whaleCheckbox = document.getElementById('whale-played') as HTMLInputElement;
+        const trickDiscardedCheckbox = document.getElementById('trick-discarded') as HTMLInputElement;
         const krakenPlayed = krakenCheckbox?.checked || false;
-        const whalePlayed = whaleCheckbox?.checked || false;
+        const trickDiscarded = trickDiscardedCheckbox?.checked || false;
         
         // Get Graybeard's tricks if active
         let graybeardTricks = 0;
@@ -1125,7 +1125,7 @@ class SkullKingGame {
             graybeardTricks = parseInt(graybeardValue);
         }
         
-        const error = this.viewModel.addRound(roundData, krakenPlayed, whalePlayed, graybeardTricks);
+        const error = this.viewModel.addRound(roundData, krakenPlayed, trickDiscarded, graybeardTricks);
         
         if (error) {
             this.showError(error);
@@ -1137,7 +1137,7 @@ class SkullKingGame {
         
         // Clear expansion checkboxes
         if (krakenCheckbox) krakenCheckbox.checked = false;
-        if (whaleCheckbox) whaleCheckbox.checked = false;
+        if (trickDiscardedCheckbox) trickDiscardedCheckbox.checked = false;
         this.showCommentary();
         
         // Scroll to the scores section after recording round
@@ -1223,6 +1223,8 @@ class SkullKingGame {
             }
             
             this.updatePreviousRounds(gameState.rounds);
+            
+            // Show/hide expansion-only UI elements
             
             // Show commentary if we have rounds
             if (gameState.rounds.length > 0) {
@@ -1390,10 +1392,10 @@ class SkullKingGame {
         container.innerHTML = sortedRounds.map((round, index) => {
             // Build expansion icons string
             let expansionIcons = '';
-            if (round.krakenPlayed || round.whalePlayed) {
+            if (round.krakenPlayed || round.trickDiscarded) {
                 const icons = [];
                 if (round.krakenPlayed) icons.push('🐙');
-                if (round.whalePlayed) icons.push('🐋');
+                if (round.trickDiscarded) icons.push('🚫');
                 expansionIcons = `<span class="round-expansion-icons">${icons.join('')}</span>`;
             }
             

@@ -202,7 +202,7 @@ interface Translation {
     bonus_label_davyjones: string;
     
     kraken_played: string;
-    whale_played: string;
+    trick_discarded: string;
     bonus_clear_btn: string;
     bonus_apply_btn: string;
     bonus_error_bid_mismatch: string;
@@ -414,8 +414,8 @@ const enTranslation: Translation = {
     bonus_label_firstmate: "First Mate Con Captured",
     bonus_label_davyjones: "Davy Jones Sea Monsters",
     
-    kraken_played: "🐙 Kraken played",
-    whale_played: "🐋 White Whale played",
+    kraken_played: "🐙 Kraken played (trick destroyed)",
+    trick_discarded: "🚫 Trick discarded (Whale/Stingray - no winner)",
     bonus_clear_btn: "Clear",
     bonus_apply_btn: "Apply Bonus",
     bonus_error_bid_mismatch: "Arrr! Bonus only be allowed when yer bid equals actual tricks won!",
@@ -627,8 +627,8 @@ const deTranslation: Translation = {
     bonus_label_firstmate: "Erster Maat Con Gefangen",
     bonus_label_davyjones: "Davy Jones Seemonster",
     
-    kraken_played: "🐙 Kraken gespielt",
-    whale_played: "🐋 Weißer Wal gespielt",
+    kraken_played: "🐙 Kraken gespielt (Stich zerstört)",
+    trick_discarded: "🚫 Stich verworfen (Wal/Rochen - kein Gewinner)",
     bonus_clear_btn: "Löschen",
     bonus_apply_btn: "Bonus Anwenden",
     bonus_error_bid_mismatch: "Arrr! Bonus nur erlaubt, wenn Gebot gleich gewonnene Stiche!",
@@ -840,8 +840,8 @@ const esTranslation: Translation = {
     bonus_label_firstmate: "Primer Oficial Con Capturado",
     bonus_label_davyjones: "Monstruos Marinos Davy Jones",
     
-    kraken_played: "🐙 Kraken jugado",
-    whale_played: "🐋 Ballena Blanca jugada",
+    kraken_played: "🐙 Kraken jugado (truco destruido)",
+    trick_discarded: "🚫 Truco descartado (Ballena/Raya - sin ganador)",
     bonus_clear_btn: "Borrar",
     bonus_apply_btn: "Aplicar Bonus",
     bonus_error_bid_mismatch: "¡Arrr! ¡Bonus solo permitido cuando apuesta igual a bazas ganadas!",
