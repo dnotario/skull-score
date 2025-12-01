@@ -158,21 +158,35 @@
                 </div>
                 
                 <!-- Scoring Mode Selection -->
-                <div class="scoring-mode-section">
+                <div class="option-section">
                     <h3 id="scoring-mode-label" data-i18n="scoring_mode_label">Scoring Rules</h3>
-                    <div class="scoring-mode-options">
-                        <label class="scoring-mode-option">
+                    <div class="option-list">
+                        <label class="option-card">
                             <input type="radio" name="scoring-mode" value="normal" id="scoring-normal" checked>
-                            <div class="scoring-mode-content">
+                            <div class="option-content">
                                 <strong id="scoring-mode-normal" data-i18n="scoring_mode_normal">Normal Scoring</strong>
                                 <p id="scoring-mode-normal-desc" data-i18n="scoring_mode_normal_desc">Traditional Skull King: Zero bid = 10×round, correct bid = 20×tricks + bonus</p>
                             </div>
                         </label>
-                        <label class="scoring-mode-option">
+                        <label class="option-card">
                             <input type="radio" name="scoring-mode" value="rascal" id="scoring-rascal">
-                            <div class="scoring-mode-content">
+                            <div class="option-content">
                                 <strong id="scoring-mode-rascal" data-i18n="scoring_mode_rascal">Rascal's Scoring</strong>
                                 <p id="scoring-mode-rascal-desc" data-i18n="scoring_mode_rascal_desc">Even-keeled scoring: 10 pts × cards dealt. Direct hit = full, off by 1 = half, off by 2+ = none</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Other Options Section -->
+                <div class="option-section">
+                    <h3 id="other-options-label" data-i18n="other_options_label">Other Options</h3>
+                    <div class="option-list">
+                        <label class="option-card">
+                            <input type="checkbox" id="expansion-mode-checkbox" onchange="game.handleExpansionModeToggle(this.checked)">
+                            <div class="option-content">
+                                <strong id="expansion-mode-title" data-i18n="expansion_mode_title">Expansion Pack</strong>
+                                <p id="expansion-mode-desc" data-i18n="expansion_mode_desc">Adds 9-player support, Stingray, Davy Jones, and new bonus cards</p>
                             </div>
                         </label>
                     </div>

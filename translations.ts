@@ -38,6 +38,7 @@ interface Translation {
     set_sail_button: string;
     back_to_port_button: string;
     player_placeholder: string;
+    game_options_title: string;
     
     // Game section
     current_bounty_title: string;
@@ -173,6 +174,11 @@ interface Translation {
     scoring_mode_normal_desc: string;
     scoring_mode_rascal: string;
     scoring_mode_rascal_desc: string;
+    scoring_mode_description: string;
+    other_options_label: string;
+    expansion_mode_title: string;
+    expansion_mode_desc: string;
+    expansion_mode_label: string;
     
     // Bonus calculator
     calc_button: string;
@@ -230,14 +236,6 @@ const enTranslation: Translation = {
     why_choose_title: "Why Choose Our Skull King Score Keeper?",
     why_choose_description: "Whether you're playing Skull King at home, at a game night, or in a tournament, our digital scorecard makes Skull King scoring effortless. Track bids, actual tricks, bonus points, and watch your Skull King scores calculate automatically. Perfect for Skull King enthusiasts who want accurate, fast scoring.",
     
-    // Player setup
-    name_crew_title: "Name Yer Crew",
-    add_pirate_button: "Add Pirate",
-    clear_all_button: "Clear All",
-    set_sail_button: "Set Sail!",
-    back_to_port_button: "Back to Port",
-    player_placeholder: "Pirate",
-    
     // Game section
     current_bounty_title: "Current Bounty",
     read_scores_button: "🔊 Read Scores",
@@ -276,9 +274,9 @@ const enTranslation: Translation = {
     
     // Error messages
     min_players_error: "Ye need at least 2 pirates to play, ye scurvy dog!",
-    max_players_error: "No more than 8 pirates can fit on this ship!",
+    max_players_error: "No more than {maxPlayers} pirates can fit on this ship!",
     duplicate_names_error: "Each pirate needs their own name, ye bilge rat!",
-    max_players_add_error: "The ship be full! Maximum 8 pirates allowed!",
+    max_players_add_error: "The ship be full! Maximum {maxPlayers} pirates allowed!",
     invalid_number_error: "{playerName} needs valid numbers for all fields, ye landlubber!",
     whole_numbers_error: "{playerName} can only use whole numbers, no half measures!",
     non_negative_error: "{playerName} can't use negative numbers, ye scallywag!",
@@ -357,6 +355,15 @@ const enTranslation: Translation = {
     ios_step_3: "3. Tap 'Add' to confirm",
     close_button: "Close",
     
+    // Player setup
+    name_crew_title: "Name Yer Crew",
+    player_placeholder: "Pirate Name",
+    add_pirate_button: "Add Pirate",
+    clear_all_button: "Clear All",
+    set_sail_button: "Set Sail!",
+    back_to_port_button: "Back to Port",
+    game_options_title: "Game Options",
+    
     // New game modal
     new_game_modal_title: "Start New Game?",
     new_game_modal_message: "Current game in progress. Start a new game?",
@@ -372,6 +379,11 @@ const enTranslation: Translation = {
     scoring_mode_normal_desc: "Traditional Skull King: Zero bid = 10×round, correct bid = 20×tricks + bonus",
     scoring_mode_rascal: "Rascal's Scoring",
     scoring_mode_rascal_desc: "Even-keeled scoring: 10 pts × cards dealt. Direct hit = full, off by 1 = half, off by 2+ = none",
+    scoring_mode_description: "Normal = exact bid scoring, Rascal = proportional scoring",
+    other_options_label: "Other Options",
+    expansion_mode_title: "Expansion Pack",
+    expansion_mode_desc: "Adds 9-player support, Stingray, Davy Jones, and new bonus cards",
+    expansion_mode_label: "Play with Expansion Pack (allows 9 players)",
     
     // Bonus calculator
     calc_button: "Calc",
@@ -429,14 +441,6 @@ const deTranslation: Translation = {
     why_choose_title: "Warum Unser Skull King Punktezähler?",
     why_choose_description: "Ob Sie Skull King zu Hause, bei einem Spieleabend oder bei einem Turnier spielen, unsere digitale Punktekarte macht die Skull King Wertung mühelos. Verfolgen Sie Gebote, gewonnene Stiche, Bonuspunkte und sehen Sie, wie Ihre Skull King Punkte automatisch berechnet werden.",
     
-    // Player setup
-    name_crew_title: "Benennt Eure Crew",
-    add_pirate_button: "Pirat Hinzufügen",
-    clear_all_button: "Alle Löschen",
-    set_sail_button: "Segel Setzen!",
-    back_to_port_button: "Zurück zum Hafen",
-    player_placeholder: "Pirat",
-    
     // Game section
     current_bounty_title: "Aktuelle Beute",
     read_scores_button: "🔊 Punkte Vorlesen",
@@ -475,9 +479,9 @@ const deTranslation: Translation = {
     
     // Error messages
     min_players_error: "Ihr braucht mindestens 2 Piraten zum Spielen!",
-    max_players_error: "Nicht mehr als 8 Piraten passen auf dieses Schiff!",
+    max_players_error: "Nicht mehr als {maxPlayers} Piraten passen auf dieses Schiff!",
     duplicate_names_error: "Jeder Pirat braucht seinen eigenen Namen!",
-    max_players_add_error: "Das Schiff ist voll! Maximal 8 Piraten erlaubt!",
+    max_players_add_error: "Das Schiff ist voll! Maximal {maxPlayers} Piraten erlaubt!",
     invalid_number_error: "{playerName} muss gültige Zahlen für alle Felder eingeben!",
     whole_numbers_error: "{playerName} kann nur ganze Zahlen verwenden, keine halben Sachen!",
     non_negative_error: "{playerName} kann keine negativen Zahlen verwenden!",
@@ -556,6 +560,15 @@ const deTranslation: Translation = {
     ios_step_3: "3. Tippen Sie auf 'Hinzufügen' zur Bestätigung",
     close_button: "Schließen",
     
+    // Player setup
+    name_crew_title: "Mannschaft Benennen",
+    player_placeholder: "Piratenname",
+    add_pirate_button: "Pirat hinzufügen",
+    clear_all_button: "Alle Löschen",
+    set_sail_button: "In See stechen!",
+    back_to_port_button: "Zurück zum Hafen",
+    game_options_title: "Spieloptionen",
+    
     // New game modal
     new_game_modal_title: "Neues Spiel Starten?",
     new_game_modal_message: "Aktuelles Spiel läuft. Neues Spiel starten?",
@@ -571,6 +584,11 @@ const deTranslation: Translation = {
     scoring_mode_normal_desc: "Traditionelle Skull King: Null-Gebot = 10×Runde, korrektes Gebot = 20×Stiche + Bonus",
     scoring_mode_rascal: "Schurken-Wertung",
     scoring_mode_rascal_desc: "Ausgeglichene Wertung: 10 Pkt × ausgeteilte Karten. Direkttreffer = voll, um 1 daneben = halb, um 2+ daneben = null",
+    scoring_mode_description: "Normal = exakte Gebotswertung, Schurke = proportionale Wertung",
+    other_options_label: "Weitere Optionen",
+    expansion_mode_title: "Erweiterungspaket",
+    expansion_mode_desc: "Fügt 9-Spieler-Unterstützung, Stachelrochen, Davy Jones und neue Bonuskarten hinzu",
+    expansion_mode_label: "Mit Erweiterungspaket spielen (erlaubt 9 Spieler)",
     
     // Bonus calculator
     calc_button: "Rechner",
@@ -628,14 +646,6 @@ const esTranslation: Translation = {
     why_choose_title: "¿Por Qué Elegir Nuestro Contador Skull King?",
     why_choose_description: "Ya sea que juegues Skull King en casa, en una noche de juegos o en un torneo, nuestra tarjeta digital hace que la puntuación sea sin esfuerzo. Rastrea apuestas, bazas ganadas, puntos de bonificación y ve cómo se calculan automáticamente tus puntos de Skull King.",
     
-    // Player setup
-    name_crew_title: "Nombrad a Vuestra Tripulación",
-    add_pirate_button: "Añadir Pirata",
-    clear_all_button: "Borrar Todo",
-    set_sail_button: "¡Zarpar!",
-    back_to_port_button: "Volver al Puerto",
-    player_placeholder: "Pirata",
-    
     // Game section
     current_bounty_title: "Botín Actual",
     read_scores_button: "🔊 Leer Puntos",
@@ -674,9 +684,9 @@ const esTranslation: Translation = {
     
     // Error messages
     min_players_error: "¡Necesitáis al menos 2 piratas para jugar!",
-    max_players_error: "¡No más de 8 piratas caben en este barco!",
+    max_players_error: "¡No más de {maxPlayers} piratas caben en este barco!",
     duplicate_names_error: "¡Cada pirata necesita su propio nombre!",
-    max_players_add_error: "¡El barco está lleno! Máximo 8 piratas permitidos!",
+    max_players_add_error: "¡El barco está lleno! Máximo {maxPlayers} piratas permitidos!",
     invalid_number_error: "¡{playerName} debe ingresar números válidos para todos los campos!",
     whole_numbers_error: "¡{playerName} solo puede usar números enteros, sin medias tintas!",
     non_negative_error: "¡{playerName} no puede usar números negativos!",
@@ -755,6 +765,15 @@ const esTranslation: Translation = {
     ios_step_3: "3. Toca 'Añadir' para confirmar",
     close_button: "Cerrar",
     
+    // Player setup
+    name_crew_title: "Nombra Tu Tripulación",
+    player_placeholder: "Nombre de Pirata",
+    add_pirate_button: "Añadir Pirata",
+    clear_all_button: "Borrar Todo",
+    set_sail_button: "¡Zarpar!",
+    back_to_port_button: "Volver al Puerto",
+    game_options_title: "Opciones de Juego",
+    
     // New game modal
     new_game_modal_title: "¿Comenzar Nuevo Juego?",
     new_game_modal_message: "Juego actual en progreso. ¿Comenzar un nuevo juego?",
@@ -770,6 +789,11 @@ const esTranslation: Translation = {
     scoring_mode_normal_desc: "Skull King tradicional: Apuesta cero = 10×ronda, apuesta correcta = 20×bazas + bonus",
     scoring_mode_rascal: "Puntuación Pícaro",
     scoring_mode_rascal_desc: "Puntuación equilibrada: 10 pts × cartas repartidas. Acierto = completo, fallo por 1 = mitad, fallo por 2+ = cero",
+    scoring_mode_description: "Normal = puntuación de apuesta exacta, Pícaro = puntuación proporcional",
+    other_options_label: "Otras Opciones",
+    expansion_mode_title: "Pack de Expansión",
+    expansion_mode_desc: "Añade soporte para 9 jugadores, Raya, Davy Jones y nuevas cartas de bonificación",
+    expansion_mode_label: "Jugar con Pack de Expansión (permite 9 jugadores)",
     
     // Bonus calculator
     calc_button: "Calc",

@@ -14,6 +14,7 @@
 
 // Game constants
 const MAX_PLAYERS = 8;
+const MAX_PLAYERS_EXPANSION = 9;
 
 // Data model interfaces
 type ScoringMode = 'normal' | 'rascal';
@@ -42,6 +43,8 @@ interface RoundData {
     };
     krakenPlayed?: boolean;
     whalePlayed?: boolean;
+    stingrayPlayed?: boolean;
+    davyJonesMonsters?: number;
     graybeardTricksWon?: number;
 }
 
@@ -50,6 +53,7 @@ interface GameStateData {
     rounds: RoundData[];
     currentRound: number;
     scoringMode: ScoringMode;
+    expansionMode?: boolean;
     graybeardActive?: boolean;
 }
 
@@ -208,6 +212,37 @@ class GameViewModel {
         localStorage.setItem('skull-king-scoring-mode', mode);
     }
 
+    // Expansion Mode Management
+    getExpansionMode(): boolean {
+        // Check saved preference
+        const savedPreference = localStorage.getItem('skull-king-expansion-mode');
+        if (savedPreference === 'true') {
+            return true;
+        } else if (savedPreference === 'false') {
+            return false;
+        }
+        // Default to false
+        return false;
+    }
+
+    setExpansionMode(enabled: boolean): void {
+        // If disabling expansion mode, remove excess players
+        if (!enabled) {
+            while (this.tempPlayers.length > MAX_PLAYERS) {
+                this.tempPlayers.pop();
+            }
+        }
+        
+        this.state.expansionMode = enabled;
+        this.saveState();
+        // Also save as a separate preference
+        localStorage.setItem('skull-king-expansion-mode', enabled.toString());
+    }
+
+    isExpansionMode(): boolean {
+        return this.getExpansionMode();
+    }
+
     // Graybeard Management
     isGraybeardActive(): boolean {
         return this.state.graybeardActive === true;
@@ -268,8 +303,10 @@ class GameViewModel {
             return this.t('min_players_error');
         }
 
-        if (validNames.length > MAX_PLAYERS) {
-            return this.t('max_players_error');
+        // Check max players based on expansion mode
+        const maxPlayers = this.getExpansionMode() ? MAX_PLAYERS_EXPANSION : MAX_PLAYERS;
+        if (validNames.length > maxPlayers) {
+            return this.t('max_players_error', { maxPlayers: maxPlayers.toString() });
         }
 
         // Check for duplicate names
@@ -282,6 +319,7 @@ class GameViewModel {
         this.state.players = validNames.map(name => ({ name: name.trim(), score: 0 }));
         this.state.rounds = [];
         this.state.currentRound = 1;
+        this.state.expansionMode = this.getExpansionMode();
         // Automatically activate Graybeard for 2-player games
         this.state.graybeardActive = validNames.length === 2;
         this.saveState();
@@ -1016,8 +1054,10 @@ class SkullKingGame {
 
     private handleAddPlayer(): void {
         const tempPlayers = this.viewModel.getTempPlayers();
-        if (tempPlayers.length >= MAX_PLAYERS) {
-            this.showError(this.t('max_players_add_error'));
+        const maxPlayers = this.viewModel.getExpansionMode() ? MAX_PLAYERS_EXPANSION : MAX_PLAYERS;
+        
+        if (tempPlayers.length >= maxPlayers) {
+            this.showError(this.t('max_players_add_error', { maxPlayers: maxPlayers.toString() }));
             return;
         }
         this.viewModel.addTempPlayer();
@@ -1037,8 +1077,9 @@ class SkullKingGame {
         // Check if Enter key was pressed
         if (event.key === 'Enter') {
             const tempPlayers = this.viewModel.getTempPlayers();
+            const maxPlayers = this.viewModel.getExpansionMode() ? MAX_PLAYERS_EXPANSION : MAX_PLAYERS;
             // Only add new player if we're on the last input and under the limit
-            if (index === tempPlayers.length - 1 && tempPlayers.length < MAX_PLAYERS) {
+            if (index === tempPlayers.length - 1 && tempPlayers.length < maxPlayers) {
                 this.handleAddPlayer();
             }
         }
@@ -1118,6 +1159,13 @@ class SkullKingGame {
         const scoringModeInput = document.getElementById(`scoring-${scoringMode}`) as HTMLInputElement;
         if (scoringModeInput) {
             scoringModeInput.checked = true;
+        }
+        
+        // Restore expansion mode selection
+        const expansionMode = this.viewModel.getExpansionMode();
+        const expansionModeCheckbox = document.getElementById('expansion-mode-checkbox') as HTMLInputElement;
+        if (expansionModeCheckbox) {
+            expansionModeCheckbox.checked = expansionMode;
         }
     }
 
@@ -1232,9 +1280,10 @@ class SkullKingGame {
             </div>
         `).join('');
 
-        // Hide/show Add Pirate button based on player count
+        // Hide/show Add Pirate button based on player count and expansion mode
         if (addPlayerBtn) {
-            if (tempPlayers.length >= MAX_PLAYERS) {
+            const maxPlayers = this.viewModel.getExpansionMode() ? MAX_PLAYERS_EXPANSION : MAX_PLAYERS;
+            if (tempPlayers.length >= maxPlayers) {
                 addPlayerBtn.style.display = 'none';
             } else {
                 addPlayerBtn.style.display = 'inline-block';
@@ -1802,6 +1851,12 @@ class SkullKingGame {
     // Public API for HTML event handlers
     public updateTempPlayer(index: number, value: string): void {
         this.viewModel.updateTempPlayer(index, value);
+    }
+
+    public handleExpansionModeToggle(enabled: boolean): void {
+        this.viewModel.setExpansionMode(enabled);
+        // Update player inputs to reflect new max player limit
+        this.updatePlayerInputs();
     }
 
     public removePlayer(index: number): void {

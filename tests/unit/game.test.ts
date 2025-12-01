@@ -42,12 +42,13 @@ beforeEach(() => {
         <input id="keep-names-checkbox" type="checkbox" />
     `;
     
-    // Mock localStorage
+    // Mock localStorage with actual storage
+    const storage: { [key: string]: string } = {};
     const localStorageMock = {
-        getItem: jest.fn(),
-        setItem: jest.fn(),
-        removeItem: jest.fn(),
-        clear: jest.fn(),
+        getItem: jest.fn((key: string) => storage[key] || null),
+        setItem: jest.fn((key: string, value: string) => { storage[key] = value; }),
+        removeItem: jest.fn((key: string) => { delete storage[key]; }),
+        clear: jest.fn(() => { Object.keys(storage).forEach(key => delete storage[key]); }),
     };
     Object.defineProperty(window, 'localStorage', {
         value: localStorageMock,
@@ -1472,8 +1473,9 @@ describe('SkullKingGame Score Announcement', () => {
     });
 
     test('should handle score announcement with no active game', () => {
-        // Create fresh instance with no game
+        // Create fresh instance with no game - clear any state first
         const freshInstance = new window.SkullKingGame();
+        freshInstance.viewModel.clearState();
         
         const announcement = freshInstance.viewModel.createScoreAnnouncement();
         
@@ -2264,7 +2266,7 @@ describe('SkullKingGame Translation System', () => {
 (global as any).i18n.setLanguage('en');
         
         expect((global as any).i18n.translate('min_players_error')).toBe('Ye need at least 2 pirates to play, ye scurvy dog!');
-        expect((global as any).i18n.translate('max_players_error')).toBe('No more than 8 pirates can fit on this ship!');
+        expect((global as any).i18n.translate('max_players_error', { maxPlayers: '8' })).toBe('No more than 8 pirates can fit on this ship!');
         expect((global as any).i18n.translate('round_label')).toBe('Round');
     });
 
@@ -3403,6 +3405,207 @@ describe('Graybeard 2-Player Mode', () => {
             
             const gameState = viewModel.getGameState();
             expect(gameState.rounds[0].graybeardTricksWon).toBe(0);
+        });
+    });
+});
+
+describe('Expansion Pack - Mode Toggle', () => {
+    let gameInstance: any;
+
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+    });
+
+    describe('Expansion Mode Toggle', () => {
+        test('should default to expansion mode disabled', () => {
+            expect(gameInstance.viewModel.isExpansionMode()).toBe(false);
+        });
+
+        test('should enable expansion mode when toggled', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            expect(gameInstance.viewModel.isExpansionMode()).toBe(true);
+        });
+
+        test('should disable expansion mode when toggled off', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setExpansionMode(false);
+            expect(gameInstance.viewModel.isExpansionMode()).toBe(false);
+        });
+
+        test('should persist expansion mode to localStorage', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            expect(localStorage.setItem).toHaveBeenCalledWith(
+                'skull-king-expansion-mode',
+                'true'
+            );
+        });
+
+        test('should load expansion mode from localStorage on init', () => {
+            // Mock localStorage returning expansion mode enabled
+            (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+                if (key === 'skull-king-expansion-mode') return 'true';
+                return null;
+            });
+            
+            // Create new instance which should load from localStorage
+            const newGame = new window.SkullKingGame();
+            expect(newGame.viewModel.isExpansionMode()).toBe(true);
+        });
+
+        test('should handle invalid localStorage values gracefully', () => {
+            (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+                if (key === 'skull-king-expansion-mode') return 'invalid';
+                return null;
+            });
+            
+            const newGame = new window.SkullKingGame();
+            expect(newGame.viewModel.isExpansionMode()).toBe(false);
+        });
+
+        test('should save expansion mode in game state', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            const gameState = gameInstance.viewModel.getGameState();
+            expect(gameState.expansionMode).toBe(true);
+        });
+    });
+
+    describe('Player Count Validation with Expansion Mode', () => {
+        test('should allow 8 players in standard mode', () => {
+            gameInstance.viewModel.setExpansionMode(false);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+            
+            const error = gameInstance.viewModel.validateAndStartGame();
+            expect(error).toBeNull();
+        });
+
+        test('should reject 9 players in standard mode', () => {
+            gameInstance.viewModel.setExpansionMode(false);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9']);
+            
+            const error = gameInstance.viewModel.validateAndStartGame();
+            expect(error).not.toBeNull();
+            expect(error).toContain('8');
+        });
+
+        test('should allow 9 players in expansion mode', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9']);
+            
+            const error = gameInstance.viewModel.validateAndStartGame();
+            expect(error).toBeNull();
+        });
+
+        test('should reject 10 players even in expansion mode', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10']);
+            
+            const error = gameInstance.viewModel.validateAndStartGame();
+            expect(error).not.toBeNull();
+            expect(error).toContain('9');
+        });
+
+        test('should still enforce minimum 2 players in expansion mode', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['Alice']);
+            
+            const error = gameInstance.viewModel.validateAndStartGame();
+            expect(error).not.toBeNull();
+            expect(error).toContain('2');
+        });
+    });
+
+    describe('Expansion Mode Persistence', () => {
+        test('should preserve expansion mode when starting new game', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            gameInstance.viewModel.startNewGame(true);
+            
+            expect(gameInstance.viewModel.isExpansionMode()).toBe(true);
+        });
+
+        test('should load expansion mode from saved game state', () => {
+            // Set up a game with expansion enabled
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            const savedState = gameInstance.viewModel.getGameState();
+            
+            // Mock localStorage to return the saved state
+            (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+                if (key === 'skullKingGameState') return JSON.stringify(savedState);
+                if (key === 'skull-king-expansion-mode') return 'true';
+                return null;
+            });
+            
+            // Create new instance (simulating page reload)
+            const reloadedGame = new window.SkullKingGame();
+            expect(reloadedGame.viewModel.isExpansionMode()).toBe(true);
+            
+            const gameState = reloadedGame.viewModel.getGameState();
+            expect(gameState.expansionMode).toBe(true);
+        });
+    });
+
+    describe('Backward Compatibility', () => {
+        test('should handle old game state without expansionMode field', () => {
+            const oldGameState = {
+                players: [
+                    { name: 'Alice', score: 50 },
+                    { name: 'Bob', score: 30 }
+                ],
+                rounds: [],
+                currentRound: 3,
+                scoringMode: 'normal'
+                // Note: no expansionMode field
+            };
+            
+            (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+                if (key === 'skullKingGameState') return JSON.stringify(oldGameState);
+                return null;
+            });
+            
+            const newGame = new window.SkullKingGame();
+            
+            // Should default to false for backward compatibility
+            expect(newGame.viewModel.isExpansionMode()).toBe(false);
+        });
+
+        test('should handle rounds without expansion fields', () => {
+            const oldGameState = {
+                players: [{ name: 'Alice', score: 20 }, { name: 'Bob', score: 10 }],
+                rounds: [{
+                    roundNumber: 1,
+                    playerData: [
+                        { playerName: 'Alice', bid: 1, actual: 1, bonus: 0, roundScore: 20 },
+                        { playerName: 'Bob', bid: 0, actual: 0, bonus: 0, roundScore: 10 }
+                    ],
+                    commentary: 'Test',
+                    krakenPlayed: false,
+                    whalePlayed: false
+                    // No stingrayPlayed or davyJonesMonsters
+                }],
+                currentRound: 2,
+                scoringMode: 'normal'
+            };
+            
+            (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+                if (key === 'skullKingGameState') return JSON.stringify(oldGameState);
+                return null;
+            });
+            
+            const newGame = new window.SkullKingGame();
+            const gameState = newGame.viewModel.getGameState();
+            
+            // Should load successfully without errors
+            expect(gameState.rounds.length).toBe(1);
+            expect(gameState.rounds[0].stingrayPlayed).toBeUndefined();
+            expect(gameState.rounds[0].davyJonesMonsters).toBeUndefined();
         });
     });
 });
