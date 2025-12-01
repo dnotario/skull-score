@@ -1531,6 +1531,42 @@ body.game-active .landing-only {
     transform: scale(1);
 }
 
+.bonus-tabs {
+    display: flex;
+    border-bottom: 2px solid #d4af37;
+    background: rgba(139, 69, 19, 0.05);
+}
+
+.bonus-tab {
+    flex: 1;
+    padding: 0.6rem 0.5rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #654321;
+    font-weight: bold;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bonus-tab:hover {
+    background: rgba(139, 69, 19, 0.1);
+}
+
+.bonus-tab.active {
+    border-bottom-color: #8B4513;
+    background: rgba(139, 69, 19, 0.15);
+}
+
+.bonus-tab-panel {
+    display: none;
+}
+
+.bonus-tab-panel.active {
+    display: block;
+}
+
 .bonus-modal-header {
     display: flex;
     justify-content: space-between;

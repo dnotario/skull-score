@@ -2366,14 +2366,10 @@ class SkullKingGame {
         this.updateBonusCountersUI();
         this.updateExpansionBonusCountersUI();
         
-        // Show/hide expansion section based on mode
-        const expansionSection = document.getElementById('expansion-bonus-section');
-        if (expansionSection) {
-            if (this.viewModel.isExpansionMode()) {
-                expansionSection.classList.remove('hidden');
-            } else {
-                expansionSection.classList.add('hidden');
-            }
+        // Show/hide expansion tab based on mode
+        const expansionTab = document.getElementById('bonus-tab-expansion');
+        if (expansionTab) {
+            expansionTab.style.display = this.viewModel.isExpansionMode() ? '' : 'none';
         }
         
         // Show modal
@@ -2425,6 +2421,17 @@ class SkullKingGame {
             modal.classList.remove('active');
         }
         // Don't clear counters on close - keep them for persistence
+    }
+
+    public switchBonusTab(tabId: string): void {
+        // Update tab buttons
+        document.querySelectorAll('.bonus-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.getAttribute('data-tab') === tabId);
+        });
+        // Update tab panels
+        document.querySelectorAll('.bonus-tab-panel').forEach(panel => {
+            panel.classList.toggle('active', panel.id === tabId);
+        });
     }
 
     // Expansion bonus calculation methods

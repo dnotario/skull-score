@@ -378,8 +378,14 @@
                 <button class="close-button" onclick="game.closeBonusModal()" aria-label="Close bonus calculator">×</button>
             </div>
             
+            <div class="bonus-tabs">
+                <button class="bonus-tab active" data-tab="tab-14s" onclick="game.switchBonusTab('tab-14s')">14s</button>
+                <button class="bonus-tab" data-tab="tab-captures" onclick="game.switchBonusTab('tab-captures')">Captures</button>
+                <button class="bonus-tab" id="bonus-tab-expansion" data-tab="tab-expansion" onclick="game.switchBonusTab('tab-expansion')" style="display:none;">Expansion</button>
+            </div>
+            
             <div class="bonus-modal-content">
-                <div class="bonus-category">
+                <div class="bonus-tab-panel active" id="tab-14s">
                     <div class="bonus-item">
                         <span class="bonus-item-label" id="bonus-label-standard-14" data-i18n="bonus_label_standard_14">Yellow/Purple/Green 14s</span>
                         <div class="bonus-counter">
@@ -400,7 +406,7 @@
                     </div>
                 </div>
                 
-                <div class="bonus-category">
+                <div class="bonus-tab-panel" id="tab-captures">
                     <div class="bonus-item">
                         <span class="bonus-item-label" id="bonus-label-mermaid-pirate" data-i18n="bonus_label_mermaid_pirate">Mermaids captured by Pirates</span>
                         <div class="bonus-counter">
@@ -439,9 +445,8 @@
                     </div>
                 </div>
                 
-                <!-- Expansion Pack Bonuses (hidden when not in expansion mode) -->
-                <div id="expansion-bonus-section" class="bonus-category expansion-bonuses hidden">
-                    <div class="expansion-header" id="expansion-bonuses-header" data-i18n="expansion_bonuses_header">⚓ Expansion Bonuses</div>
+                <!-- Expansion Pack Bonuses Tab -->
+                <div class="bonus-tab-panel" id="tab-expansion">
                     <div class="bonus-item">
                         <span class="bonus-item-label" id="bonus-label-seven" data-i18n="bonus_label_seven">7s Captured (Penalty)</span>
                         <div class="bonus-counter">

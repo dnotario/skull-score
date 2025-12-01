@@ -3920,18 +3920,18 @@ describe('Expansion Pack Bonus Calculator - Phase 2', () => {
     });
 
     describe('Expansion Bonus UI Visibility', () => {
-        test('should start with expansion section hidden in HTML', () => {
-            // Verify the HTML default state - expansion section should have hidden class
+        test('should start with expansion tab hidden in HTML', () => {
+            // Verify the HTML default state - expansion tab button should be hidden
             // This tests that the HTML template has the correct initial state
-            const html = `<div id="expansion-bonus-section" class="bonus-category expansion-bonuses hidden"></div>`;
+            const html = `<button id="bonus-tab-expansion" style="display:none;">Expansion</button>`;
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const section = doc.getElementById('expansion-bonus-section');
+            const tab = doc.getElementById('bonus-tab-expansion') as HTMLElement;
             
-            expect(section?.classList.contains('hidden')).toBe(true);
+            expect(tab?.style.display).toBe('none');
         });
 
-        test('should keep expansion section hidden when game started WITHOUT expansion mode', () => {
+        test('should keep expansion tab hidden when game started WITHOUT expansion mode', () => {
             // Start a fresh game WITHOUT expansion mode
             const freshGame = new window.SkullKingGame();
             freshGame.viewModel.startNewGame(false);
@@ -3942,11 +3942,11 @@ describe('Expansion Pack Bonus Calculator - Phase 2', () => {
             // Verify expansion mode is off
             expect(freshGame.viewModel.isExpansionMode()).toBe(false);
             
-            // Create the expansion section element for testing
-            const expansionSection = document.createElement('div');
-            expansionSection.id = 'expansion-bonus-section';
-            expansionSection.classList.add('hidden');
-            document.body.appendChild(expansionSection);
+            // Create the expansion tab button for testing
+            const expansionTab = document.createElement('button');
+            expansionTab.id = 'bonus-tab-expansion';
+            expansionTab.style.display = 'none';
+            document.body.appendChild(expansionTab);
             
             // Create bid/actual inputs (required for openBonusModal)
             const bidInput = document.createElement('input');
@@ -3959,13 +3959,13 @@ describe('Expansion Pack Bonus Calculator - Phase 2', () => {
             actualInput.value = '1';
             document.body.appendChild(actualInput);
             
-            // Open bonus modal - should keep expansion section hidden
+            // Open bonus modal - should keep expansion tab hidden
             freshGame.openBonusModal(0);
             
-            expect(expansionSection.classList.contains('hidden')).toBe(true);
+            expect(expansionTab.style.display).toBe('none');
             
             // Clean up
-            document.body.removeChild(expansionSection);
+            document.body.removeChild(expansionTab);
             document.body.removeChild(bidInput);
             document.body.removeChild(actualInput);
         });
@@ -3984,11 +3984,11 @@ describe('Expansion Pack Bonus Calculator - Phase 2', () => {
             // Verify expansion mode is off (state should override localStorage)
             expect(freshGame.viewModel.isExpansionMode()).toBe(false);
             
-            // Create the expansion section element for testing
-            const expansionSection = document.createElement('div');
-            expansionSection.id = 'expansion-bonus-section';
-            expansionSection.classList.add('hidden');
-            document.body.appendChild(expansionSection);
+            // Create the expansion tab button for testing
+            const expansionTab = document.createElement('button');
+            expansionTab.id = 'bonus-tab-expansion';
+            expansionTab.style.display = 'none';
+            document.body.appendChild(expansionTab);
             
             // Create bid/actual inputs
             const bidInput = document.createElement('input');
@@ -4001,23 +4001,23 @@ describe('Expansion Pack Bonus Calculator - Phase 2', () => {
             actualInput.value = '1';
             document.body.appendChild(actualInput);
             
-            // Open bonus modal - should keep expansion section hidden
+            // Open bonus modal - should keep expansion tab hidden
             freshGame.openBonusModal(0);
             
-            expect(expansionSection.classList.contains('hidden')).toBe(true);
+            expect(expansionTab.style.display).toBe('none');
             
             // Clean up
-            document.body.removeChild(expansionSection);
+            document.body.removeChild(expansionTab);
             document.body.removeChild(bidInput);
             document.body.removeChild(actualInput);
         });
 
-        test('should show expansion section when game started WITH expansion mode', () => {
-            // Create the expansion section element for testing
-            const expansionSection = document.createElement('div');
-            expansionSection.id = 'expansion-bonus-section';
-            expansionSection.classList.add('hidden');
-            document.body.appendChild(expansionSection);
+        test('should show expansion tab when game started WITH expansion mode', () => {
+            // Create the expansion tab button for testing
+            const expansionTab = document.createElement('button');
+            expansionTab.id = 'bonus-tab-expansion';
+            expansionTab.style.display = 'none';
+            document.body.appendChild(expansionTab);
             
             // Create bid/actual inputs (required for openBonusModal)
             const bidInput = document.createElement('input');
@@ -4032,23 +4032,23 @@ describe('Expansion Pack Bonus Calculator - Phase 2', () => {
             
             gameInstance.viewModel.setExpansionMode(true);
             
-            // Open bonus modal for player 0 - this should show the expansion section
+            // Open bonus modal for player 0 - this should show the expansion tab
             gameInstance.openBonusModal(0);
             
-            expect(expansionSection.classList.contains('hidden')).toBe(false);
+            expect(expansionTab.style.display).toBe('');
             
             // Clean up
-            document.body.removeChild(expansionSection);
+            document.body.removeChild(expansionTab);
             document.body.removeChild(bidInput);
             document.body.removeChild(actualInput);
         });
 
-        test('should keep expansion section hidden when expansion mode is disabled', () => {
-            // Create the expansion section element for testing
-            const expansionSection = document.createElement('div');
-            expansionSection.id = 'expansion-bonus-section';
-            expansionSection.classList.add('hidden');
-            document.body.appendChild(expansionSection);
+        test('should keep expansion tab hidden when expansion mode is disabled', () => {
+            // Create the expansion tab button for testing
+            const expansionTab = document.createElement('button');
+            expansionTab.id = 'bonus-tab-expansion';
+            expansionTab.style.display = 'none';
+            document.body.appendChild(expansionTab);
             
             // Create bid/actual inputs (required for openBonusModal)
             const bidInput = document.createElement('input');
@@ -4066,10 +4066,10 @@ describe('Expansion Pack Bonus Calculator - Phase 2', () => {
             // Open bonus modal for player 0
             gameInstance.openBonusModal(0);
             
-            expect(expansionSection.classList.contains('hidden')).toBe(true);
+            expect(expansionTab.style.display).toBe('none');
             
             // Clean up
-            document.body.removeChild(expansionSection);
+            document.body.removeChild(expansionTab);
             document.body.removeChild(bidInput);
             document.body.removeChild(actualInput);
         });
