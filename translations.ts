@@ -26,6 +26,7 @@ interface Translation {
     feature_calculator: string;
     feature_commentary: string;
     feature_audio: string;
+    feature_expansion: string;
     feature_saving: string;
     start_button: string;
     why_choose_title: string;
@@ -237,6 +238,7 @@ const enTranslation: Translation = {
     landing_subtitle: "Perfect Skull King Scoring Solution",
     feature_mobile: "📱 Mobile Skull King Scorecard - Works on phones, tablets, and computers",
     feature_calculator: "🧮 Automatic Score Calculator - No more manual Skull King scoring errors",
+    feature_expansion: "🏴‍☠️ Full Expansion Support - 9 players, Graybeard, sea monsters, and expansion bonuses",
     feature_commentary: "🦜 Pirate Commentary - Entertaining feedback on your Skull King gameplay",
     feature_audio: "🔊 Audio Score Reader - Hear your Skull King scores announced",
     feature_saving: "💾 Game State Saving - Never lose your Skull King scoring progress",
@@ -450,6 +452,7 @@ const deTranslation: Translation = {
     landing_subtitle: "Perfekte Skull King Wertungslösung",
     feature_mobile: "📱 Mobile Skull King Punktekarte - Funktioniert auf Handys, Tablets und Computern",
     feature_calculator: "🧮 Automatischer Punkterechner - Keine manuellen Skull King Wertungsfehler mehr",
+    feature_expansion: "🏴‍☠️ Volle Erweiterung - 9 Spieler, Graybeard, Seemonster und Erweiterungsboni",
     feature_commentary: "🦜 Piratenkommentare - Unterhaltsames Feedback zu Ihrem Skull King Spiel",
     feature_audio: "🔊 Audio Punkteansage - Hören Sie Ihre Skull King Punkte",
     feature_saving: "💾 Spielstand Speichern - Verlieren Sie nie Ihren Skull King Fortschritt",
@@ -663,6 +666,7 @@ const esTranslation: Translation = {
     landing_subtitle: "Solución Perfecta de Puntuación Skull King",
     feature_mobile: "📱 Tarjeta Skull King Móvil - Funciona en teléfonos, tablets y computadoras",
     feature_calculator: "🧮 Calculadora Automática - No más errores manuales de puntuación Skull King",
+    feature_expansion: "🏴‍☠️ Soporte Completo de Expansión - 9 jugadores, Graybeard, monstruos marinos y bonos de expansión",
     feature_commentary: "🦜 Comentarios Piratas - Retroalimentación entretenida sobre tu juego Skull King",
     feature_audio: "🔊 Lector de Audio - Escucha tus puntos de Skull King anunciados",
     feature_saving: "💾 Guardado del Estado - Nunca pierdas tu progreso de Skull King",

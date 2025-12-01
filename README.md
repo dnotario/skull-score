@@ -12,6 +12,14 @@ A pirate-themed web application for tracking scores in the Skull King card game,
 - **Data Persistence**: Game state saved to local storage
 - **Mobile Responsive**: Optimized for both desktop and mobile play
 
+### Expansion Pack Support
+- **9-Player Mode**: Enable expansion pack to support up to 9 players
+- **Graybeard Mode**: Automatic ghost player for 2-player games
+- **Sea Monster Tracking**: Track Kraken, White Whale, and Spotted Stingray plays
+- **Expansion Bonuses**: 7s (-5), 8s (+5), First Mate Con (+30), Davy Jones sea monsters (+20 each)
+- **Trick Discarding**: Handle Whale/Stingray tricks with no winner
+- **Dynamic Card Limits**: Automatic adjustment based on player count and expansion mode
+
 ### Pirate Experience
 - **Authentic Theme**: Complete pirate aesthetic with parchment backgrounds and nautical styling
 - **Intelligent Commentary System**: Dynamic pirate commentary with 100+ unique variants that analyzes gameplay
@@ -19,12 +27,12 @@ A pirate-themed web application for tracking scores in the Skull King card game,
 - **Animated Elements**: Bobbing parrot icon, glowing golden borders, and smooth transitions
 
 ### Game Management
-- **Player Setup**: Add 2-8 players with custom names
+- **Player Setup**: Add 2-8 players with custom names (2-9 with expansion)
 - **Round Validation**: Input validation with helpful error messages
 - **Score History**: View all previous rounds with detailed breakdowns
 - **New Game Options**: Start fresh while optionally keeping player names
 - **Round Deletion**: Remove the last round if needed
-- **Bonus Calculator**: Interactive popup modal for calculating complex bonus points
+- **Bonus Calculator**: Interactive popup modal for calculating complex bonus points (including expansion bonuses)
 
 ## 🚀 Getting Started
 
@@ -213,7 +221,7 @@ The game features a sophisticated commentary system that provides contextual pir
 - **Frontend**: HTML5, CSS3, TypeScript
 - **Styling**: Custom CSS with pirate theme and animations
 - **Storage**: Local Storage for game persistence
-- **Testing**: Jest with comprehensive unit tests (110+ tests)
+- **Testing**: Jest with comprehensive unit tests (125+ tests)
 - **Build**: TypeScript compiler with automated builds to `build/runFiles/`
 - **Analytics**: Google Analytics 4 integration
 - **Architecture**: Pure function scoring logic for testability
@@ -244,20 +252,24 @@ This app is a **score keeper**, not a full digital implementation of Skull King:
 
 ### What's Included
 - Complete scoring calculation for both Traditional and Rascal modes
+- Full expansion pack support (9 players, Graybeard, expansion bonuses)
+- Sea monster tracking (Kraken, White Whale, Spotted Stingray)
+- Interactive bonus calculator with all bonus types including expansion
 - Manual bonus point entry with validation
 - Full round and game state management
 - Input validation ensuring game rules are followed
 
 ### What's NOT Included
 - Card tracking or automatic bonus calculation
-- Expansion content (Kraken, White Whale, Loot cards, pirate abilities)
-- Game variants (two-player mode, alternative round structures)
-- Automatic special card bonus calculation
+- Optional scoring variants (Cannonball/Grapeshot for Rascal mode)
+- Alternative round structures (only standard 10-round games)
+- Pirate abilities tracking (special powers from expansion)
 
-Players must manually calculate bonus points for:
+Players use the bonus calculator to tally points for:
 - Number 14 cards (+10 for standard suits, +20 for black)
 - Mermaid captures (+20 for Pirates, +40 for Skull King)
 - Skull King captures (+30 for Pirates)
+- Expansion bonuses: 7s (-5), 8s (+5), First Mate Con (+30), Davy Jones (+20 per sea monster)
 
 ## 🎨 Design Philosophy
 
