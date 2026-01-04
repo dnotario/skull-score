@@ -647,8 +647,7 @@ input[type="text"]:focus {
     gap: 0.5rem;
     justify-content: center;
     margin: 1rem 0;
-    flex-wrap: nowrap;
-    white-space: nowrap;
+    flex-wrap: wrap;
 }
 
 .expansion-checkbox {
@@ -673,6 +672,23 @@ input[type="text"]:focus {
     user-select: none;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    white-space: normal;
+}
+
+/* Mobile: ensure checkboxes wrap text properly */
+@media (max-width: 480px) {
+    .expansion-indicators {
+        justify-content: flex-start;
+    }
+
+    .expansion-checkbox {
+        max-width: 48%;
+        font-size: 0.7rem;
+    }
+
+    .expansion-checkbox span {
+        line-height: 1.2;
+    }
 }
 
 .round-expansion-icons {
