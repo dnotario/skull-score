@@ -145,7 +145,6 @@ interface Translation {
     // Footer
     disclaimer_title: string;
     disclaimer_text_1: string;
-    disclaimer_text_2: string;
     feedback_text: string;
     
     // PWA Install
@@ -350,7 +349,6 @@ const enTranslation: Translation = {
     // Footer
     disclaimer_title: "Disclaimer:",
     disclaimer_text_1: "This website is an independent fan-created score keeper for the Skull King card game. It is not affiliated with, endorsed by, or connected to Grandpa Beck's Games, the official publisher of Skull King. Skull King is a trademark of Grandpa Beck's Games.",
-    disclaimer_text_2: "This tool is provided for educational and entertainment purposes to help players track their game scores.",
     feedback_text: "For feedback, suggestions, or bug reports, contact:",
     
     // PWA Install
@@ -564,7 +562,6 @@ const deTranslation: Translation = {
     // Footer
     disclaimer_title: "Hinweis:",
     disclaimer_text_1: "Diese Website ist ein unabhängiger, von Fans erstellter Punktezähler für das Skull King Kartenspiel. Sie ist nicht mit Grandpa Beck's Games, dem offiziellen Herausgeber von Skull King, verbunden oder von diesem unterstützt. Skull King ist eine Marke von Grandpa Beck's Games.",
-    disclaimer_text_2: "Dieses Tool wird für Bildungs- und Unterhaltungszwecke bereitgestellt, um Spielern bei der Verfolgung ihrer Spielpunkte zu helfen.",
     feedback_text: "Für Feedback, Vorschläge oder Fehlerberichte kontaktieren Sie:",
     
     // PWA Install
@@ -778,7 +775,6 @@ const esTranslation: Translation = {
     // Footer
     disclaimer_title: "Aviso:",
     disclaimer_text_1: "Este sitio web es un contador de puntos creado por fans independientes para el juego de cartas Skull King. No está afiliado, respaldado o conectado con Grandpa Beck's Games, el editor oficial de Skull King. Skull King es una marca registrada de Grandpa Beck's Games.",
-    disclaimer_text_2: "Esta herramienta se proporciona con fines educativos y de entretenimiento para ayudar a los jugadores a rastrear sus puntuaciones.",
     feedback_text: "Para comentarios, sugerencias o informes de errores, contacte:",
     
     // PWA Install

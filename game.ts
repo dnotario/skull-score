@@ -2183,9 +2183,6 @@ class SkullKingGame {
         const disclaimerText1 = document.getElementById('disclaimer-text-1');
         if (disclaimerText1) disclaimerText1.textContent = this.t('disclaimer_text_1');
 
-        const disclaimerText2 = document.getElementById('disclaimer-text-2');
-        if (disclaimerText2) disclaimerText2.textContent = this.t('disclaimer_text_2');
-
         const feedbackText = document.getElementById('feedback-text');
         if (feedbackText) feedbackText.textContent = this.t('feedback_text');
     }
