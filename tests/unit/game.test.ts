@@ -3688,15 +3688,15 @@ describe('Expansion Pack - Mode Toggle', () => {
             expect(cardsRound8).toBe(8);
         });
 
-        test('expansion mode should use 89 cards total', () => {
+        test('expansion mode should use 84 cards total', () => {
             gameInstance.viewModel.setExpansionMode(true);
             gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
             gameInstance.viewModel.validateAndStartGame();
-            
-            // With 8 players and 89 cards, round 10 should give 10 cards each (80 needed, 89 available)
+
+            // With 8 players and 84 cards, round 10 should give 10 cards each (80 needed, 84 available)
             const cardsRound10 = gameInstance.viewModel.getCardsPerRound(10, 8);
             expect(cardsRound10).toBe(10);
-            
+
             // Round 9 should also give full 9 cards
             const cardsRound9 = gameInstance.viewModel.getCardsPerRound(9, 8);
             expect(cardsRound9).toBe(9);
@@ -3707,12 +3707,12 @@ describe('Expansion Pack - Mode Toggle', () => {
             gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9']);
             gameInstance.viewModel.validateAndStartGame();
             
-            // With 9 players and 89 cards, round 10 needs 90 cards but only 89 available
-            // So round 10 should give 9 cards each (floor(89/9) = 9)
+            // With 9 players and 84 cards, round 10 needs 90 cards but only 84 available
+            // So round 10 should give 9 cards each (floor(84/9) = 9)
             const cardsRound10 = gameInstance.viewModel.getCardsPerRound(10, 9);
             expect(cardsRound10).toBe(9);
-            
-            // Round 9 should give full 9 cards (81 needed, 89 available)
+
+            // Round 9 should give full 9 cards (81 needed, 84 available)
             const cardsRound9 = gameInstance.viewModel.getCardsPerRound(9, 9);
             expect(cardsRound9).toBe(9);
         });
@@ -3732,7 +3732,7 @@ describe('Expansion Pack - Mode Toggle', () => {
             gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
             gameInstance.viewModel.validateAndStartGame();
             
-            // 8 players, round 10 needs 80 cards, 89 available - should work
+            // 8 players, round 10 needs 80 cards, 84 available - should work
             const cardsRound10 = gameInstance.viewModel.getCardsPerRound(10, 8);
             expect(cardsRound10).toBe(10);
         });
