@@ -610,13 +610,13 @@ class GameViewModel {
         return null; // Success
     }
 
-    removeLastRound(): { [playerName: string]: { bid: number; actual: number; bonus: number } } | null {
+    removeLastRound(): { playerData: { [playerName: string]: { bid: number; actual: number; bonus: number } }, trickLost: boolean, graybeardTricksWon: number } | null {
         if (this.state.rounds.length === 0) {
             return null;
         }
 
         const lastRound = this.state.rounds.pop()!;
-        
+
         // Revert scores from the removed round
         for (const playerData of lastRound.playerData) {
             const player = this.state.players.find(p => p.name === playerData.playerName);
@@ -647,7 +647,11 @@ class GameViewModel {
             };
         }
 
-        return result;
+        return {
+            playerData: result,
+            trickLost: lastRound.trickLost || false,
+            graybeardTricksWon: lastRound.graybeardTricksWon || 0
+        };
     }
 
 
@@ -1937,17 +1941,17 @@ class SkullKingGame {
 
         // Ensure the round inputs are visible for editing, even if game was complete
         this.showNewRoundInputs();
-        
+
         // Update UI to reflect the new game state (with last round removed)
         this.updateUI();
 
         // Populate the inputs with the removed round's data for editing
         const players = this.viewModel.getPlayers();
-        for (const [playerName, data] of Object.entries(lastRoundData)) {
+        for (const [playerName, data] of Object.entries(lastRoundData.playerData)) {
             // Find player index by name
             const playerIndex = players.findIndex((p: Player) => p.name === playerName);
             if (playerIndex === -1) continue;
-            
+
             const bidInput = document.getElementById(`bid-player-${playerIndex}`) as HTMLInputElement;
             const actualInput = document.getElementById(`actual-player-${playerIndex}`) as HTMLInputElement;
             const bonusButton = document.getElementById(`bonus-player-${playerIndex}`);
@@ -1965,11 +1969,25 @@ class SkullKingGame {
                     bonusValueEl.classList.add('no-bonus');
                 }
             }
-            
+
             // Update the computed score for this player
             this.updateRoundScoreInternalByIndex(playerIndex);
         }
-        
+
+        // Restore expansion card checkbox state
+        const trickLostCheckbox = document.getElementById('trick-lost') as HTMLInputElement;
+        if (trickLostCheckbox) {
+            trickLostCheckbox.checked = lastRoundData.trickLost;
+        }
+
+        // Restore Graybeard tricks input if Graybeard is active
+        if (this.viewModel.isGraybeardActive()) {
+            const graybeardInput = document.getElementById('graybeard-tricks') as HTMLInputElement;
+            if (graybeardInput) {
+                graybeardInput.value = lastRoundData.graybeardTricksWon.toString();
+            }
+        }
+
         // Scroll to the round inputs section for editing
         const roundInputsSection = document.getElementById('new-round');
         if (roundInputsSection) {

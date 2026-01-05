@@ -1097,9 +1097,11 @@ describe('SkullKingGame Update Last Round', () => {
         
         // Remove last round and get its data
         const removedRoundData = gameInstance.viewModel.removeLastRound();
-        
+
         // Verify the data is correct
-        expect(removedRoundData).toEqual(roundData);
+        expect(removedRoundData!.playerData).toEqual(roundData);
+        expect(removedRoundData!.trickLost).toBe(false);
+        expect(removedRoundData!.graybeardTricksWon).toBe(0);
         
         // Verify the round was actually removed
         const gameState = gameInstance.viewModel.getGameState();
@@ -1125,7 +1127,9 @@ describe('SkullKingGame Update Last Round', () => {
         
         // Remove last round and get its data
         const removedRoundData = gameInstance.viewModel.removeLastRound();
-        expect(removedRoundData).toEqual(roundData);
+        expect(removedRoundData!.playerData).toEqual(roundData);
+        expect(removedRoundData!.trickLost).toBe(false);
+        expect(removedRoundData!.graybeardTricksWon).toBe(0);
         
         // Verify the round was removed
         gameState = gameInstance.viewModel.getGameState();
@@ -1201,10 +1205,10 @@ describe('SkullKingGame Update Last Round', () => {
         
         const removedRoundData = gameInstance.viewModel.removeLastRound();
         expect(removedRoundData).toBeDefined();
-        expect(removedRoundData!['Alice'].bid).toBe(10); // Round 10 should have 10 cards
-        expect(removedRoundData!['Alice'].actual).toBe(10);
-        expect(removedRoundData!['Bob'].bid).toBe(0);
-        expect(removedRoundData!['Bob'].actual).toBe(0);
+        expect(removedRoundData!.playerData['Alice'].bid).toBe(10); // Round 10 should have 10 cards
+        expect(removedRoundData!.playerData['Alice'].actual).toBe(10);
+        expect(removedRoundData!.playerData['Bob'].bid).toBe(0);
+        expect(removedRoundData!.playerData['Bob'].actual).toBe(0);
         
         // Verify the round was removed and scores reverted
         expect(gameInstance.viewModel.state.rounds.length).toBe(9);
@@ -1254,10 +1258,10 @@ describe('SkullKingGame Update Last Round', () => {
         // Remove the last round for editing
         const removedRoundData = gameInstance.viewModel.removeLastRound();
         expect(removedRoundData).toBeDefined();
-        expect(removedRoundData!['Alice'].bid).toBe(1);
-        expect(removedRoundData!['Alice'].actual).toBe(1);
-        expect(removedRoundData!['Bob'].bid).toBe(0);
-        expect(removedRoundData!['Bob'].actual).toBe(0);
+        expect(removedRoundData!.playerData['Alice'].bid).toBe(1);
+        expect(removedRoundData!.playerData['Alice'].actual).toBe(1);
+        expect(removedRoundData!.playerData['Bob'].bid).toBe(0);
+        expect(removedRoundData!.playerData['Bob'].actual).toBe(0);
         
         // Verify scores were reverted and round was removed
         gameState = gameInstance.viewModel.getGameState();
@@ -2926,6 +2930,130 @@ describe('Expansion Card Support', () => {
         };
         error = gameInstance.viewModel.validateRoundData(twoTricksData, undefined, true);
         expect(error).toBeNull();
+    });
+
+    test('should restore trickLost state when editing round', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        gameInstance.viewModel.validateAndStartGame();
+
+        // Round 1: Add round with trickLost=true (0 tricks won + 1 lost = 1 expected)
+        const roundData = {
+            'Alice': { bid: 0, actual: 0, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 },
+            'Charlie': { bid: 0, actual: 0, bonus: 0 }
+        };
+
+        const error = gameInstance.viewModel.addRound(roundData, true, 0);
+        expect(error).toBeNull();
+
+        // Verify round was added with trickLost=true
+        let gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.rounds[0].trickLost).toBe(true);
+
+        // Remove the round for editing
+        const removedRoundData = gameInstance.viewModel.removeLastRound();
+        expect(removedRoundData).toBeDefined();
+        expect(removedRoundData!.trickLost).toBe(true);
+        expect(removedRoundData!.graybeardTricksWon).toBe(0);
+
+        // Verify round was removed
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(0);
+
+        // Re-add the round with trickLost (should validate correctly)
+        const readdError = gameInstance.viewModel.addRound(removedRoundData!.playerData, removedRoundData!.trickLost, removedRoundData!.graybeardTricksWon);
+        expect(readdError).toBeNull();
+
+        // Verify round was re-added with trickLost preserved
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.rounds[0].trickLost).toBe(true);
+    });
+
+    test('should restore Graybeard tricks when editing round', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+
+        // Verify Graybeard is active for 2-player game
+        expect(gameInstance.viewModel.isGraybeardActive()).toBe(true);
+
+        // Round 1: Add round with Graybeard winning 1 trick (Alice: 0, Bob: 0, Graybeard: 1 = 1 total)
+        const roundData = {
+            'Alice': { bid: 0, actual: 0, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        };
+
+        const error = gameInstance.viewModel.addRound(roundData, false, 1);
+        expect(error).toBeNull();
+
+        // Verify round was added with graybeardTricksWon=1
+        let gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.rounds[0].graybeardTricksWon).toBe(1);
+
+        // Remove the round for editing
+        const removedRoundData = gameInstance.viewModel.removeLastRound();
+        expect(removedRoundData).toBeDefined();
+        expect(removedRoundData!.trickLost).toBe(false);
+        expect(removedRoundData!.graybeardTricksWon).toBe(1);
+
+        // Verify round was removed
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(0);
+
+        // Re-add the round with Graybeard tricks (should validate correctly)
+        const readdError = gameInstance.viewModel.addRound(removedRoundData!.playerData, removedRoundData!.trickLost, removedRoundData!.graybeardTricksWon);
+        expect(readdError).toBeNull();
+
+        // Verify round was re-added with Graybeard tricks preserved
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.rounds[0].graybeardTricksWon).toBe(1);
+    });
+
+    test('should restore both trickLost and Graybeard tricks when editing round', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+
+        // Verify Graybeard is active
+        expect(gameInstance.viewModel.isGraybeardActive()).toBe(true);
+
+        // Round 2: Add round with both trickLost and Graybeard tricks
+        // 2 total tricks - 1 lost = 1 expected; Alice: 0, Bob: 0, Graybeard: 1 = 1 total
+        gameInstance.viewModel.state.currentRound = 2;
+        const roundData = {
+            'Alice': { bid: 0, actual: 0, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        };
+
+        const error = gameInstance.viewModel.addRound(roundData, true, 1);
+        expect(error).toBeNull();
+
+        // Verify round was added correctly
+        let gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.rounds[0].trickLost).toBe(true);
+        expect(gameState.rounds[0].graybeardTricksWon).toBe(1);
+
+        // Remove the round for editing
+        const removedRoundData = gameInstance.viewModel.removeLastRound();
+        expect(removedRoundData).toBeDefined();
+        expect(removedRoundData!.trickLost).toBe(true);
+        expect(removedRoundData!.graybeardTricksWon).toBe(1);
+
+        // Re-add the round (should validate correctly with both flags)
+        const readdError = gameInstance.viewModel.addRound(removedRoundData!.playerData, removedRoundData!.trickLost, removedRoundData!.graybeardTricksWon);
+        expect(readdError).toBeNull();
+
+        // Verify both flags were preserved
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.rounds[0].trickLost).toBe(true);
+        expect(gameState.rounds[0].graybeardTricksWon).toBe(1);
     });
 });
 
