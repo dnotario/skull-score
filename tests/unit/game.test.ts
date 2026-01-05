@@ -340,7 +340,7 @@ describe('SkullKingGame Player Limits', () => {
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBeNull(); // Should succeed
     });
-    
+
     test('should reject more than 8 players', () => {
         // Setup with 9 players (should fail)
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy']);
@@ -352,15 +352,15 @@ describe('SkullKingGame Player Limits', () => {
     test('should require minimum of 2 players', () => {
         // Setup with 1 player (should fail)
         gameInstance.viewModel.setTempPlayers(['Alice']);
-        
+
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBe('Ye need at least 2 pirates to play, ye scurvy dog!');
     });
-    
+
     test('should accept minimum of 2 players', () => {
         // Setup with exactly 2 players (should work)
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
-        
+
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBeNull(); // Should succeed
     });
@@ -650,7 +650,8 @@ describe('SkullKingGame Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBe("Alice's bid (2) can't exceed 1 tricks in round 1!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice's bid (2) can't exceed 1 tricks in round 1!");
         });
 
         test('should reject actual tricks exceeding current round number', () => {
@@ -661,7 +662,8 @@ describe('SkullKingGame Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBe("Alice can't win more than 1 tricks in round 1!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can't win more than 1 tricks in round 1!");
         });
 
         test('should accept valid bids and actuals within round limits', () => {
@@ -672,7 +674,7 @@ describe('SkullKingGame Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should validate different round numbers correctly', () => {
@@ -680,12 +682,12 @@ describe('SkullKingGame Validation', () => {
             expect(gameInstance.viewModel.addRound({
                 'Alice': { bid: 1, actual: 1, bonus: 0 },
                 'Bob': { bid: 0, actual: 0, bonus: 0 }
-            })).toBeNull();
+            })).toEqual({ status: 'ok' });
             
             expect(gameInstance.viewModel.addRound({
                 'Alice': { bid: 2, actual: 1, bonus: 0 },
                 'Bob': { bid: 0, actual: 1, bonus: 0 }
-            })).toBeNull();
+            })).toEqual({ status: 'ok' });
             
             // Now in round 3, max should be 3
             const validRoundData = {
@@ -715,8 +717,10 @@ describe('SkullKingGame Validation', () => {
                 'Bob': { bid: 1, actual: 1, bonus: 0 }
             };
             
-            expect(gameInstance.viewModel.addRound(validRoundData)).toBeNull();
-            expect(freshGame.viewModel.addRound(invalidRoundData)).toContain("Alice's bid (4) can't exceed 3 tricks in round 3");
+            expect(gameInstance.viewModel.addRound(validRoundData)).toEqual({ status: 'ok' });
+            const invalidResult = freshGame.viewModel.addRound(invalidRoundData);
+            expect(invalidResult.status).toBe('error');
+            expect(invalidResult.message).toContain("Alice's bid (4) can't exceed 3 tricks in round 3");
         });
     });
 
@@ -724,15 +728,17 @@ describe('SkullKingGame Validation', () => {
         test('should reject negative values', () => {
             // Test negative bid
             let result = gameInstance.testValidateSinglePlayerInput(-1, 1, 0, 'Alice');
-            expect(result).toBe("Alice can't use negative numbers, ye scallywag!");
-            
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can't use negative numbers, ye scallywag!");
+
             // Test negative actual
             result = gameInstance.testValidateSinglePlayerInput(1, -1, 0, 'Alice');
-            expect(result).toBe("Alice can't use negative numbers, ye scallywag!");
-            
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can't use negative numbers, ye scallywag!");
+
             // Test negative bonus (now allowed for house rule penalties)
             result = gameInstance.testValidateSinglePlayerInput(1, 1, -10, 'Alice');
-            expect(result).toBeNull(); // Should succeed - negative bonuses now allowed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed - negative bonuses now allowed
         });
         
         test('should reject round with bonus points when bid does not equal actual', () => {
@@ -741,10 +747,11 @@ describe('SkullKingGame Validation', () => {
                 'Alice': { bid: 1, actual: 0, bonus: 20 }, // Wrong: bonus with incorrect bid
                 'Bob': { bid: 0, actual: 1, bonus: 0 }
             };
-            
+
             const result = gameInstance.viewModel.addRound(invalidRoundData);
-            expect(result).toBe("Alice can't earn bonus points without bidding correctly (bid: 1, actual: 0)!");
-            
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can't earn bonus points without bidding correctly (bid: 1, actual: 0)!");
+
             // Verify the round was NOT added
             const gameState = gameInstance.viewModel.getGameState();
             expect(gameState.rounds.length).toBe(0);
@@ -759,7 +766,7 @@ describe('SkullKingGame Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(validRoundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
             
             // Verify the round was added
             const gameState = gameInstance.viewModel.getGameState();
@@ -775,40 +782,45 @@ describe('SkullKingGame Validation', () => {
 
         test('should reject NaN values', () => {
             const result = gameInstance.testValidateSinglePlayerInput(NaN, 1, 0, 'Alice');
-            expect(result).toBe("Alice needs valid numbers for all fields, ye landlubber!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice needs valid numbers for all fields, ye landlubber!");
         });
 
         test('should reject non-integer values', () => {
             const result = gameInstance.testValidateSinglePlayerInput(1.5, 1, 0, 'Alice');
-            expect(result).toBe("Alice can only use whole numbers, no half measures!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can only use whole numbers, no half measures!");
         });
 
         test('should accept high bonus values when prediction is correct', () => {
             // The game doesn't restrict bonus values as long as the prediction is correct
             const result = gameInstance.testValidateSinglePlayerInput(1, 1, 150, 'Alice');
-            expect(result).toBeNull(); // Should succeed - no upper limit on bonus
+            expect(result).toEqual({ status: 'ok' }); // Should succeed - no upper limit on bonus
         });
 
         test('should reject bonus points for incorrect predictions', () => {
             const result = gameInstance.testValidateSinglePlayerInput(1, 0, 10, 'Alice');
-            expect(result).toBe("Alice can't earn bonus points without bidding correctly (bid: 1, actual: 0)!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can't earn bonus points without bidding correctly (bid: 1, actual: 0)!");
         });
 
         test('should allow valid inputs', () => {
             const result = gameInstance.testValidateSinglePlayerInput(1, 1, 10, 'Alice');
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should reject bid exceeding round limit', () => {
             // Round 1 with 2 players = max 1 trick
             const result = gameInstance.testValidateSinglePlayerInput(2, 0, 0, 'Alice', 1);
-            expect(result).toBe("Alice's bid (2) can't exceed 1 tricks in round 1!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice's bid (2) can't exceed 1 tricks in round 1!");
         });
 
         test('should reject actual exceeding round limit', () => {
             // Round 1 with 2 players = max 1 trick
             const result = gameInstance.testValidateSinglePlayerInput(0, 2, 0, 'Alice', 1);
-            expect(result).toBe("Alice can't win more than 1 tricks in round 1!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can't win more than 1 tricks in round 1!");
         });
     });
     
@@ -823,18 +835,18 @@ describe('SkullKingGame Validation', () => {
         
         test('should allow bonus when bid equals actual in Rascal mode', () => {
             const result = gameInstance.testValidateSinglePlayerInput(1, 1, 20, 'Alice');
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
         
         test('should allow bonus when off by 1 in Rascal mode', () => {
             // In Rascal mode, bonuses are allowed for glancing blows (off by 1)
             // Off by 1 (bid 0, actual 1)
             let result = gameInstance.testValidateSinglePlayerInput(0, 1, 20, 'Alice');
-            expect(result).toBeNull(); // Should succeed - glancing blow gets half bonus
+            expect(result).toEqual({ status: 'ok' }); // Should succeed - glancing blow gets half bonus
             
             // Off by 1 (bid 1, actual 0)
             result = gameInstance.testValidateSinglePlayerInput(1, 0, 20, 'Alice');
-            expect(result).toBeNull(); // Should succeed - glancing blow gets half bonus
+            expect(result).toEqual({ status: 'ok' }); // Should succeed - glancing blow gets half bonus
         });
         
         test('should reject bonus when off by more than 1 in Rascal mode', () => {
@@ -851,11 +863,13 @@ describe('SkullKingGame Validation', () => {
             // Now in round 5 with 2 players = 5 tricks available
             // Off by 2 (bid 1, actual 3)
             let result = gameInstance.testValidateSinglePlayerInput(1, 3, 20, 'Alice', 5);
-            expect(result).toContain("can't earn bonus points without bidding correctly");
+            expect(result.status).toBe('error');
+            expect(result.message).toContain("can't earn bonus points without bidding correctly");
             
             // Off by 3 (bid 0, actual 3)
             result = gameInstance.testValidateSinglePlayerInput(0, 3, 20, 'Alice', 5);
-            expect(result).toContain("can't earn bonus points without bidding correctly");
+            expect(result.status).toBe('error');
+            expect(result.message).toContain("can't earn bonus points without bidding correctly");
         });
         
         test('should allow bonus when off by 1 in Rascal mode and give half', () => {
@@ -866,7 +880,7 @@ describe('SkullKingGame Validation', () => {
             };
             
             const addResult = gameInstance.viewModel.addRound(roundData);
-            expect(addResult).toBeNull(); // Should succeed now
+            expect(addResult).toEqual({ status: 'ok' }); // Should succeed now
             
             // Verify the round was added
             const gameState = gameInstance.viewModel.getGameState();
@@ -886,7 +900,7 @@ describe('SkullKingGame Validation', () => {
             };
             
             const addResult = gameInstance.viewModel.addRound(roundData);
-            expect(addResult).toBeNull(); // Should succeed
+            expect(addResult).toEqual({ status: 'ok' }); // Should succeed
             
             // Verify Alice got full base score and full bonus
             const gameState = gameInstance.viewModel.getGameState();
@@ -930,8 +944,9 @@ describe('SkullKingGame Validation', () => {
             };
             
             const addResult = freshGame.viewModel.addRound(roundData);
-            expect(addResult).toContain("can't earn bonus points without bidding correctly");
-            
+            expect(addResult.status).toBe('error');
+            expect(addResult.message).toContain("can't earn bonus points without bidding correctly");
+
             // Verify round was NOT added  
             gameState = freshGame.viewModel.getGameState();
             expect(gameState.rounds.length).toBe(2); // Only the 2 rounds we added
@@ -943,11 +958,12 @@ describe('SkullKingGame Validation', () => {
             
             // In normal mode, bonus only allowed when exact
             let result = gameInstance.testValidateSinglePlayerInput(1, 0, 20, 'Alice');
-            expect(result).toContain("can't earn bonus points without bidding correctly");
+            expect(result.status).toBe('error');
+            expect(result.message).toContain("can't earn bonus points without bidding correctly");
             
             // Exact bid should allow bonus
             result = gameInstance.testValidateSinglePlayerInput(1, 1, 20, 'Alice');
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
     });
 
@@ -1150,7 +1166,7 @@ describe('SkullKingGame Update Last Round', () => {
                 'Bob': { bid: 0, actual: 0, bonus: 0 }
             };
             const error = gameInstance.viewModel.addRound(roundData);
-            expect(error).toBeNull();
+            expect(error).toEqual({ status: 'ok' });
             expect(gameInstance.viewModel.state.currentRound).toBe(round + 1);
             expect(gameInstance.viewModel.state.rounds.length).toBe(round);
         }
@@ -1221,7 +1237,7 @@ describe('SkullKingGame Update Last Round', () => {
             'Bob': { bid: 5, actual: 5, bonus: 0 }
         };
         const addResult = gameInstance.viewModel.addRound(newRoundData);
-        expect(addResult).toBeNull(); // Should succeed
+        expect(addResult).toEqual({ status: 'ok' }); // Should succeed
         
         // Verify the new round was added
         const finalGameState = gameInstance.viewModel.getGameState();
@@ -1246,7 +1262,7 @@ describe('SkullKingGame Update Last Round', () => {
             'Bob': { bid: 0, actual: 0, bonus: 0 }
         };
         const addResult = gameInstance.viewModel.addRound(initialRoundData);
-        expect(addResult).toBeNull(); // Should succeed
+        expect(addResult).toEqual({ status: 'ok' }); // Should succeed
         
         // Verify initial state
         let gameState = gameInstance.viewModel.getGameState();
@@ -1276,7 +1292,7 @@ describe('SkullKingGame Update Last Round', () => {
             'Bob': { bid: 0, actual: 1, bonus: 0 }    // Changed actual from 0 to 1 (total still = 1)
         };
         const updateResult = gameInstance.viewModel.addRound(updatedRoundData);
-        expect(updateResult).toBeNull(); // Should succeed
+        expect(updateResult).toEqual({ status: 'ok' }); // Should succeed
         
         // Verify updated state
         gameState = gameInstance.viewModel.getGameState();
@@ -1346,12 +1362,12 @@ describe('SkullKingGame Modal Error Display', () => {
         };
         
         // Simulate the error flow
-        const error = gameInstance.viewModel.addRound(invalidRoundData);
-        expect(error).not.toBeNull(); // Should fail validation
-        
-        // Simulate calling showError with the validation error
-        gameInstance.showError(error);
-        
+        const result = gameInstance.viewModel.addRound(invalidRoundData);
+        expect(result.status).toBe('error'); // Should fail validation
+
+        // Simulate calling showError with the validation error message
+        gameInstance.showError(result.message);
+
         // Verify showErrorModal was called with the correct error message
         expect(showErrorSpy).toHaveBeenCalledWith("Alice's bid (5) can't exceed 1 tricks in round 1!");
         
@@ -1509,7 +1525,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should reject too many wins in round 1', () => {
@@ -1522,7 +1538,8 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBe('Total tricks won (2) must equal 1 for round 1 with 4 players!');
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toBe('Total tricks won (2) must equal 1 for round 1 with 4 players!');
         });
 
         test('should reject too few wins in round 1', () => {
@@ -1535,7 +1552,8 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBe('Total tricks won (0) must equal 1 for round 1 with 4 players!');
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toBe('Total tricks won (0) must equal 1 for round 1 with 4 players!');
         });
 
         test('should accept valid wins total in round 3', () => {
@@ -1562,7 +1580,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
     });
 
@@ -1600,7 +1618,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = eightPlayerGame.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should reject invalid total in 8 players round 9 (card limitation)', () => {
@@ -1638,7 +1656,8 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = eightPlayerGame.viewModel.addRound(roundData);
-            expect(result).toBe('Total tricks won (9) must equal 8 for round 9 with 8 players!');
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toBe('Total tricks won (9) must equal 8 for round 9 with 8 players!');
         });
 
         test('should handle 6 players in round 10 correctly', () => {
@@ -1672,7 +1691,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = sixPlayerGame.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should handle extreme case: 7 players in round 10 with card limitation', () => {
@@ -1711,7 +1730,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = sevenPlayerGame.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
     });
 
@@ -1726,7 +1745,8 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBe('Total tricks won (0) must equal 1 for round 1 with 4 players!');
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toBe('Total tricks won (0) must equal 1 for round 1 with 4 players!');
         });
 
         test('should handle maximum wins distribution', () => {
@@ -1747,7 +1767,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should validate edit last round with correct total wins', () => {
@@ -1772,7 +1792,188 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(invalidUpdate);
-            expect(result).toBe('Total tricks won (0) must equal 1 for round 1 with 4 players!');
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toBe('Total tricks won (0) must equal 1 for round 1 with 4 players!');
+        });
+    });
+});
+
+describe('SkullKingGame Trick Validation Bypass', () => {
+    let gameInstance: any;
+
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+        // Setup a standard game for testing
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'Dave']);
+        gameInstance.viewModel.validateAndStartGame();
+    });
+
+    describe('Normal Validation (skipTrickValidation = false)', () => {
+        test('should reject mismatched trick count when skipTrickValidation is false', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total, but 2 wins reported
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 1, bonus: 0 }, // Invalid: total wins = 2
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, false);
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toContain('Total tricks won (2) must equal 1');
+        });
+
+        test('should reject when total tricks are too few', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total, but 0 wins reported
+            const roundData = {
+                'Alice': { bid: 1, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, false);
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toContain('Total tricks won (0) must equal 1');
+        });
+
+        test('should still reject negative tricks even when skipTrickValidation is false', () => {
+            // Negative tricks should always be rejected (hard validation)
+            const roundData = {
+                'Alice': { bid: 1, actual: -1, bonus: 0 }, // Negative actual
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, false);
+            expect(result.status).toBe('error');
+            expect(result.message).toContain('negative');
+        });
+    });
+
+    describe('Bypass Validation (skipTrickValidation = true)', () => {
+        test('should accept mismatched trick count when skipTrickValidation is true', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total, but 2 wins reported
+            // This simulates optional cards or house rules
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 1, bonus: 0 }, // Total wins = 2 (mismatch)
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, true);
+            expect(result).toEqual({ status: 'ok' }); // Should succeed with bypass
+            expect(gameInstance.viewModel.getGameState().currentRound).toBe(2); // Round advanced
+        });
+
+        test('should accept when total tricks are too few with skipTrickValidation', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total, but 0 wins reported
+            const roundData = {
+                'Alice': { bid: 1, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, true);
+            expect(result).toEqual({ status: 'ok' }); // Should succeed with bypass
+        });
+
+        test('should accept when total tricks are too many with skipTrickValidation', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total, but 3 wins reported
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 1, actual: 1, bonus: 0 },
+                'Charlie': { bid: 0, actual: 1, bonus: 0 }, // Total wins = 3 (more than expected)
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, true);
+            expect(result).toEqual({ status: 'ok' }); // Should succeed with bypass
+        });
+
+        test('should still reject negative tricks even with skipTrickValidation', () => {
+            // Hard validations should never be bypassed
+            const roundData = {
+                'Alice': { bid: 1, actual: -1, bonus: 0 }, // Negative actual
+                'Bob': { bid: 0, actual: 2, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, true);
+            expect(result.status).not.toBe('ok'); // Should still fail
+            expect(result.status).toBe('error');
+            expect(result.message).toContain('negative');
+        });
+
+        test('should still reject bonus without correct bid even with skipTrickValidation', () => {
+            // Hard validations should never be bypassed
+            const roundData = {
+                'Alice': { bid: 1, actual: 0, bonus: 10 }, // Bonus without correct bid
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, true);
+            expect(result.status).not.toBe('ok'); // Should still fail
+            expect(result.status).toBe('error');
+            expect(result.message).toContain('bonus');
+        });
+    });
+
+    describe('Graybeard Mode with Bypass', () => {
+        beforeEach(() => {
+            // Setup 2-player game with Graybeard (automatically activated for 2 players)
+            gameInstance = new window.SkullKingGame();
+            gameInstance.viewModel.startNewGame(false);
+            gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+            gameInstance.viewModel.validateAndStartGame();
+        });
+
+        test('should reject mismatched tricks with Graybeard when skipTrickValidation is false', () => {
+            // Round 1: 2 players + Graybeard, 1 card each = 1 trick total
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            const graybeardTricks = 1; // Total would be 2, should be 1
+
+            const result = gameInstance.viewModel.addRound(roundData, false, graybeardTricks, false);
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toContain('Total tricks won');
+            expect(result.message).toContain('Graybeard');
+        });
+
+        test('should accept mismatched tricks with Graybeard when skipTrickValidation is true', () => {
+            // Round 1: 2 players + Graybeard with optional cards
+            // With optional cards, total tricks might not match expected
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 1, bonus: 0 } // Total: 2 players + Graybeard 0 = 2, expected 1
+            };
+            const graybeardTricks = 0; // Graybeard wins 0 (valid)
+
+            const result = gameInstance.viewModel.addRound(roundData, false, graybeardTricks, true);
+            expect(result).toEqual({ status: 'ok' }); // Should succeed with bypass
+        });
+
+        test('should still reject negative Graybeard tricks even with skipTrickValidation', () => {
+            // Hard validations should never be bypassed
+            const roundData = {
+                'Alice': { bid: 1, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            const graybeardTricks = -1; // Negative Graybeard tricks
+
+            const result = gameInstance.viewModel.addRound(roundData, false, graybeardTricks, true);
+            expect(result.status).not.toBe('ok');
+            expect(result.status).toBe('error');
+            expect(result.message).toContain('negative');
         });
     });
 });
@@ -2404,15 +2605,18 @@ describe('SkullKingGame Translation System', () => {
         // Test validation error in different languages
 (global as any).i18n.setLanguage('en');
         let error = gameInstance.viewModel.validateSinglePlayerInput(-1, 0, 0, 'Alice');
-        expect(error).toContain('negative numbers');
+        expect(error.status).toBe('error');
+        expect(error.message).toContain('negative numbers');
         
 (global as any).i18n.setLanguage('de');
         error = gameInstance.viewModel.validateSinglePlayerInput(-1, 0, 0, 'Alice');
-        expect(error).toContain('negativen Zahlen');
+        expect(error.status).toBe('error');
+        expect(error.message).toContain('negativen Zahlen');
         
 (global as any).i18n.setLanguage('es');
         error = gameInstance.viewModel.validateSinglePlayerInput(-1, 0, 0, 'Alice');
-        expect(error).toContain('números negativos');
+        expect(error.status).toBe('error');
+        expect(error.message).toContain('números negativos');
     });
 
     test('should translate round headers in previous rounds display', () => {
@@ -2773,11 +2977,12 @@ describe('Expansion Card Support', () => {
         
         // Without trick lost: should fail (0 tricks vs 1 expected)
         let error = gameInstance.viewModel.validateRoundData(roundData);
-        expect(error).toContain('must equal');
+        expect(error.status).toBe('mismatch_tricks_round');
+        expect(error.message).toContain('must equal');
 
         // With trick lost: should pass (0 tricks + 1 lost = 1)
         error = gameInstance.viewModel.validateRoundData(roundData, undefined, true);
-        expect(error).toBeNull();
+        expect(error).toEqual({ status: 'ok' });
     });
 
     test('should allow trick lost (Kraken or Whale/Stingray)', () => {
@@ -2793,11 +2998,12 @@ describe('Expansion Card Support', () => {
 
         // Without trick lost: should fail (0 tricks vs 1 expected)
         let error = gameInstance.viewModel.validateRoundData(roundData);
-        expect(error).toContain('must equal');
+        expect(error.status).toBe('mismatch_tricks_round');
+        expect(error.message).toContain('must equal');
 
         // With trick lost: should pass (Kraken or Whale/Stingray can lose a trick)
         error = gameInstance.viewModel.validateRoundData(roundData, undefined, true);
-        expect(error).toBeNull();
+        expect(error).toEqual({ status: 'ok' });
     });
     
     test('should validate trick lost reduces expected tricks', () => {
@@ -2815,11 +3021,12 @@ describe('Expansion Card Support', () => {
 
         // Without trick lost: should fail (1 trick vs 2 expected)
         let error = gameInstance.viewModel.validateRoundData(roundData);
-        expect(error).toContain('must equal');
+        expect(error.status).toBe('mismatch_tricks_round');
+        expect(error.message).toContain('must equal');
 
         // With trick lost: should pass (1 trick + 1 lost = 2)
         error = gameInstance.viewModel.validateRoundData(roundData, undefined, true);
-        expect(error).toBeNull();
+        expect(error).toEqual({ status: 'ok' });
     });
     
     test('should store expansion card flags in round data', () => {
@@ -2836,7 +3043,7 @@ describe('Expansion Card Support', () => {
 
         // Add round with trick lost (1 trick won + 1 lost = 2 expected)
         const error = gameInstance.viewModel.addRound(roundData, true, 0);
-        expect(error).toBeNull();
+        expect(error).toEqual({ status: 'ok' });
 
         const gameState = gameInstance.viewModel.getGameState();
         const lastRound = gameState.rounds[gameState.rounds.length - 1];
@@ -2896,11 +3103,12 @@ describe('Expansion Card Support', () => {
         
         // Without trick lost: should fail (1 trick vs 2 expected)
         let error = gameInstance.viewModel.validateRoundData(roundData);
-        expect(error).toContain('must equal');
+        expect(error.status).toBe('mismatch_tricks_round');
+        expect(error.message).toContain('must equal');
 
         // With trick lost: should pass (1 trick + 1 lost = 2)
         error = gameInstance.viewModel.validateRoundData(roundData, undefined, true);
-        expect(error).toBeNull();
+        expect(error).toEqual({ status: 'ok' });
     });
 
     test('should validate maximum 1 trick can be lost per round', () => {
@@ -2917,11 +3125,13 @@ describe('Expansion Card Support', () => {
 
         // Without trick lost: should fail (0 tricks vs 3 expected)
         let error = gameInstance.viewModel.validateRoundData(roundData);
-        expect(error).toContain('must equal');
+        expect(error.status).toBe('mismatch_tricks_round');
+        expect(error.message).toContain('must equal');
 
         // With trick lost: still should fail (0 tricks + 1 lost = 1, but need 3)
         error = gameInstance.viewModel.validateRoundData(roundData, undefined, true);
-        expect(error).toContain('must equal');
+        expect(error.status).toBe('mismatch_tricks_round');
+        expect(error.message).toContain('must equal');
 
         // With 2 tricks won and 1 lost: should pass (2 + 1 lost = 3)
         const twoTricksData = {
@@ -2929,7 +3139,7 @@ describe('Expansion Card Support', () => {
             'Bob': { bid: 0, actual: 0, bonus: 0 }
         };
         error = gameInstance.viewModel.validateRoundData(twoTricksData, undefined, true);
-        expect(error).toBeNull();
+        expect(error).toEqual({ status: 'ok' });
     });
 
     test('should restore trickLost state when editing round', () => {
@@ -2945,7 +3155,7 @@ describe('Expansion Card Support', () => {
         };
 
         const error = gameInstance.viewModel.addRound(roundData, true, 0);
-        expect(error).toBeNull();
+        expect(error).toEqual({ status: 'ok' });
 
         // Verify round was added with trickLost=true
         let gameState = gameInstance.viewModel.getGameState();
@@ -2964,7 +3174,7 @@ describe('Expansion Card Support', () => {
 
         // Re-add the round with trickLost (should validate correctly)
         const readdError = gameInstance.viewModel.addRound(removedRoundData!.playerData, removedRoundData!.trickLost, removedRoundData!.graybeardTricksWon);
-        expect(readdError).toBeNull();
+        expect(readdError).toEqual({ status: 'ok' });
 
         // Verify round was re-added with trickLost preserved
         gameState = gameInstance.viewModel.getGameState();
@@ -2987,7 +3197,7 @@ describe('Expansion Card Support', () => {
         };
 
         const error = gameInstance.viewModel.addRound(roundData, false, 1);
-        expect(error).toBeNull();
+        expect(error).toEqual({ status: 'ok' });
 
         // Verify round was added with graybeardTricksWon=1
         let gameState = gameInstance.viewModel.getGameState();
@@ -3006,7 +3216,7 @@ describe('Expansion Card Support', () => {
 
         // Re-add the round with Graybeard tricks (should validate correctly)
         const readdError = gameInstance.viewModel.addRound(removedRoundData!.playerData, removedRoundData!.trickLost, removedRoundData!.graybeardTricksWon);
-        expect(readdError).toBeNull();
+        expect(readdError).toEqual({ status: 'ok' });
 
         // Verify round was re-added with Graybeard tricks preserved
         gameState = gameInstance.viewModel.getGameState();
@@ -3031,7 +3241,7 @@ describe('Expansion Card Support', () => {
         };
 
         const error = gameInstance.viewModel.addRound(roundData, true, 1);
-        expect(error).toBeNull();
+        expect(error).toEqual({ status: 'ok' });
 
         // Verify round was added correctly
         let gameState = gameInstance.viewModel.getGameState();
@@ -3047,7 +3257,7 @@ describe('Expansion Card Support', () => {
 
         // Re-add the round (should validate correctly with both flags)
         const readdError = gameInstance.viewModel.addRound(removedRoundData!.playerData, removedRoundData!.trickLost, removedRoundData!.graybeardTricksWon);
-        expect(readdError).toBeNull();
+        expect(readdError).toEqual({ status: 'ok' });
 
         // Verify both flags were preserved
         gameState = gameInstance.viewModel.getGameState();
@@ -3271,7 +3481,7 @@ describe('Graybeard 2-Player Mode', () => {
         test('should activate Graybeard for exactly 2 players', () => {
             viewModel.setTempPlayers(['Alice', 'Bob']);
             const error = viewModel.validateAndStartGame();
-            
+
             expect(error).toBeNull();
             expect(viewModel.isGraybeardActive()).toBe(true);
         });
@@ -3279,7 +3489,7 @@ describe('Graybeard 2-Player Mode', () => {
         test('should NOT activate Graybeard for 3 players', () => {
             viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
             const error = viewModel.validateAndStartGame();
-            
+
             expect(error).toBeNull();
             expect(viewModel.isGraybeardActive()).toBe(false);
         });
@@ -3287,7 +3497,7 @@ describe('Graybeard 2-Player Mode', () => {
         test('should NOT activate Graybeard for 4+ players', () => {
             viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'David']);
             const error = viewModel.validateAndStartGame();
-            
+
             expect(error).toBeNull();
             expect(viewModel.isGraybeardActive()).toBe(false);
         });
@@ -3308,17 +3518,18 @@ describe('Graybeard 2-Player Mode', () => {
             // Round 1: 1 card dealt, so total tricks must be 1
             // Alice: 0, Bob: 1, Graybeard: 0 = 1 total (valid)
             let error = viewModel.validateRoundData(roundData, 1, false, 0);
-            expect(error).toBeNull();
+            expect(error).toEqual({ status: 'ok' });
 
             // Alice: 0, Bob: 0, Graybeard: 1 = 1 total (valid)
             roundData['Bob'].actual = 0;
             error = viewModel.validateRoundData(roundData, 1, false, 1);
-            expect(error).toBeNull();
+            expect(error).toEqual({ status: 'ok' });
 
             // Alice: 0, Bob: 1, Graybeard: 1 = 2 total (invalid)
             roundData['Bob'].actual = 1;
             error = viewModel.validateRoundData(roundData, 1, false, 1);
-            expect(error).toContain('Total tricks won (2 including Graybeard) must equal 1');
+            expect(error.status).toBe('mismatch_tricks_round');
+            expect(error.message).toContain('Total tricks won (2 including Graybeard) must equal 1');
         });
 
         test('should reject negative Graybeard tricks', () => {
@@ -3328,7 +3539,8 @@ describe('Graybeard 2-Player Mode', () => {
             };
             
             const error = viewModel.validateRoundData(roundData, 1, false, -1);
-            expect(error).toContain("Graybeard's tricks cannot be negative");
+            expect(error.status).toBe('error');
+            expect(error.message).toContain("Graybeard's tricks cannot be negative");
         });
 
         test('should reject Graybeard tricks exceeding round maximum', () => {
@@ -3339,7 +3551,8 @@ describe('Graybeard 2-Player Mode', () => {
 
             // Round 2: 2 cards dealt, Graybeard tries to win 3
             const error = viewModel.validateRoundData(roundData, 2, false, 3);
-            expect(error).toContain('Graybeard cannot win more than 2 tricks');
+            expect(error.status).toBe('error');
+            expect(error.message).toContain('Graybeard cannot win more than 2 tricks');
         });
 
         test('should store Graybeard tricks in round data', () => {
@@ -3349,7 +3562,7 @@ describe('Graybeard 2-Player Mode', () => {
             };
 
             const error = viewModel.addRound(roundData, false, 1);
-            expect(error).toBeNull();
+            expect(error).toEqual({ status: 'ok' });
 
             const gameState = viewModel.getGameState();
             expect(gameState.rounds[0].graybeardTricksWon).toBe(1);
@@ -3371,7 +3584,7 @@ describe('Graybeard 2-Player Mode', () => {
             // Round 3: 3 cards, trick lost, so 2 tricks total
             // Graybeard wins 2
             const error = viewModel.validateRoundData(roundData, 3, true, 2);
-            expect(error).toBeNull();
+            expect(error).toEqual({ status: 'ok' });
         });
 
         test('should handle Graybeard with trick lost from Whale/Stingray', () => {
@@ -3383,7 +3596,7 @@ describe('Graybeard 2-Player Mode', () => {
             // Round 4: 4 cards, trick lost (Whale/Stingray), so 3 tricks total
             // Alice: 1, Bob: 0, Graybeard: 2 = 3 total
             const error = viewModel.validateRoundData(roundData, 4, true, 2);
-            expect(error).toBeNull();
+            expect(error).toEqual({ status: 'ok' });
         });
     });
 
@@ -3537,7 +3750,7 @@ describe('Graybeard 2-Player Mode', () => {
             
             // Round 1: Graybeard wins the only trick
             const error = viewModel.addRound(roundData, false, 1);
-            expect(error).toBeNull();
+            expect(error).toEqual({ status: 'ok' });
 
             // Both players should get points for zero bid
             const gameState = viewModel.getGameState();
@@ -3557,7 +3770,7 @@ describe('Graybeard 2-Player Mode', () => {
 
             // Round 5: 5 tricks, all won by players
             const error = viewModel.addRound(roundData, false, 0);
-            expect(error).toBeNull();
+            expect(error).toEqual({ status: 'ok' });
             
             const gameState = viewModel.getGameState();
             expect(gameState.rounds[0].graybeardTricksWon).toBe(0);
@@ -3762,7 +3975,7 @@ describe('Expansion Pack - Mode Toggle', () => {
             round10Data['P8'] = { bid: 10, actual: 10, bonus: 0 };
             
             const error = gameInstance.viewModel.addRound(round10Data);
-            expect(error).toBeNull(); // Should succeed with 10 tricks in expansion mode
+            expect(error).toEqual({ status: 'ok' }); // Should succeed with 10 tricks in expansion mode
         });
     });
 
@@ -4362,7 +4575,7 @@ describe('Graybeard Round History Bug', () => {
         // Add round using the exposed addRound method
         const result = game.viewModel.addRound(roundData, false, 0);
 
-        expect(result).toBeNull(); // No error
+        expect(result).toEqual({ status: 'ok' }); // No error
 
         // Get the state and check the round
         const state = game.viewModel.getGameState();
@@ -4399,7 +4612,7 @@ describe('Graybeard Round History Bug', () => {
         // Add round with graybeard tricks = 0
         const result = game.viewModel.addRound(roundData, false, 0);
 
-        expect(result).toBeNull(); // No error
+        expect(result).toEqual({ status: 'ok' }); // No error
         
         // Get the state and check the round
         const state = game.viewModel.getGameState();
@@ -4558,7 +4771,7 @@ describe('Other/House Rules Bonus', () => {
     describe('Validation with negative bonuses', () => {
         test('should allow negative bonuses in validation', () => {
             const result = gameInstance.testValidateSinglePlayerInput(1, 1, -15, 'Alice');
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should allow adding round with negative bonus', () => {
@@ -4568,7 +4781,7 @@ describe('Other/House Rules Bonus', () => {
             };
 
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
 
             // Verify the round was added with negative bonus
             const gameState = gameInstance.viewModel.getGameState();
@@ -4586,7 +4799,7 @@ describe('Other/House Rules Bonus', () => {
             };
 
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
 
             const gameState = gameInstance.viewModel.getGameState();
             const aliceScore = gameState.players.find((p: any) => p.name === 'Alice')?.score;
@@ -4649,7 +4862,7 @@ describe('Other/House Rules Bonus', () => {
             };
 
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull();
+            expect(result).toEqual({ status: 'ok' });
 
             const gameState = gameInstance.viewModel.getGameState();
             const aliceScore = gameState.players.find((p: any) => p.name === 'Alice')?.score;
@@ -4663,7 +4876,7 @@ describe('Other/House Rules Bonus', () => {
             };
 
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull();
+            expect(result).toEqual({ status: 'ok' });
 
             const gameState = gameInstance.viewModel.getGameState();
             const aliceScore = gameState.players.find((p: any) => p.name === 'Alice')?.score;

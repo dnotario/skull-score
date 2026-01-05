@@ -19,6 +19,34 @@ const MAX_PLAYERS_EXPANSION = 9;
 // Data model interfaces
 type ScoringMode = 'normal' | 'rascal';
 
+// Validation result type for better error handling
+/**
+ * Represents the result of a validation operation.
+ * 
+ * @remarks
+ * This is a discriminated union type that can represent three different validation outcomes:
+ * - A successful validation with status 'ok'
+ * - A mismatch error between tricks and rounds with status 'mismatch_tricks_round' and an error message
+ * - A general error with status 'error' and an error message
+ * 
+ * @example
+ * ```typescript
+ * const success: ValidationResult = { status: 'ok' };
+ * const mismatch: ValidationResult = { 
+ *   status: 'mismatch_tricks_round', 
+ *   message: 'Number of tricks does not match the round' 
+ * };
+ * const error: ValidationResult = { 
+ *   status: 'error', 
+ *   message: 'Invalid input provided' 
+ * };
+ * ```
+ */
+type ValidationResult =
+  | { status: 'ok' }
+  | { status: 'mismatch_tricks_round'; message: string }
+  | { status: 'error'; message: string };
+
 interface Player {
     name: string;
     score: number;
@@ -375,74 +403,74 @@ class GameViewModel {
     }
 
     // Input Validation
-    validateSinglePlayerInput(bid: number, actual: number, bonus: number, playerName: string, roundNumber?: number): string | null {
+    validateSinglePlayerInput(bid: number, actual: number, bonus: number, playerName: string, roundNumber?: number): ValidationResult {
         const targetRound = roundNumber || this.state.currentRound;
-        
+
         // Check for invalid numbers (NaN)
         if (isNaN(bid) || isNaN(actual) || isNaN(bonus)) {
-            return this.t('invalid_number_error', { playerName });
+            return { status: 'error', message: this.t('invalid_number_error', { playerName }) };
         }
 
         // Integer validation
         if (!Number.isInteger(bid) || !Number.isInteger(actual) || !Number.isInteger(bonus)) {
-            return this.t('whole_numbers_error', { playerName });
+            return { status: 'error', message: this.t('whole_numbers_error', { playerName }) };
         }
 
         // Basic validation (bonus can now be negative for house rule penalties)
         if (bid < 0 || actual < 0) {
-            return this.t('non_negative_error', { playerName });
+            return { status: 'error', message: this.t('non_negative_error', { playerName }) };
         }
 
         // Round-specific validation: bids and actual tricks can't exceed available cards
         const maxTricks = this.getCardsPerRound(targetRound, this.state.players.length);
         if (bid > maxTricks) {
-            return this.t('bid_exceeds_tricks_error', {
+            return { status: 'error', message: this.t('bid_exceeds_tricks_error', {
                 playerName,
                 bid: bid.toString(),
                 maxTricks: maxTricks.toString(),
                 round: targetRound.toString(),
                 playerCount: this.state.players.length.toString()
-            });
+            }) };
         }
         if (actual > maxTricks) {
-            return this.t('actual_exceeds_tricks_error', {
+            return { status: 'error', message: this.t('actual_exceeds_tricks_error', {
                 playerName,
                 maxTricks: maxTricks.toString(),
                 round: targetRound.toString(),
                 playerCount: this.state.players.length.toString(),
                 actual: actual.toString()
-            });
+            }) };
         }
 
         // Bonus point validation
         if (bonus > 0) {
             const scoringMode = this.state.scoringMode || 'normal';
-            
+
             if (scoringMode === 'normal') {
                 // Traditional scoring: "Only awarded if you make your exact bid!"
                 if (bid !== actual) {
-                    return this.t('bonus_without_correct_bid_error', {
+                    return { status: 'error', message: this.t('bonus_without_correct_bid_error', {
                         playerName,
                         bid: bid.toString(),
                         actual: actual.toString()
-                    });
+                    }) };
                 }
             } else if (scoringMode === 'rascal') {
                 // Rascal scoring: Bonuses allowed for direct hit or glancing blow (off by 1)
                 // Full bonus for exact bid, half bonus for off by 1, no bonus for off by 2+
                 const difference = Math.abs(bid - actual);
                 if (difference > 1) {
-                    return this.t('bonus_without_correct_bid_error', {
+                    return { status: 'error', message: this.t('bonus_without_correct_bid_error', {
                         playerName,
                         bid: bid.toString(),
                         actual: actual.toString()
-                    });
+                    }) };
                 }
             }
         }
 
 
-        return null; // Valid
+        return { status: 'ok' };
     }
 
     // Round Management
@@ -485,63 +513,66 @@ class GameViewModel {
         return this.getCardsPerRound(this.state.currentRound, this.state.players.length);
     }
 
-    validateRoundData(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, roundNumber?: number, trickLost = false, graybeardTricks = 0): string | null {
+    validateRoundData(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, roundNumber?: number, trickLost = false, graybeardTricks = 0, skipTrickValidation = false): ValidationResult {
         const targetRound = roundNumber || this.state.currentRound;
-        
-        // Validate each player's input
+
+        // Validate each player's input (always required - these are "hard" validations)
         for (const [playerName, playerData] of Object.entries(data)) {
             const { bid, actual, bonus } = playerData;
-            const validationError = this.validateSinglePlayerInput(bid, actual, bonus, playerName, targetRound);
-            if (validationError) {
-                return validationError;
+            const validationResult = this.validateSinglePlayerInput(bid, actual, bonus, playerName, targetRound);
+            if (validationResult.status !== 'ok') {
+                return validationResult;
             }
         }
 
-        // Validate Graybeard's tricks if active
+        // Validate Graybeard's tricks if active (always required - these are "hard" validations)
         if (this.isGraybeardActive()) {
             if (graybeardTricks < 0) {
-                return this.t('graybeard_negative_tricks_error', { fallback: "Graybeard's tricks cannot be negative!" });
+                return { status: 'error', message: this.t('graybeard_negative_tricks_error', { fallback: "Graybeard's tricks cannot be negative!" }) };
             }
             const maxTricks = this.getCardsPerRound(targetRound, this.state.players.length);
             if (graybeardTricks > maxTricks) {
-                return this.t('graybeard_exceeds_tricks_error', { 
+                return { status: 'error', message: this.t('graybeard_exceeds_tricks_error', {
                     fallback: "Graybeard cannot win more than {maxTricks} tricks!",
                     maxTricks: maxTricks.toString()
-                });
+                }) };
             }
         }
 
         // Validate that total actual wins equals the number of tricks available (minus lost tricks)
-        // getCardsPerRound returns cards per player, which equals total tricks in the round
-        const totalTricks = this.getCardsPerRound(targetRound, this.state.players.length);
-        // Trick lost: Kraken or Whale/Stingray with no winner (reduces tricks by 1)
-        const lostTricks = trickLost ? 1 : 0;
-        const expectedTricks = totalTricks - lostTricks;
-        const totalActualWins = Object.values(data).reduce((sum, playerData) => sum + playerData.actual, 0);
-        
-        // Include Graybeard's tricks in the total if active
-        const totalWinsIncludingGraybeard = totalActualWins + (this.isGraybeardActive() ? graybeardTricks : 0);
-        
-        if (totalWinsIncludingGraybeard !== expectedTricks) {
-            const errorKey = this.isGraybeardActive() ? 'total_tricks_mismatch_with_graybeard_error' : 'total_tricks_mismatch_error';
-            return this.t(errorKey, {
-                totalActual: totalWinsIncludingGraybeard.toString(),
-                maxTricks: expectedTricks.toString(),
-                round: targetRound.toString(),
-                playerCount: this.state.players.length.toString(),
-                fallback: this.isGraybeardActive() ? 
-                    `Total tricks won (${totalWinsIncludingGraybeard} including Graybeard) must equal ${expectedTricks} for round ${targetRound}!` :
-                    `Total tricks won (${totalWinsIncludingGraybeard}) must equal ${expectedTricks} for round ${targetRound} with ${this.state.players.length} players!`
-            });
+        // This is a "soft" validation that can be skipped if user confirms (for optional cards/house rules)
+        if (!skipTrickValidation) {
+            // getCardsPerRound returns cards per player, which equals total tricks in the round
+            const totalTricks = this.getCardsPerRound(targetRound, this.state.players.length);
+            // Trick lost: Kraken or Whale/Stingray with no winner (reduces tricks by 1)
+            const lostTricks = trickLost ? 1 : 0;
+            const expectedTricks = totalTricks - lostTricks;
+            const totalActualWins = Object.values(data).reduce((sum, playerData) => sum + playerData.actual, 0);
+
+            // Include Graybeard's tricks in the total if active
+            const totalWinsIncludingGraybeard = totalActualWins + (this.isGraybeardActive() ? graybeardTricks : 0);
+
+            if (totalWinsIncludingGraybeard !== expectedTricks) {
+                const errorKey = this.isGraybeardActive() ? 'total_tricks_mismatch_with_graybeard_error' : 'total_tricks_mismatch_error';
+                return { status: 'mismatch_tricks_round', message: this.t(errorKey, {
+                    totalActual: totalWinsIncludingGraybeard.toString(),
+                    maxTricks: expectedTricks.toString(),
+                    round: targetRound.toString(),
+                    playerCount: this.state.players.length.toString(),
+                    fallback: this.isGraybeardActive() ?
+                        `Total tricks won (${totalWinsIncludingGraybeard} including Graybeard) must equal ${expectedTricks} for round ${targetRound}!` :
+                        `Total tricks won (${totalWinsIncludingGraybeard}) must equal ${expectedTricks} for round ${targetRound} with ${this.state.players.length} players!`
+                }) };
+            }
         }
 
-        return null; // Valid
+        return { status: 'ok' };
     }
 
-    addRound(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, trickLost = false, graybeardTricks = 0): string | null {
-        const validationError = this.validateRoundData(data, undefined, trickLost, graybeardTricks);
-        if (validationError) {
-            return validationError;
+    addRound(data: { [playerName: string]: { bid: number; actual: number; bonus: number } }, trickLost = false, graybeardTricks = 0, skipTrickValidation = false): ValidationResult {
+        const validationResult = this.validateRoundData(data, undefined, trickLost, graybeardTricks, skipTrickValidation);
+        if (validationResult.status !== 'ok') {
+            return validationResult;
         }
 
         const roundData: RoundData = {
@@ -596,7 +627,7 @@ class GameViewModel {
         if (this.isGameComplete()) {
             const sortedPlayers = this.getPlayersSortedByScore();
             const winner = sortedPlayers[0];
-            
+
             this.trackEvent('game_completed', {
                 event_category: 'gameplay',
                 event_label: 'game_finished',
@@ -607,7 +638,7 @@ class GameViewModel {
             });
         }
 
-        return null; // Success
+        return { status: 'ok' };
     }
 
     removeLastRound(): { playerData: { [playerName: string]: { bid: number; actual: number; bonus: number } }, trickLost: boolean, graybeardTricksWon: number } | null {
@@ -1110,10 +1141,10 @@ class SkullKingGame {
         this.updateUI();
     }
 
-    private handleAddRound(): void {
+    private handleAddRound(skipTrickValidation = false): void {
         const gameState = this.viewModel.getGameState();
         const roundData = this.collectRoundData(gameState.players);
-        
+
         // Get expansion card checkbox state
         const trickLostCheckbox = document.getElementById('trick-lost') as HTMLInputElement;
         const trickLost = trickLostCheckbox?.checked || false;
@@ -1126,10 +1157,27 @@ class SkullKingGame {
             graybeardTricks = parseInt(graybeardValue);
         }
 
-        const error = this.viewModel.addRound(roundData, trickLost, graybeardTricks);
+        const result = this.viewModel.addRound(roundData, trickLost, graybeardTricks, skipTrickValidation);
 
-        if (error) {
-            this.showError(error);
+        if (result.status !== 'ok') {
+            // Check if this is a trick validation error (can be overridden with confirmation)
+            if (result.status === 'mismatch_tricks_round' && !skipTrickValidation) {
+                // Show confirmation dialog for trick count mismatch
+                const title = this.t('trick_mismatch_confirm_title');
+                const message = this.t('trick_mismatch_confirm_message', {
+                    originalError: result.message,
+                    fallback: `${result.message}\n\nYou may be using optional cards or house rules that add/remove cards from the game. Would you like to proceed with this trick count anyway?`
+                });
+
+                this.showTrickMismatchConfirmation(title, message, () => {
+                    // User confirmed - retry with skipTrickValidation=true
+                    this.handleAddRound(true);
+                });
+                return;
+            }
+
+            // For all other errors (or if already tried to skip), show regular error
+            this.showError(result.message);
             return;
         }
 
@@ -1139,7 +1187,7 @@ class SkullKingGame {
         // Clear expansion checkbox
         if (trickLostCheckbox) trickLostCheckbox.checked = false;
         this.showCommentary();
-        
+
         // Scroll to the scores section after recording round
         const scoresSection = document.querySelector('.current-scores');
         if (scoresSection) {
@@ -1537,9 +1585,58 @@ class SkullKingGame {
 
         titleEl.textContent = title;
         messageEl.textContent = message;
-        
+
         // Show standard buttons
         modalButtons?.classList.remove('hidden');
+
+        modal.classList.remove('hidden');
+    }
+
+    private showTrickMismatchConfirmation(title: string, message: string, onConfirm: () => void): void {
+        const modal = document.getElementById('modal');
+        const titleEl = document.getElementById('modal-title');
+        const messageEl = document.getElementById('modal-message');
+        const modalButtons = document.getElementById('modal-buttons');
+        const modalConfirm = document.getElementById('modal-confirm');
+        const modalCancel = document.getElementById('modal-cancel');
+
+        if (!modal || !titleEl || !messageEl) return;
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+
+        modalButtons?.classList.remove('hidden');
+
+        // Customize buttons for this specific confirmation
+        if (modalConfirm && modalCancel) {
+            // Red button for "Proceed Anyway" (warning - user is overriding validation)
+            modalConfirm.textContent = this.t('proceed_anyway_button', { fallback: 'Proceed Anyway' });
+            modalConfirm.classList.add('btn-warning');
+            modalConfirm.classList.remove('btn-primary');
+
+            // Green button for "Check Again" (safe option - return to fix)
+            modalCancel.textContent = this.t('check_again_button', { fallback: 'Check Again' });
+            modalCancel.classList.add('btn-safe');
+            modalCancel.classList.remove('btn-secondary');
+            modalCancel.style.display = 'inline-block';
+        }
+
+        // Set callback for confirmation
+        this.viewModel.setModalConfirmCallback(() => {
+            // Reset button styles after confirmation
+            if (modalConfirm && modalCancel) {
+                modalConfirm.classList.remove('btn-warning');
+                modalConfirm.classList.add('btn-primary');
+                modalConfirm.textContent = this.t('aye_button');
+
+                modalCancel.classList.remove('btn-safe');
+                modalCancel.classList.add('btn-secondary');
+                modalCancel.textContent = this.t('nay_button');
+            }
+
+            // Execute the confirmation action
+            onConfirm();
+        });
 
         modal.classList.remove('hidden');
     }
@@ -1791,8 +1888,8 @@ class SkullKingGame {
         const bonus = bonusValue ? parseInt(bonusValue) : 0;
         
         // Use the centralized validation
-        const validationError = this.viewModel.validateSinglePlayerInput(bid, actual, bonus, playerName);
-        if (validationError) {
+        const validationResult = this.viewModel.validateSinglePlayerInput(bid, actual, bonus, playerName);
+        if (validationResult.status !== 'ok') {
             scoreDisplay.textContent = '-';
             scoreDisplay.className = 'computed-score invalid';
             return;
@@ -1838,8 +1935,8 @@ class SkullKingGame {
         const playerName = players[playerIndex]?.name || '';
         
         // Use the centralized validation
-        const validationError = this.viewModel.validateSinglePlayerInput(bid, actual, bonus, playerName);
-        if (validationError) {
+        const validationResult = this.viewModel.validateSinglePlayerInput(bid, actual, bonus, playerName);
+        if (validationResult.status !== 'ok') {
             scoreDisplay.textContent = '-';
             scoreDisplay.className = 'computed-score invalid';
             return;
@@ -2760,7 +2857,7 @@ class SkullKingGame {
     }
     
     // Public method for validation testing
-    public testValidateSinglePlayerInput(bid: number, actual: number, bonus: number, playerName: string, roundNumber?: number): string | null {
+    public testValidateSinglePlayerInput(bid: number, actual: number, bonus: number, playerName: string, roundNumber?: number): ValidationResult {
         return this.viewModel.validateSinglePlayerInput(bid, actual, bonus, playerName, roundNumber);
     }
     
