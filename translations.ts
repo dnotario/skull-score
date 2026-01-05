@@ -72,10 +72,14 @@ interface Translation {
     aye_button: string;
     nay_button: string;
     same_players_prefix: string;
-    
+    trick_mismatch_confirm_title: string;
+    trick_mismatch_confirm_message: string;
+
     // Button labels
     new_game_button: string;
     edit_round_button: string;
+    proceed_anyway_button: string;
+    check_again_button: string;
     
     // Error messages
     min_players_error: string;
@@ -277,10 +281,14 @@ const enTranslation: Translation = {
     aye_button: "Aye",
     nay_button: "Nay",
     same_players_prefix: "Same Players -",
-    
+    trick_mismatch_confirm_title: "⚠️ Trick Count Mismatch",
+    trick_mismatch_confirm_message: "{originalError}\n\nYe may be usin' optional cards or house rules that add or remove cards from the game, matey! Would ye like to proceed with this trick count anyway?",
+
     // Button labels
     new_game_button: "New Game",
     edit_round_button: "Edit Round {round}",
+    proceed_anyway_button: "Proceed Anyway",
+    check_again_button: "Check Again",
     
     // Error messages
     min_players_error: "Ye need at least 2 pirates to play, ye scurvy dog!",
@@ -491,10 +499,14 @@ const deTranslation: Translation = {
     aye_button: "Aye",
     nay_button: "Nay",
     same_players_prefix: "Gleiche Spieler -",
-    
+    trick_mismatch_confirm_title: "⚠️ Stichanzahl-Unstimmigkeit",
+    trick_mismatch_confirm_message: "{originalError}\n\nIhr verwendet möglicherweise optionale Karten oder Hausregeln, die Karten hinzufügen oder entfernen! Möchtet ihr trotzdem mit dieser Stichanzahl fortfahren?",
+
     // Button labels
     new_game_button: "Neues Spiel",
     edit_round_button: "Runde {round} Bearbeiten",
+    proceed_anyway_button: "Trotzdem Fortfahren",
+    check_again_button: "Nochmal Prüfen",
     
     // Error messages
     min_players_error: "Ihr braucht mindestens 2 Piraten zum Spielen!",
@@ -705,10 +717,14 @@ const esTranslation: Translation = {
     aye_button: "Sí",
     nay_button: "No",
     same_players_prefix: "Mismos Jugadores -",
-    
+    trick_mismatch_confirm_title: "⚠️ Desajuste en Conteo de Bazas",
+    trick_mismatch_confirm_message: "{originalError}\n\n¡Puede que estéis usando cartas opcionales o reglas de la casa que añaden o quitan cartas del juego! ¿Queréis continuar con este conteo de bazas de todos modos?",
+
     // Button labels
     new_game_button: "Nuevo Juego",
     edit_round_button: "Editar Ronda {round}",
+    proceed_anyway_button: "Continuar De Todos Modos",
+    check_again_button: "Revisar De Nuevo",
     
     // Error messages
     min_players_error: "¡Necesitáis al menos 2 piratas para jugar!",

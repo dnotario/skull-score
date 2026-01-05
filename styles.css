@@ -246,6 +246,30 @@ input[type="text"]:focus {
     transform: translateY(-2px);
 }
 
+.btn-warning {
+    background: #ff6b35;
+    color: white;
+    box-shadow: 0 3px 0 #cc5429;
+}
+
+.btn-warning:hover {
+    background: #cc5429;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 #a0431f;
+}
+
+.btn-safe {
+    background: #28a745;
+    color: white;
+    box-shadow: 0 3px 0 #1e7e34;
+}
+
+.btn-safe:hover {
+    background: #1e7e34;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 #155724;
+}
+
 /* Player Setup */
 .player-setup {
     text-align: center;
