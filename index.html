@@ -237,12 +237,8 @@
                 <div id="round-inputs" class="round-inputs"></div>
                 <div class="expansion-indicators">
                     <label class="expansion-checkbox">
-                        <input type="checkbox" id="kraken-played">
-                        <span data-i18n="kraken_played">🐙 Kraken played (trick destroyed)</span>
-                    </label>
-                    <label class="expansion-checkbox">
-                        <input type="checkbox" id="trick-discarded">
-                        <span data-i18n="trick_discarded">🚫 Trick discarded (Whale/Stingray - no winner)</span>
+                        <input type="checkbox" id="trick-lost">
+                        <span data-i18n="trick_lost">🚫 Trick lost (Kraken or Whale/Stingray with no winner)</span>
                     </label>
                 </div>
                 <div class="record-round-container">
@@ -381,6 +377,7 @@
                 <button class="bonus-tab active" data-tab="tab-14s" onclick="game.switchBonusTab('tab-14s')">14s</button>
                 <button class="bonus-tab" data-tab="tab-captures" onclick="game.switchBonusTab('tab-captures')">Captures</button>
                 <button class="bonus-tab" id="bonus-tab-expansion" data-tab="tab-expansion" onclick="game.switchBonusTab('tab-expansion')" style="display:none;">Expansion</button>
+                <button class="bonus-tab" data-tab="tab-other" onclick="game.switchBonusTab('tab-other')">Other</button>
             </div>
             
             <div class="bonus-modal-content">
@@ -483,7 +480,21 @@
                         <span class="bonus-points"><span id="points-davyJonesMonsters">+0</span></span>
                     </div>
                 </div>
-                
+
+                <!-- Other / House Rules -->
+                <div class="bonus-tab-panel" id="tab-other">
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-other" data-i18n="bonus_label_other">House Rules / Other Bonus</span>
+                        <div class="bonus-counter bonus-counter-no-display">
+                            <button class="counter-btn" onclick="game.updateBonusCounter('other', -1)">−</button>
+                            <span class="counter-value" id="counter-other" style="display: none;">0</span>
+                            <button class="counter-btn" onclick="game.updateBonusCounter('other', 1)">+</button>
+                        </div>
+                        <span class="bonus-points"><span id="points-other">0</span></span>
+                    </div>
+                    <p class="bonus-description" id="bonus-description-other" data-i18n="bonus_description_other">Use for custom house rules or variant bonuses (±5 per click)</p>
+                </div>
+
                 <!-- Total -->
                 <div class="bonus-total">
                     <span class="bonus-total-label" id="bonus-total-label" data-i18n="bonus_total_label">Total Bonus:</span>

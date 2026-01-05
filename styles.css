@@ -1688,6 +1688,10 @@ body.game-active .landing-only {
     gap: 0.5rem;
 }
 
+.bonus-counter-no-display {
+    gap: 0.75rem;
+}
+
 .counter-btn {
     background: #8B4513;
     color: #f4e4c1;

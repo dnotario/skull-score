@@ -192,17 +192,18 @@ interface Translation {
     bonus_label_sk_pirate: string;
     bonus_label_mermaid_sk: string;
     bonus_label_loot: string;
+    bonus_label_other: string;
+    bonus_description_other: string;
     bonus_total_label: string;
-    
+
     // Expansion bonus labels
     expansion_bonuses_header: string;
     bonus_label_seven: string;
     bonus_label_eight: string;
     bonus_label_firstmate: string;
     bonus_label_davyjones: string;
-    
-    kraken_played: string;
-    trick_discarded: string;
+
+    trick_lost: string;
     bonus_clear_btn: string;
     bonus_apply_btn: string;
     bonus_error_bid_mismatch: string;
@@ -405,17 +406,18 @@ const enTranslation: Translation = {
     bonus_label_sk_pirate: "Pirates captured by Skull King",
     bonus_label_mermaid_sk: "Skull King captured by Mermaid",
     bonus_label_loot: "Loot Alliances",
+    bonus_label_other: "House Rules / Other Bonus",
+    bonus_description_other: "Use for custom house rules or variant bonuses (±5 per click)",
     bonus_total_label: "Total Bonus:",
-    
+
     // Expansion bonus labels
     expansion_bonuses_header: "⚓ Expansion Bonuses",
     bonus_label_seven: "7s Captured (Penalty)",
     bonus_label_eight: "8s Captured (Bonus)",
     bonus_label_firstmate: "First Mate Con Captured",
     bonus_label_davyjones: "Davy Jones Sea Monsters",
-    
-    kraken_played: "🐙 Kraken played (trick destroyed)",
-    trick_discarded: "🚫 Trick discarded (Whale/Stingray - no winner)",
+
+    trick_lost: "🚫 Trick lost (Kraken or Whale/Stingray with no winner)",
     bonus_clear_btn: "Clear",
     bonus_apply_btn: "Apply Bonus",
     bonus_error_bid_mismatch: "Arrr! Bonus only be allowed when yer bid equals actual tricks won!",
@@ -618,17 +620,18 @@ const deTranslation: Translation = {
     bonus_label_sk_pirate: "Piraten vom Skull King gefangen",
     bonus_label_mermaid_sk: "Skull King von Meerjungfrau gefangen",
     bonus_label_loot: "Beute-Allianzen",
+    bonus_label_other: "Hausregeln / Sonstiger Bonus",
+    bonus_description_other: "Für benutzerdefinierte Hausregeln oder Varianten-Boni verwenden (±5 pro Klick)",
     bonus_total_label: "Gesamt-Bonus:",
-    
+
     // Expansion bonus labels
     expansion_bonuses_header: "⚓ Erweiterungs-Boni",
     bonus_label_seven: "7er Gefangen (Strafe)",
     bonus_label_eight: "8er Gefangen (Bonus)",
     bonus_label_firstmate: "Erster Maat Con Gefangen",
     bonus_label_davyjones: "Davy Jones Seemonster",
-    
-    kraken_played: "🐙 Kraken gespielt (Stich zerstört)",
-    trick_discarded: "🚫 Stich verworfen (Wal/Rochen - kein Gewinner)",
+
+    trick_lost: "🚫 Stich verloren (Kraken oder Wal/Rochen ohne Gewinner)",
     bonus_clear_btn: "Löschen",
     bonus_apply_btn: "Bonus Anwenden",
     bonus_error_bid_mismatch: "Arrr! Bonus nur erlaubt, wenn Gebot gleich gewonnene Stiche!",
@@ -831,17 +834,18 @@ const esTranslation: Translation = {
     bonus_label_sk_pirate: "Piratas capturados por Rey Calavera",
     bonus_label_mermaid_sk: "Rey Calavera capturado por Sirena",
     bonus_label_loot: "Alianzas de Botín",
+    bonus_label_other: "Reglas de Casa / Bonus Otro",
+    bonus_description_other: "Usar para reglas de casa personalizadas o bonos variantes (±5 por clic)",
     bonus_total_label: "Bonus Total:",
-    
+
     // Expansion bonus labels
     expansion_bonuses_header: "⚓ Bonos de Expansión",
     bonus_label_seven: "7s Capturados (Penalización)",
     bonus_label_eight: "8s Capturados (Bonus)",
     bonus_label_firstmate: "Primer Oficial Con Capturado",
     bonus_label_davyjones: "Monstruos Marinos Davy Jones",
-    
-    kraken_played: "🐙 Kraken jugado (truco destruido)",
-    trick_discarded: "🚫 Truco descartado (Ballena/Raya - sin ganador)",
+
+    trick_lost: "🚫 Baza perdida (Kraken o Ballena/Raya sin ganador)",
     bonus_clear_btn: "Borrar",
     bonus_apply_btn: "Aplicar Bonus",
     bonus_error_bid_mismatch: "¡Arrr! ¡Bonus solo permitido cuando apuesta igual a bazas ganadas!",
