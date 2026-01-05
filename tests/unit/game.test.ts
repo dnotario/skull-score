@@ -42,12 +42,13 @@ beforeEach(() => {
         <input id="keep-names-checkbox" type="checkbox" />
     `;
     
-    // Mock localStorage
+    // Mock localStorage with actual storage
+    const storage: { [key: string]: string } = {};
     const localStorageMock = {
-        getItem: jest.fn(),
-        setItem: jest.fn(),
-        removeItem: jest.fn(),
-        clear: jest.fn(),
+        getItem: jest.fn((key: string) => storage[key] || null),
+        setItem: jest.fn((key: string, value: string) => { storage[key] = value; }),
+        removeItem: jest.fn((key: string) => { delete storage[key]; }),
+        clear: jest.fn(() => { Object.keys(storage).forEach(key => delete storage[key]); }),
     };
     Object.defineProperty(window, 'localStorage', {
         value: localStorageMock,
@@ -339,7 +340,7 @@ describe('SkullKingGame Player Limits', () => {
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBeNull(); // Should succeed
     });
-    
+
     test('should reject more than 8 players', () => {
         // Setup with 9 players (should fail)
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy']);
@@ -351,15 +352,15 @@ describe('SkullKingGame Player Limits', () => {
     test('should require minimum of 2 players', () => {
         // Setup with 1 player (should fail)
         gameInstance.viewModel.setTempPlayers(['Alice']);
-        
+
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBe('Ye need at least 2 pirates to play, ye scurvy dog!');
     });
-    
+
     test('should accept minimum of 2 players', () => {
         // Setup with exactly 2 players (should work)
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
-        
+
         const result = gameInstance.viewModel.validateAndStartGame();
         expect(result).toBeNull(); // Should succeed
     });
@@ -649,7 +650,8 @@ describe('SkullKingGame Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBe("Alice's bid (2) can't exceed 1 tricks in round 1!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice's bid (2) can't exceed 1 tricks in round 1!");
         });
 
         test('should reject actual tricks exceeding current round number', () => {
@@ -660,7 +662,8 @@ describe('SkullKingGame Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBe("Alice can't win more than 1 tricks in round 1!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can't win more than 1 tricks in round 1!");
         });
 
         test('should accept valid bids and actuals within round limits', () => {
@@ -671,7 +674,7 @@ describe('SkullKingGame Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should validate different round numbers correctly', () => {
@@ -679,12 +682,12 @@ describe('SkullKingGame Validation', () => {
             expect(gameInstance.viewModel.addRound({
                 'Alice': { bid: 1, actual: 1, bonus: 0 },
                 'Bob': { bid: 0, actual: 0, bonus: 0 }
-            })).toBeNull();
+            })).toEqual({ status: 'ok' });
             
             expect(gameInstance.viewModel.addRound({
                 'Alice': { bid: 2, actual: 1, bonus: 0 },
                 'Bob': { bid: 0, actual: 1, bonus: 0 }
-            })).toBeNull();
+            })).toEqual({ status: 'ok' });
             
             // Now in round 3, max should be 3
             const validRoundData = {
@@ -714,8 +717,10 @@ describe('SkullKingGame Validation', () => {
                 'Bob': { bid: 1, actual: 1, bonus: 0 }
             };
             
-            expect(gameInstance.viewModel.addRound(validRoundData)).toBeNull();
-            expect(freshGame.viewModel.addRound(invalidRoundData)).toContain("Alice's bid (4) can't exceed 3 tricks in round 3");
+            expect(gameInstance.viewModel.addRound(validRoundData)).toEqual({ status: 'ok' });
+            const invalidResult = freshGame.viewModel.addRound(invalidRoundData);
+            expect(invalidResult.status).toBe('error');
+            expect(invalidResult.message).toContain("Alice's bid (4) can't exceed 3 tricks in round 3");
         });
     });
 
@@ -723,15 +728,17 @@ describe('SkullKingGame Validation', () => {
         test('should reject negative values', () => {
             // Test negative bid
             let result = gameInstance.testValidateSinglePlayerInput(-1, 1, 0, 'Alice');
-            expect(result).toBe("Alice can't use negative numbers, ye scallywag!");
-            
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can't use negative numbers, ye scallywag!");
+
             // Test negative actual
             result = gameInstance.testValidateSinglePlayerInput(1, -1, 0, 'Alice');
-            expect(result).toBe("Alice can't use negative numbers, ye scallywag!");
-            
-            // Test negative bonus
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can't use negative numbers, ye scallywag!");
+
+            // Test negative bonus (now allowed for house rule penalties)
             result = gameInstance.testValidateSinglePlayerInput(1, 1, -10, 'Alice');
-            expect(result).toBe("Alice can't use negative numbers, ye scallywag!");
+            expect(result).toEqual({ status: 'ok' }); // Should succeed - negative bonuses now allowed
         });
         
         test('should reject round with bonus points when bid does not equal actual', () => {
@@ -740,10 +747,11 @@ describe('SkullKingGame Validation', () => {
                 'Alice': { bid: 1, actual: 0, bonus: 20 }, // Wrong: bonus with incorrect bid
                 'Bob': { bid: 0, actual: 1, bonus: 0 }
             };
-            
+
             const result = gameInstance.viewModel.addRound(invalidRoundData);
-            expect(result).toBe("Alice can't earn bonus points without bidding correctly (bid: 1, actual: 0)!");
-            
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can't earn bonus points without bidding correctly (bid: 1, actual: 0)!");
+
             // Verify the round was NOT added
             const gameState = gameInstance.viewModel.getGameState();
             expect(gameState.rounds.length).toBe(0);
@@ -758,7 +766,7 @@ describe('SkullKingGame Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(validRoundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
             
             // Verify the round was added
             const gameState = gameInstance.viewModel.getGameState();
@@ -774,40 +782,45 @@ describe('SkullKingGame Validation', () => {
 
         test('should reject NaN values', () => {
             const result = gameInstance.testValidateSinglePlayerInput(NaN, 1, 0, 'Alice');
-            expect(result).toBe("Alice needs valid numbers for all fields, ye landlubber!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice needs valid numbers for all fields, ye landlubber!");
         });
 
         test('should reject non-integer values', () => {
             const result = gameInstance.testValidateSinglePlayerInput(1.5, 1, 0, 'Alice');
-            expect(result).toBe("Alice can only use whole numbers, no half measures!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can only use whole numbers, no half measures!");
         });
 
         test('should accept high bonus values when prediction is correct', () => {
             // The game doesn't restrict bonus values as long as the prediction is correct
             const result = gameInstance.testValidateSinglePlayerInput(1, 1, 150, 'Alice');
-            expect(result).toBeNull(); // Should succeed - no upper limit on bonus
+            expect(result).toEqual({ status: 'ok' }); // Should succeed - no upper limit on bonus
         });
 
         test('should reject bonus points for incorrect predictions', () => {
             const result = gameInstance.testValidateSinglePlayerInput(1, 0, 10, 'Alice');
-            expect(result).toBe("Alice can't earn bonus points without bidding correctly (bid: 1, actual: 0)!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can't earn bonus points without bidding correctly (bid: 1, actual: 0)!");
         });
 
         test('should allow valid inputs', () => {
             const result = gameInstance.testValidateSinglePlayerInput(1, 1, 10, 'Alice');
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should reject bid exceeding round limit', () => {
             // Round 1 with 2 players = max 1 trick
             const result = gameInstance.testValidateSinglePlayerInput(2, 0, 0, 'Alice', 1);
-            expect(result).toBe("Alice's bid (2) can't exceed 1 tricks in round 1!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice's bid (2) can't exceed 1 tricks in round 1!");
         });
 
         test('should reject actual exceeding round limit', () => {
             // Round 1 with 2 players = max 1 trick
             const result = gameInstance.testValidateSinglePlayerInput(0, 2, 0, 'Alice', 1);
-            expect(result).toBe("Alice can't win more than 1 tricks in round 1!");
+            expect(result.status).toBe('error');
+            expect(result.message).toBe("Alice can't win more than 1 tricks in round 1!");
         });
     });
     
@@ -822,18 +835,18 @@ describe('SkullKingGame Validation', () => {
         
         test('should allow bonus when bid equals actual in Rascal mode', () => {
             const result = gameInstance.testValidateSinglePlayerInput(1, 1, 20, 'Alice');
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
         
         test('should allow bonus when off by 1 in Rascal mode', () => {
             // In Rascal mode, bonuses are allowed for glancing blows (off by 1)
             // Off by 1 (bid 0, actual 1)
             let result = gameInstance.testValidateSinglePlayerInput(0, 1, 20, 'Alice');
-            expect(result).toBeNull(); // Should succeed - glancing blow gets half bonus
+            expect(result).toEqual({ status: 'ok' }); // Should succeed - glancing blow gets half bonus
             
             // Off by 1 (bid 1, actual 0)
             result = gameInstance.testValidateSinglePlayerInput(1, 0, 20, 'Alice');
-            expect(result).toBeNull(); // Should succeed - glancing blow gets half bonus
+            expect(result).toEqual({ status: 'ok' }); // Should succeed - glancing blow gets half bonus
         });
         
         test('should reject bonus when off by more than 1 in Rascal mode', () => {
@@ -850,11 +863,13 @@ describe('SkullKingGame Validation', () => {
             // Now in round 5 with 2 players = 5 tricks available
             // Off by 2 (bid 1, actual 3)
             let result = gameInstance.testValidateSinglePlayerInput(1, 3, 20, 'Alice', 5);
-            expect(result).toContain("can't earn bonus points without bidding correctly");
+            expect(result.status).toBe('error');
+            expect(result.message).toContain("can't earn bonus points without bidding correctly");
             
             // Off by 3 (bid 0, actual 3)
             result = gameInstance.testValidateSinglePlayerInput(0, 3, 20, 'Alice', 5);
-            expect(result).toContain("can't earn bonus points without bidding correctly");
+            expect(result.status).toBe('error');
+            expect(result.message).toContain("can't earn bonus points without bidding correctly");
         });
         
         test('should allow bonus when off by 1 in Rascal mode and give half', () => {
@@ -865,7 +880,7 @@ describe('SkullKingGame Validation', () => {
             };
             
             const addResult = gameInstance.viewModel.addRound(roundData);
-            expect(addResult).toBeNull(); // Should succeed now
+            expect(addResult).toEqual({ status: 'ok' }); // Should succeed now
             
             // Verify the round was added
             const gameState = gameInstance.viewModel.getGameState();
@@ -885,7 +900,7 @@ describe('SkullKingGame Validation', () => {
             };
             
             const addResult = gameInstance.viewModel.addRound(roundData);
-            expect(addResult).toBeNull(); // Should succeed
+            expect(addResult).toEqual({ status: 'ok' }); // Should succeed
             
             // Verify Alice got full base score and full bonus
             const gameState = gameInstance.viewModel.getGameState();
@@ -929,8 +944,9 @@ describe('SkullKingGame Validation', () => {
             };
             
             const addResult = freshGame.viewModel.addRound(roundData);
-            expect(addResult).toContain("can't earn bonus points without bidding correctly");
-            
+            expect(addResult.status).toBe('error');
+            expect(addResult.message).toContain("can't earn bonus points without bidding correctly");
+
             // Verify round was NOT added  
             gameState = freshGame.viewModel.getGameState();
             expect(gameState.rounds.length).toBe(2); // Only the 2 rounds we added
@@ -942,11 +958,12 @@ describe('SkullKingGame Validation', () => {
             
             // In normal mode, bonus only allowed when exact
             let result = gameInstance.testValidateSinglePlayerInput(1, 0, 20, 'Alice');
-            expect(result).toContain("can't earn bonus points without bidding correctly");
+            expect(result.status).toBe('error');
+            expect(result.message).toContain("can't earn bonus points without bidding correctly");
             
             // Exact bid should allow bonus
             result = gameInstance.testValidateSinglePlayerInput(1, 1, 20, 'Alice');
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
     });
 
@@ -1096,9 +1113,11 @@ describe('SkullKingGame Update Last Round', () => {
         
         // Remove last round and get its data
         const removedRoundData = gameInstance.viewModel.removeLastRound();
-        
+
         // Verify the data is correct
-        expect(removedRoundData).toEqual(roundData);
+        expect(removedRoundData!.playerData).toEqual(roundData);
+        expect(removedRoundData!.trickLost).toBe(false);
+        expect(removedRoundData!.graybeardTricksWon).toBe(0);
         
         // Verify the round was actually removed
         const gameState = gameInstance.viewModel.getGameState();
@@ -1124,7 +1143,9 @@ describe('SkullKingGame Update Last Round', () => {
         
         // Remove last round and get its data
         const removedRoundData = gameInstance.viewModel.removeLastRound();
-        expect(removedRoundData).toEqual(roundData);
+        expect(removedRoundData!.playerData).toEqual(roundData);
+        expect(removedRoundData!.trickLost).toBe(false);
+        expect(removedRoundData!.graybeardTricksWon).toBe(0);
         
         // Verify the round was removed
         gameState = gameInstance.viewModel.getGameState();
@@ -1145,7 +1166,7 @@ describe('SkullKingGame Update Last Round', () => {
                 'Bob': { bid: 0, actual: 0, bonus: 0 }
             };
             const error = gameInstance.viewModel.addRound(roundData);
-            expect(error).toBeNull();
+            expect(error).toEqual({ status: 'ok' });
             expect(gameInstance.viewModel.state.currentRound).toBe(round + 1);
             expect(gameInstance.viewModel.state.rounds.length).toBe(round);
         }
@@ -1200,10 +1221,10 @@ describe('SkullKingGame Update Last Round', () => {
         
         const removedRoundData = gameInstance.viewModel.removeLastRound();
         expect(removedRoundData).toBeDefined();
-        expect(removedRoundData!['Alice'].bid).toBe(10); // Round 10 should have 10 cards
-        expect(removedRoundData!['Alice'].actual).toBe(10);
-        expect(removedRoundData!['Bob'].bid).toBe(0);
-        expect(removedRoundData!['Bob'].actual).toBe(0);
+        expect(removedRoundData!.playerData['Alice'].bid).toBe(10); // Round 10 should have 10 cards
+        expect(removedRoundData!.playerData['Alice'].actual).toBe(10);
+        expect(removedRoundData!.playerData['Bob'].bid).toBe(0);
+        expect(removedRoundData!.playerData['Bob'].actual).toBe(0);
         
         // Verify the round was removed and scores reverted
         expect(gameInstance.viewModel.state.rounds.length).toBe(9);
@@ -1216,7 +1237,7 @@ describe('SkullKingGame Update Last Round', () => {
             'Bob': { bid: 5, actual: 5, bonus: 0 }
         };
         const addResult = gameInstance.viewModel.addRound(newRoundData);
-        expect(addResult).toBeNull(); // Should succeed
+        expect(addResult).toEqual({ status: 'ok' }); // Should succeed
         
         // Verify the new round was added
         const finalGameState = gameInstance.viewModel.getGameState();
@@ -1241,7 +1262,7 @@ describe('SkullKingGame Update Last Round', () => {
             'Bob': { bid: 0, actual: 0, bonus: 0 }
         };
         const addResult = gameInstance.viewModel.addRound(initialRoundData);
-        expect(addResult).toBeNull(); // Should succeed
+        expect(addResult).toEqual({ status: 'ok' }); // Should succeed
         
         // Verify initial state
         let gameState = gameInstance.viewModel.getGameState();
@@ -1253,10 +1274,10 @@ describe('SkullKingGame Update Last Round', () => {
         // Remove the last round for editing
         const removedRoundData = gameInstance.viewModel.removeLastRound();
         expect(removedRoundData).toBeDefined();
-        expect(removedRoundData!['Alice'].bid).toBe(1);
-        expect(removedRoundData!['Alice'].actual).toBe(1);
-        expect(removedRoundData!['Bob'].bid).toBe(0);
-        expect(removedRoundData!['Bob'].actual).toBe(0);
+        expect(removedRoundData!.playerData['Alice'].bid).toBe(1);
+        expect(removedRoundData!.playerData['Alice'].actual).toBe(1);
+        expect(removedRoundData!.playerData['Bob'].bid).toBe(0);
+        expect(removedRoundData!.playerData['Bob'].actual).toBe(0);
         
         // Verify scores were reverted and round was removed
         gameState = gameInstance.viewModel.getGameState();
@@ -1271,7 +1292,7 @@ describe('SkullKingGame Update Last Round', () => {
             'Bob': { bid: 0, actual: 1, bonus: 0 }    // Changed actual from 0 to 1 (total still = 1)
         };
         const updateResult = gameInstance.viewModel.addRound(updatedRoundData);
-        expect(updateResult).toBeNull(); // Should succeed
+        expect(updateResult).toEqual({ status: 'ok' }); // Should succeed
         
         // Verify updated state
         gameState = gameInstance.viewModel.getGameState();
@@ -1341,12 +1362,12 @@ describe('SkullKingGame Modal Error Display', () => {
         };
         
         // Simulate the error flow
-        const error = gameInstance.viewModel.addRound(invalidRoundData);
-        expect(error).not.toBeNull(); // Should fail validation
-        
-        // Simulate calling showError with the validation error
-        gameInstance.showError(error);
-        
+        const result = gameInstance.viewModel.addRound(invalidRoundData);
+        expect(result.status).toBe('error'); // Should fail validation
+
+        // Simulate calling showError with the validation error message
+        gameInstance.showError(result.message);
+
         // Verify showErrorModal was called with the correct error message
         expect(showErrorSpy).toHaveBeenCalledWith("Alice's bid (5) can't exceed 1 tricks in round 1!");
         
@@ -1472,8 +1493,9 @@ describe('SkullKingGame Score Announcement', () => {
     });
 
     test('should handle score announcement with no active game', () => {
-        // Create fresh instance with no game
+        // Create fresh instance with no game - clear any state first
         const freshInstance = new window.SkullKingGame();
+        freshInstance.viewModel.clearState();
         
         const announcement = freshInstance.viewModel.createScoreAnnouncement();
         
@@ -1503,7 +1525,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should reject too many wins in round 1', () => {
@@ -1516,7 +1538,8 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBe('Total tricks won (2) must equal 1 for round 1 with 4 players!');
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toBe('Total tricks won (2) must equal 1 for round 1 with 4 players!');
         });
 
         test('should reject too few wins in round 1', () => {
@@ -1529,7 +1552,8 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBe('Total tricks won (0) must equal 1 for round 1 with 4 players!');
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toBe('Total tricks won (0) must equal 1 for round 1 with 4 players!');
         });
 
         test('should accept valid wins total in round 3', () => {
@@ -1556,7 +1580,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
     });
 
@@ -1594,7 +1618,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = eightPlayerGame.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should reject invalid total in 8 players round 9 (card limitation)', () => {
@@ -1632,7 +1656,8 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = eightPlayerGame.viewModel.addRound(roundData);
-            expect(result).toBe('Total tricks won (9) must equal 8 for round 9 with 8 players!');
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toBe('Total tricks won (9) must equal 8 for round 9 with 8 players!');
         });
 
         test('should handle 6 players in round 10 correctly', () => {
@@ -1666,7 +1691,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = sixPlayerGame.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should handle extreme case: 7 players in round 10 with card limitation', () => {
@@ -1705,7 +1730,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = sevenPlayerGame.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
     });
 
@@ -1720,7 +1745,8 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBe('Total tricks won (0) must equal 1 for round 1 with 4 players!');
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toBe('Total tricks won (0) must equal 1 for round 1 with 4 players!');
         });
 
         test('should handle maximum wins distribution', () => {
@@ -1741,7 +1767,7 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(roundData);
-            expect(result).toBeNull(); // Should succeed
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
         });
 
         test('should validate edit last round with correct total wins', () => {
@@ -1766,7 +1792,188 @@ describe('SkullKingGame Total Wins Validation', () => {
             };
             
             const result = gameInstance.viewModel.addRound(invalidUpdate);
-            expect(result).toBe('Total tricks won (0) must equal 1 for round 1 with 4 players!');
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toBe('Total tricks won (0) must equal 1 for round 1 with 4 players!');
+        });
+    });
+});
+
+describe('SkullKingGame Trick Validation Bypass', () => {
+    let gameInstance: any;
+
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+        // Setup a standard game for testing
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'Dave']);
+        gameInstance.viewModel.validateAndStartGame();
+    });
+
+    describe('Normal Validation (skipTrickValidation = false)', () => {
+        test('should reject mismatched trick count when skipTrickValidation is false', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total, but 2 wins reported
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 1, bonus: 0 }, // Invalid: total wins = 2
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, false);
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toContain('Total tricks won (2) must equal 1');
+        });
+
+        test('should reject when total tricks are too few', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total, but 0 wins reported
+            const roundData = {
+                'Alice': { bid: 1, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, false);
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toContain('Total tricks won (0) must equal 1');
+        });
+
+        test('should still reject negative tricks even when skipTrickValidation is false', () => {
+            // Negative tricks should always be rejected (hard validation)
+            const roundData = {
+                'Alice': { bid: 1, actual: -1, bonus: 0 }, // Negative actual
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, false);
+            expect(result.status).toBe('error');
+            expect(result.message).toContain('negative');
+        });
+    });
+
+    describe('Bypass Validation (skipTrickValidation = true)', () => {
+        test('should accept mismatched trick count when skipTrickValidation is true', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total, but 2 wins reported
+            // This simulates optional cards or house rules
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 1, bonus: 0 }, // Total wins = 2 (mismatch)
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, true);
+            expect(result).toEqual({ status: 'ok' }); // Should succeed with bypass
+            expect(gameInstance.viewModel.getGameState().currentRound).toBe(2); // Round advanced
+        });
+
+        test('should accept when total tricks are too few with skipTrickValidation', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total, but 0 wins reported
+            const roundData = {
+                'Alice': { bid: 1, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, true);
+            expect(result).toEqual({ status: 'ok' }); // Should succeed with bypass
+        });
+
+        test('should accept when total tricks are too many with skipTrickValidation', () => {
+            // Round 1: 4 players, 1 card each = 1 trick total, but 3 wins reported
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 1, actual: 1, bonus: 0 },
+                'Charlie': { bid: 0, actual: 1, bonus: 0 }, // Total wins = 3 (more than expected)
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, true);
+            expect(result).toEqual({ status: 'ok' }); // Should succeed with bypass
+        });
+
+        test('should still reject negative tricks even with skipTrickValidation', () => {
+            // Hard validations should never be bypassed
+            const roundData = {
+                'Alice': { bid: 1, actual: -1, bonus: 0 }, // Negative actual
+                'Bob': { bid: 0, actual: 2, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, true);
+            expect(result.status).not.toBe('ok'); // Should still fail
+            expect(result.status).toBe('error');
+            expect(result.message).toContain('negative');
+        });
+
+        test('should still reject bonus without correct bid even with skipTrickValidation', () => {
+            // Hard validations should never be bypassed
+            const roundData = {
+                'Alice': { bid: 1, actual: 0, bonus: 10 }, // Bonus without correct bid
+                'Bob': { bid: 0, actual: 0, bonus: 0 },
+                'Charlie': { bid: 0, actual: 0, bonus: 0 },
+                'Dave': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData, false, 0, true);
+            expect(result.status).not.toBe('ok'); // Should still fail
+            expect(result.status).toBe('error');
+            expect(result.message).toContain('bonus');
+        });
+    });
+
+    describe('Graybeard Mode with Bypass', () => {
+        beforeEach(() => {
+            // Setup 2-player game with Graybeard (automatically activated for 2 players)
+            gameInstance = new window.SkullKingGame();
+            gameInstance.viewModel.startNewGame(false);
+            gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+            gameInstance.viewModel.validateAndStartGame();
+        });
+
+        test('should reject mismatched tricks with Graybeard when skipTrickValidation is false', () => {
+            // Round 1: 2 players + Graybeard, 1 card each = 1 trick total
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            const graybeardTricks = 1; // Total would be 2, should be 1
+
+            const result = gameInstance.viewModel.addRound(roundData, false, graybeardTricks, false);
+            expect(result.status).toBe('mismatch_tricks_round');
+            expect(result.message).toContain('Total tricks won');
+            expect(result.message).toContain('Graybeard');
+        });
+
+        test('should accept mismatched tricks with Graybeard when skipTrickValidation is true', () => {
+            // Round 1: 2 players + Graybeard with optional cards
+            // With optional cards, total tricks might not match expected
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 0 },
+                'Bob': { bid: 0, actual: 1, bonus: 0 } // Total: 2 players + Graybeard 0 = 2, expected 1
+            };
+            const graybeardTricks = 0; // Graybeard wins 0 (valid)
+
+            const result = gameInstance.viewModel.addRound(roundData, false, graybeardTricks, true);
+            expect(result).toEqual({ status: 'ok' }); // Should succeed with bypass
+        });
+
+        test('should still reject negative Graybeard tricks even with skipTrickValidation', () => {
+            // Hard validations should never be bypassed
+            const roundData = {
+                'Alice': { bid: 1, actual: 0, bonus: 0 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+            const graybeardTricks = -1; // Negative Graybeard tricks
+
+            const result = gameInstance.viewModel.addRound(roundData, false, graybeardTricks, true);
+            expect(result.status).not.toBe('ok');
+            expect(result.status).toBe('error');
+            expect(result.message).toContain('negative');
         });
     });
 });
@@ -2150,13 +2357,14 @@ describe('SkullKingGame Real-time Score Calculation', () => {
         expect(scoreDisplay.textContent).toBe('-');
         expect(scoreDisplay.className).toContain('invalid');
         
-        // Test negative bonus (uses centralized validation)
+        // Test negative bonus (now allowed for house rule penalties)
         bidInput.value = '1';
+        actualInput.value = '1';
         bonusButton.setAttribute('data-bonus-value', '-10');
         gameInstance.updateRoundScore('Alice');
-        
-        expect(scoreDisplay.textContent).toBe('-');
-        expect(scoreDisplay.className).toContain('invalid');
+
+        expect(scoreDisplay.textContent).toBe('+10'); // 20 * 1 - 10 = 10 (displayed with + sign)
+        expect(scoreDisplay.className).toContain('positive');
     });
     
     test('should show "-" when bid exceeds round limit', () => {
@@ -2264,7 +2472,7 @@ describe('SkullKingGame Translation System', () => {
 (global as any).i18n.setLanguage('en');
         
         expect((global as any).i18n.translate('min_players_error')).toBe('Ye need at least 2 pirates to play, ye scurvy dog!');
-        expect((global as any).i18n.translate('max_players_error')).toBe('No more than 8 pirates can fit on this ship!');
+        expect((global as any).i18n.translate('max_players_error', { maxPlayers: '8' })).toBe('No more than 8 pirates can fit on this ship!');
         expect((global as any).i18n.translate('round_label')).toBe('Round');
     });
 
@@ -2397,15 +2605,18 @@ describe('SkullKingGame Translation System', () => {
         // Test validation error in different languages
 (global as any).i18n.setLanguage('en');
         let error = gameInstance.viewModel.validateSinglePlayerInput(-1, 0, 0, 'Alice');
-        expect(error).toContain('negative numbers');
+        expect(error.status).toBe('error');
+        expect(error.message).toContain('negative numbers');
         
 (global as any).i18n.setLanguage('de');
         error = gameInstance.viewModel.validateSinglePlayerInput(-1, 0, 0, 'Alice');
-        expect(error).toContain('negativen Zahlen');
+        expect(error.status).toBe('error');
+        expect(error.message).toContain('negativen Zahlen');
         
 (global as any).i18n.setLanguage('es');
         error = gameInstance.viewModel.validateSinglePlayerInput(-1, 0, 0, 'Alice');
-        expect(error).toContain('números negativos');
+        expect(error.status).toBe('error');
+        expect(error.message).toContain('números negativos');
     });
 
     test('should translate round headers in previous rounds display', () => {
@@ -2764,55 +2975,58 @@ describe('Expansion Card Support', () => {
             'Charlie': { bid: 0, actual: 0, bonus: 0 }
         };
         
-        // Without Kraken: should fail (0 tricks vs 1 expected)
+        // Without trick lost: should fail (0 tricks vs 1 expected)
         let error = gameInstance.viewModel.validateRoundData(roundData);
-        expect(error).toContain('must equal');
-        
-        // With Kraken: should pass (0 tricks + 1 destroyed = 1)
-        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true, false);
-        expect(error).toBeNull();
+        expect(error.status).toBe('mismatch_tricks_round');
+        expect(error.message).toContain('must equal');
+
+        // With trick lost: should pass (0 tricks + 1 lost = 1)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true);
+        expect(error).toEqual({ status: 'ok' });
     });
-    
-    test('should allow destroyed tricks when Whale played', () => {
+
+    test('should allow trick lost (Kraken or Whale/Stingray)', () => {
         gameInstance.viewModel.startNewGame(false);
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
         gameInstance.viewModel.validateAndStartGame();
-        
+
         // Round 1: 1 trick total (1 card per player, but only 1 trick total)
         const roundData = {
             'Alice': { bid: 0, actual: 0, bonus: 0 },
-            'Bob': { bid: 0, actual: 0, bonus: 10 }
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
         };
-        
-        // Without Whale: should fail (0 tricks vs 1 expected)
+
+        // Without trick lost: should fail (0 tricks vs 1 expected)
         let error = gameInstance.viewModel.validateRoundData(roundData);
-        expect(error).toContain('must equal');
-        
-        // With Whale: should pass (0 tricks + 1 destroyed = 1)
-        error = gameInstance.viewModel.validateRoundData(roundData, undefined, false, true);
-        expect(error).toBeNull();
+        expect(error.status).toBe('mismatch_tricks_round');
+        expect(error.message).toContain('must equal');
+
+        // With trick lost: should pass (Kraken or Whale/Stingray can lose a trick)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true);
+        expect(error).toEqual({ status: 'ok' });
     });
     
-    test('should allow both Kraken and Whale in same round', () => {
+    test('should validate trick lost reduces expected tricks', () => {
         gameInstance.viewModel.startNewGame(false);
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
         gameInstance.viewModel.validateAndStartGame();
-        
+
         // Round 2: 2 tricks total (2 cards per player, but only 2 tricks total)
         gameInstance.viewModel.state.currentRound = 2;
         const roundData = {
-            'Alice': { bid: 0, actual: 0, bonus: 10 },
-            'Bob': { bid: 0, actual: 0, bonus: 10 },
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 },
             'Charlie': { bid: 0, actual: 0, bonus: 0 }
         };
-        
-        // Without expansion cards: should fail (0 tricks vs 2 expected)
+
+        // Without trick lost: should fail (1 trick vs 2 expected)
         let error = gameInstance.viewModel.validateRoundData(roundData);
-        expect(error).toContain('must equal');
-        
-        // With both Kraken and Whale: should pass (0 tricks + 2 destroyed = 2)
-        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true, true);
-        expect(error).toBeNull();
+        expect(error.status).toBe('mismatch_tricks_round');
+        expect(error.message).toContain('must equal');
+
+        // With trick lost: should pass (1 trick + 1 lost = 2)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true);
+        expect(error).toEqual({ status: 'ok' });
     });
     
     test('should store expansion card flags in round data', () => {
@@ -2823,19 +3037,18 @@ describe('Expansion Card Support', () => {
         // Round 2: 2 tricks total
         gameInstance.viewModel.state.currentRound = 2;
         const roundData = {
-            'Alice': { bid: 0, actual: 0, bonus: 10 },
-            'Bob': { bid: 0, actual: 0, bonus: 10 }
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
         };
-        
-        // Add round with Kraken and Whale played (0 tricks + 2 destroyed = 2 expected)
-        const error = gameInstance.viewModel.addRound(roundData, true, true);
-        expect(error).toBeNull();
-        
+
+        // Add round with trick lost (1 trick won + 1 lost = 2 expected)
+        const error = gameInstance.viewModel.addRound(roundData, true, 0);
+        expect(error).toEqual({ status: 'ok' });
+
         const gameState = gameInstance.viewModel.getGameState();
         const lastRound = gameState.rounds[gameState.rounds.length - 1];
-        
-        expect(lastRound.krakenPlayed).toBe(true);
-        expect(lastRound.whalePlayed).toBe(true);
+
+        expect(lastRound.trickLost).toBe(true);
     });
     
     test('should calculate Loot bonuses correctly', () => {
@@ -2876,26 +3089,181 @@ describe('Expansion Card Support', () => {
         expect(gameInstance.bonusCounters.loot).toBe(2);
     });
     
-    test('should not allow more than 2 destroyed tricks', () => {
+    test('should validate correctly with Kraken and trick discarded', () => {
         gameInstance.viewModel.startNewGame(false);
         gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
         gameInstance.viewModel.validateAndStartGame();
         
+        // Round 2: 2 total tricks
+        gameInstance.viewModel.state.currentRound = 2;
+        const roundData = {
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        };
+        
+        // Without trick lost: should fail (1 trick vs 2 expected)
+        let error = gameInstance.viewModel.validateRoundData(roundData);
+        expect(error.status).toBe('mismatch_tricks_round');
+        expect(error.message).toContain('must equal');
+
+        // With trick lost: should pass (1 trick + 1 lost = 2)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true);
+        expect(error).toEqual({ status: 'ok' });
+    });
+
+    test('should validate maximum 1 trick can be lost per round', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+
         // Round 3: 3 total tricks
         gameInstance.viewModel.state.currentRound = 3;
         const roundData = {
-            'Alice': { bid: 0, actual: 0, bonus: 10 },
-            'Bob': { bid: 0, actual: 0, bonus: 10 }
+            'Alice': { bid: 0, actual: 0, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
         };
-        
-        // Without expansion cards: should fail (0 tricks vs 3 expected)
+
+        // Without trick lost: should fail (0 tricks vs 3 expected)
         let error = gameInstance.viewModel.validateRoundData(roundData);
-        expect(error).toContain('must equal');
-        
-        // With both Kraken and Whale: still should fail (0 tricks + 2 destroyed = 2, but need 3)
-        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true, true);
-        expect(error).toContain('must equal');
-        expect(error).toContain('1'); // Expected 1 with 2 destroyed (3-2=1), but got 0
+        expect(error.status).toBe('mismatch_tricks_round');
+        expect(error.message).toContain('must equal');
+
+        // With trick lost: still should fail (0 tricks + 1 lost = 1, but need 3)
+        error = gameInstance.viewModel.validateRoundData(roundData, undefined, true);
+        expect(error.status).toBe('mismatch_tricks_round');
+        expect(error.message).toContain('must equal');
+
+        // With 2 tricks won and 1 lost: should pass (2 + 1 lost = 3)
+        const twoTricksData = {
+            'Alice': { bid: 2, actual: 2, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        };
+        error = gameInstance.viewModel.validateRoundData(twoTricksData, undefined, true);
+        expect(error).toEqual({ status: 'ok' });
+    });
+
+    test('should restore trickLost state when editing round', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        gameInstance.viewModel.validateAndStartGame();
+
+        // Round 1: Add round with trickLost=true (0 tricks won + 1 lost = 1 expected)
+        const roundData = {
+            'Alice': { bid: 0, actual: 0, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 },
+            'Charlie': { bid: 0, actual: 0, bonus: 0 }
+        };
+
+        const error = gameInstance.viewModel.addRound(roundData, true, 0);
+        expect(error).toEqual({ status: 'ok' });
+
+        // Verify round was added with trickLost=true
+        let gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.rounds[0].trickLost).toBe(true);
+
+        // Remove the round for editing
+        const removedRoundData = gameInstance.viewModel.removeLastRound();
+        expect(removedRoundData).toBeDefined();
+        expect(removedRoundData!.trickLost).toBe(true);
+        expect(removedRoundData!.graybeardTricksWon).toBe(0);
+
+        // Verify round was removed
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(0);
+
+        // Re-add the round with trickLost (should validate correctly)
+        const readdError = gameInstance.viewModel.addRound(removedRoundData!.playerData, removedRoundData!.trickLost, removedRoundData!.graybeardTricksWon);
+        expect(readdError).toEqual({ status: 'ok' });
+
+        // Verify round was re-added with trickLost preserved
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.rounds[0].trickLost).toBe(true);
+    });
+
+    test('should restore Graybeard tricks when editing round', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+
+        // Verify Graybeard is active for 2-player game
+        expect(gameInstance.viewModel.isGraybeardActive()).toBe(true);
+
+        // Round 1: Add round with Graybeard winning 1 trick (Alice: 0, Bob: 0, Graybeard: 1 = 1 total)
+        const roundData = {
+            'Alice': { bid: 0, actual: 0, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        };
+
+        const error = gameInstance.viewModel.addRound(roundData, false, 1);
+        expect(error).toEqual({ status: 'ok' });
+
+        // Verify round was added with graybeardTricksWon=1
+        let gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.rounds[0].graybeardTricksWon).toBe(1);
+
+        // Remove the round for editing
+        const removedRoundData = gameInstance.viewModel.removeLastRound();
+        expect(removedRoundData).toBeDefined();
+        expect(removedRoundData!.trickLost).toBe(false);
+        expect(removedRoundData!.graybeardTricksWon).toBe(1);
+
+        // Verify round was removed
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(0);
+
+        // Re-add the round with Graybeard tricks (should validate correctly)
+        const readdError = gameInstance.viewModel.addRound(removedRoundData!.playerData, removedRoundData!.trickLost, removedRoundData!.graybeardTricksWon);
+        expect(readdError).toEqual({ status: 'ok' });
+
+        // Verify round was re-added with Graybeard tricks preserved
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.rounds[0].graybeardTricksWon).toBe(1);
+    });
+
+    test('should restore both trickLost and Graybeard tricks when editing round', () => {
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+
+        // Verify Graybeard is active
+        expect(gameInstance.viewModel.isGraybeardActive()).toBe(true);
+
+        // Round 2: Add round with both trickLost and Graybeard tricks
+        // 2 total tricks - 1 lost = 1 expected; Alice: 0, Bob: 0, Graybeard: 1 = 1 total
+        gameInstance.viewModel.state.currentRound = 2;
+        const roundData = {
+            'Alice': { bid: 0, actual: 0, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        };
+
+        const error = gameInstance.viewModel.addRound(roundData, true, 1);
+        expect(error).toEqual({ status: 'ok' });
+
+        // Verify round was added correctly
+        let gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.rounds[0].trickLost).toBe(true);
+        expect(gameState.rounds[0].graybeardTricksWon).toBe(1);
+
+        // Remove the round for editing
+        const removedRoundData = gameInstance.viewModel.removeLastRound();
+        expect(removedRoundData).toBeDefined();
+        expect(removedRoundData!.trickLost).toBe(true);
+        expect(removedRoundData!.graybeardTricksWon).toBe(1);
+
+        // Re-add the round (should validate correctly with both flags)
+        const readdError = gameInstance.viewModel.addRound(removedRoundData!.playerData, removedRoundData!.trickLost, removedRoundData!.graybeardTricksWon);
+        expect(readdError).toEqual({ status: 'ok' });
+
+        // Verify both flags were preserved
+        gameState = gameInstance.viewModel.getGameState();
+        expect(gameState.rounds.length).toBe(1);
+        expect(gameState.rounds[0].trickLost).toBe(true);
+        expect(gameState.rounds[0].graybeardTricksWon).toBe(1);
     });
 });
 
@@ -3113,7 +3481,7 @@ describe('Graybeard 2-Player Mode', () => {
         test('should activate Graybeard for exactly 2 players', () => {
             viewModel.setTempPlayers(['Alice', 'Bob']);
             const error = viewModel.validateAndStartGame();
-            
+
             expect(error).toBeNull();
             expect(viewModel.isGraybeardActive()).toBe(true);
         });
@@ -3121,7 +3489,7 @@ describe('Graybeard 2-Player Mode', () => {
         test('should NOT activate Graybeard for 3 players', () => {
             viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
             const error = viewModel.validateAndStartGame();
-            
+
             expect(error).toBeNull();
             expect(viewModel.isGraybeardActive()).toBe(false);
         });
@@ -3129,7 +3497,7 @@ describe('Graybeard 2-Player Mode', () => {
         test('should NOT activate Graybeard for 4+ players', () => {
             viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie', 'David']);
             const error = viewModel.validateAndStartGame();
-            
+
             expect(error).toBeNull();
             expect(viewModel.isGraybeardActive()).toBe(false);
         });
@@ -3149,18 +3517,19 @@ describe('Graybeard 2-Player Mode', () => {
             
             // Round 1: 1 card dealt, so total tricks must be 1
             // Alice: 0, Bob: 1, Graybeard: 0 = 1 total (valid)
-            let error = viewModel.validateRoundData(roundData, 1, false, false, 0);
-            expect(error).toBeNull();
-            
+            let error = viewModel.validateRoundData(roundData, 1, false, 0);
+            expect(error).toEqual({ status: 'ok' });
+
             // Alice: 0, Bob: 0, Graybeard: 1 = 1 total (valid)
             roundData['Bob'].actual = 0;
-            error = viewModel.validateRoundData(roundData, 1, false, false, 1);
-            expect(error).toBeNull();
-            
+            error = viewModel.validateRoundData(roundData, 1, false, 1);
+            expect(error).toEqual({ status: 'ok' });
+
             // Alice: 0, Bob: 1, Graybeard: 1 = 2 total (invalid)
             roundData['Bob'].actual = 1;
-            error = viewModel.validateRoundData(roundData, 1, false, false, 1);
-            expect(error).toContain('Total tricks won (2 including Graybeard) must equal 1');
+            error = viewModel.validateRoundData(roundData, 1, false, 1);
+            expect(error.status).toBe('mismatch_tricks_round');
+            expect(error.message).toContain('Total tricks won (2 including Graybeard) must equal 1');
         });
 
         test('should reject negative Graybeard tricks', () => {
@@ -3169,8 +3538,9 @@ describe('Graybeard 2-Player Mode', () => {
                 'Bob': { bid: 0, actual: 0, bonus: 0 }
             };
             
-            const error = viewModel.validateRoundData(roundData, 1, false, false, -1);
-            expect(error).toContain("Graybeard's tricks cannot be negative");
+            const error = viewModel.validateRoundData(roundData, 1, false, -1);
+            expect(error.status).toBe('error');
+            expect(error.message).toContain("Graybeard's tricks cannot be negative");
         });
 
         test('should reject Graybeard tricks exceeding round maximum', () => {
@@ -3178,10 +3548,11 @@ describe('Graybeard 2-Player Mode', () => {
                 'Alice': { bid: 0, actual: 0, bonus: 0 },
                 'Bob': { bid: 0, actual: 0, bonus: 0 }
             };
-            
+
             // Round 2: 2 cards dealt, Graybeard tries to win 3
-            const error = viewModel.validateRoundData(roundData, 2, false, false, 3);
-            expect(error).toContain('Graybeard cannot win more than 2 tricks');
+            const error = viewModel.validateRoundData(roundData, 2, false, 3);
+            expect(error.status).toBe('error');
+            expect(error.message).toContain('Graybeard cannot win more than 2 tricks');
         });
 
         test('should store Graybeard tricks in round data', () => {
@@ -3189,10 +3560,10 @@ describe('Graybeard 2-Player Mode', () => {
                 'Alice': { bid: 0, actual: 0, bonus: 0 },
                 'Bob': { bid: 0, actual: 0, bonus: 0 }
             };
-            
-            const error = viewModel.addRound(roundData, false, false, 1);
-            expect(error).toBeNull();
-            
+
+            const error = viewModel.addRound(roundData, false, 1);
+            expect(error).toEqual({ status: 'ok' });
+
             const gameState = viewModel.getGameState();
             expect(gameState.rounds[0].graybeardTricksWon).toBe(1);
         });
@@ -3204,28 +3575,28 @@ describe('Graybeard 2-Player Mode', () => {
             viewModel.validateAndStartGame();
         });
 
-        test('should handle Graybeard with Kraken', () => {
+        test('should handle Graybeard with trick lost', () => {
             const roundData = {
                 'Alice': { bid: 0, actual: 0, bonus: 0 },
                 'Bob': { bid: 0, actual: 0, bonus: 0 }
             };
-            
-            // Round 3: 3 cards, Kraken destroys 1, so 2 tricks total
+
+            // Round 3: 3 cards, trick lost, so 2 tricks total
             // Graybeard wins 2
-            const error = viewModel.validateRoundData(roundData, 3, true, false, 2);
-            expect(error).toBeNull();
+            const error = viewModel.validateRoundData(roundData, 3, true, 2);
+            expect(error).toEqual({ status: 'ok' });
         });
 
-        test('should handle Graybeard with White Whale', () => {
+        test('should handle Graybeard with trick lost from Whale/Stingray', () => {
             const roundData = {
                 'Alice': { bid: 1, actual: 1, bonus: 0 },
                 'Bob': { bid: 0, actual: 0, bonus: 0 }
             };
-            
-            // Round 4: 4 cards, Whale destroys 1, so 3 tricks total
+
+            // Round 4: 4 cards, trick lost (Whale/Stingray), so 3 tricks total
             // Alice: 1, Bob: 0, Graybeard: 2 = 3 total
-            const error = viewModel.validateRoundData(roundData, 4, false, true, 2);
-            expect(error).toBeNull();
+            const error = viewModel.validateRoundData(roundData, 4, true, 2);
+            expect(error).toEqual({ status: 'ok' });
         });
     });
 
@@ -3309,9 +3680,9 @@ describe('Graybeard 2-Player Mode', () => {
                 'Bob': { bid: 0, actual: 0, bonus: 0 }
             };
             
-            viewModel.addRound(roundData, false, false, 1);
+            viewModel.addRound(roundData, false, 1);
             gameInstance.updateUI();
-            
+
             const previousRounds = document.getElementById('previous-rounds');
             // Check for the ghost emoji which is consistent across languages
             expect(previousRounds?.innerHTML).toContain('👻');
@@ -3331,14 +3702,14 @@ describe('Graybeard 2-Player Mode', () => {
                 'Alice': { bid: 0, actual: 0, bonus: 0 },
                 'Bob': { bid: 1, actual: 0, bonus: 0 } // Failed bid
             };
-            
+
             // Graybeard won the trick that Bob needed
-            viewModel.addRound(roundData, false, false, 1);
-            
+            viewModel.addRound(roundData, false, 1);
+
             const gameState = viewModel.getGameState();
             const alice = gameState.players.find((p: any) => p.name === 'Alice');
             const bob = gameState.players.find((p: any) => p.name === 'Bob');
-            
+
             // Alice gets 10 points for successful zero bid in round 1
             expect(alice.score).toBe(10);
             // Bob loses 10 points for missing by 1
@@ -3350,11 +3721,11 @@ describe('Graybeard 2-Player Mode', () => {
                 'Alice': { bid: 1, actual: 1, bonus: 20 },
                 'Bob': { bid: 0, actual: 0, bonus: 0 }
             };
-            
+
             // Round 2: 2 tricks total
             // Alice: 1, Bob: 0, Graybeard: 1
             viewModel.state.currentRound = 2;
-            viewModel.addRound(roundData, false, false, 1);
+            viewModel.addRound(roundData, false, 1);
             
             const gameState = viewModel.getGameState();
             const alice = gameState.players.find((p: any) => p.name === 'Alice');
@@ -3378,9 +3749,9 @@ describe('Graybeard 2-Player Mode', () => {
             };
             
             // Round 1: Graybeard wins the only trick
-            const error = viewModel.addRound(roundData, false, false, 1);
-            expect(error).toBeNull();
-            
+            const error = viewModel.addRound(roundData, false, 1);
+            expect(error).toEqual({ status: 'ok' });
+
             // Both players should get points for zero bid
             const gameState = viewModel.getGameState();
             expect(gameState.players[0].score).toBe(10); // Alice
@@ -3391,18 +3762,1125 @@ describe('Graybeard 2-Player Mode', () => {
             viewModel.setTempPlayers(['Alice', 'Bob']);
             viewModel.validateAndStartGame();
             viewModel.state.currentRound = 5;
-            
+
             const roundData = {
                 'Alice': { bid: 3, actual: 3, bonus: 0 },
                 'Bob': { bid: 2, actual: 2, bonus: 0 }
             };
-            
+
             // Round 5: 5 tricks, all won by players
-            const error = viewModel.addRound(roundData, false, false, 0);
-            expect(error).toBeNull();
+            const error = viewModel.addRound(roundData, false, 0);
+            expect(error).toEqual({ status: 'ok' });
             
             const gameState = viewModel.getGameState();
             expect(gameState.rounds[0].graybeardTricksWon).toBe(0);
+        });
+    });
+});
+
+describe('Expansion Pack - Mode Toggle', () => {
+    let gameInstance: any;
+
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+    });
+
+    describe('Expansion Mode Toggle', () => {
+        test('should default to expansion mode disabled', () => {
+            expect(gameInstance.viewModel.isExpansionMode()).toBe(false);
+        });
+
+        test('should enable expansion mode when toggled', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            expect(gameInstance.viewModel.isExpansionMode()).toBe(true);
+        });
+
+        test('should disable expansion mode when toggled off', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setExpansionMode(false);
+            expect(gameInstance.viewModel.isExpansionMode()).toBe(false);
+        });
+
+        test('should persist expansion mode to localStorage', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            expect(localStorage.setItem).toHaveBeenCalledWith(
+                'skull-king-expansion-mode',
+                'true'
+            );
+        });
+
+        test('should load expansion mode from localStorage on init', () => {
+            // Mock localStorage returning expansion mode enabled
+            (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+                if (key === 'skull-king-expansion-mode') return 'true';
+                return null;
+            });
+            
+            // Create new instance which should load from localStorage
+            const newGame = new window.SkullKingGame();
+            expect(newGame.viewModel.isExpansionMode()).toBe(true);
+        });
+
+        test('should handle invalid localStorage values gracefully', () => {
+            (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+                if (key === 'skull-king-expansion-mode') return 'invalid';
+                return null;
+            });
+            
+            const newGame = new window.SkullKingGame();
+            expect(newGame.viewModel.isExpansionMode()).toBe(false);
+        });
+
+        test('should save expansion mode in game state', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            const gameState = gameInstance.viewModel.getGameState();
+            expect(gameState.expansionMode).toBe(true);
+        });
+    });
+
+    describe('Player Count Validation with Expansion Mode', () => {
+        test('should allow 8 players in standard mode', () => {
+            gameInstance.viewModel.setExpansionMode(false);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+            
+            const error = gameInstance.viewModel.validateAndStartGame();
+            expect(error).toBeNull();
+        });
+
+        test('should reject 9 players in standard mode', () => {
+            gameInstance.viewModel.setExpansionMode(false);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9']);
+            
+            const error = gameInstance.viewModel.validateAndStartGame();
+            expect(error).not.toBeNull();
+            expect(error).toContain('8');
+        });
+
+        test('should allow 9 players in expansion mode', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9']);
+            
+            const error = gameInstance.viewModel.validateAndStartGame();
+            expect(error).toBeNull();
+        });
+
+        test('should reject 10 players even in expansion mode', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10']);
+            
+            const error = gameInstance.viewModel.validateAndStartGame();
+            expect(error).not.toBeNull();
+            expect(error).toContain('9');
+        });
+
+        test('should still enforce minimum 2 players in expansion mode', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['Alice']);
+            
+            const error = gameInstance.viewModel.validateAndStartGame();
+            expect(error).not.toBeNull();
+            expect(error).toContain('2');
+        });
+    });
+
+    describe('Cards Per Round with Expansion Mode', () => {
+        test('base game should use 70 cards total', () => {
+            gameInstance.viewModel.setExpansionMode(false);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            // With 8 players and 70 cards, round 10 should give 8 cards each (80 needed, only 70 available)
+            const cardsRound10 = gameInstance.viewModel.getCardsPerRound(10, 8);
+            expect(cardsRound10).toBe(8); // floor(70/8) = 8
+            
+            // Round 8 should give 8 cards each (64 needed, 70 available)
+            const cardsRound8 = gameInstance.viewModel.getCardsPerRound(8, 8);
+            expect(cardsRound8).toBe(8);
+        });
+
+        test('expansion mode should use 84 cards total', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+            gameInstance.viewModel.validateAndStartGame();
+
+            // With 8 players and 84 cards, round 10 should give 10 cards each (80 needed, 84 available)
+            const cardsRound10 = gameInstance.viewModel.getCardsPerRound(10, 8);
+            expect(cardsRound10).toBe(10);
+
+            // Round 9 should also give full 9 cards
+            const cardsRound9 = gameInstance.viewModel.getCardsPerRound(9, 8);
+            expect(cardsRound9).toBe(9);
+        });
+
+        test('expansion mode with 9 players should allow full 10 rounds', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            // With 9 players and 84 cards, round 10 needs 90 cards but only 84 available
+            // So round 10 should give 9 cards each (floor(84/9) = 9)
+            const cardsRound10 = gameInstance.viewModel.getCardsPerRound(10, 9);
+            expect(cardsRound10).toBe(9);
+
+            // Round 9 should give full 9 cards (81 needed, 84 available)
+            const cardsRound9 = gameInstance.viewModel.getCardsPerRound(9, 9);
+            expect(cardsRound9).toBe(9);
+        });
+
+        test('base game with 8 players round 9 should be limited', () => {
+            gameInstance.viewModel.setExpansionMode(false);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            // 8 players, round 9 needs 72 cards but only 70 available
+            const cardsRound9 = gameInstance.viewModel.getCardsPerRound(9, 8);
+            expect(cardsRound9).toBe(8); // floor(70/8) = 8
+        });
+
+        test('expansion mode with 8 players should allow full 10 cards in round 10', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            // 8 players, round 10 needs 80 cards, 84 available - should work
+            const cardsRound10 = gameInstance.viewModel.getCardsPerRound(10, 8);
+            expect(cardsRound10).toBe(10);
+        });
+
+        test('trick validation should account for expansion card count', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            // Advance to round 10
+            for (let i = 1; i < 10; i++) {
+                const roundData: { [key: string]: { bid: number; actual: number; bonus: number } } = {};
+                const cardsThisRound = gameInstance.viewModel.getCardsPerRound(i, 8);
+                for (let p = 0; p < 7; p++) {
+                    roundData[`P${p + 1}`] = { bid: 0, actual: 0, bonus: 0 };
+                }
+                // Last player gets all tricks
+                roundData['P8'] = { bid: cardsThisRound, actual: cardsThisRound, bonus: 0 };
+                gameInstance.viewModel.addRound(roundData);
+            }
+            
+            // Round 10 with expansion should expect 10 tricks (not 8 like base game)
+            const round10Data: { [key: string]: { bid: number; actual: number; bonus: number } } = {};
+            for (let p = 0; p < 7; p++) {
+                round10Data[`P${p + 1}`] = { bid: 0, actual: 0, bonus: 0 };
+            }
+            round10Data['P8'] = { bid: 10, actual: 10, bonus: 0 };
+            
+            const error = gameInstance.viewModel.addRound(round10Data);
+            expect(error).toEqual({ status: 'ok' }); // Should succeed with 10 tricks in expansion mode
+        });
+    });
+
+    describe('Expansion Mode Persistence', () => {
+        test('should preserve expansion mode when starting new game', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            gameInstance.viewModel.startNewGame(true);
+            
+            expect(gameInstance.viewModel.isExpansionMode()).toBe(true);
+        });
+
+        test('should load expansion mode from saved game state', () => {
+            // Set up a game with expansion enabled
+            gameInstance.viewModel.setExpansionMode(true);
+            gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+            gameInstance.viewModel.validateAndStartGame();
+            
+            const savedState = gameInstance.viewModel.getGameState();
+            
+            // Mock localStorage to return the saved state
+            (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+                if (key === 'skullKingGameState') return JSON.stringify(savedState);
+                if (key === 'skull-king-expansion-mode') return 'true';
+                return null;
+            });
+            
+            // Create new instance (simulating page reload)
+            const reloadedGame = new window.SkullKingGame();
+            expect(reloadedGame.viewModel.isExpansionMode()).toBe(true);
+            
+            const gameState = reloadedGame.viewModel.getGameState();
+            expect(gameState.expansionMode).toBe(true);
+        });
+    });
+
+    describe('Backward Compatibility', () => {
+        test('should handle old game state without expansionMode field', () => {
+            const oldGameState = {
+                players: [
+                    { name: 'Alice', score: 50 },
+                    { name: 'Bob', score: 30 }
+                ],
+                rounds: [],
+                currentRound: 3,
+                scoringMode: 'normal'
+                // Note: no expansionMode field
+            };
+            
+            (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+                if (key === 'skullKingGameState') return JSON.stringify(oldGameState);
+                return null;
+            });
+            
+            const newGame = new window.SkullKingGame();
+            
+            // Should default to false for backward compatibility
+            expect(newGame.viewModel.isExpansionMode()).toBe(false);
+        });
+
+        test('should handle rounds without expansion fields', () => {
+            const oldGameState = {
+                players: [{ name: 'Alice', score: 20 }, { name: 'Bob', score: 10 }],
+                rounds: [{
+                    roundNumber: 1,
+                    playerData: [
+                        { playerName: 'Alice', bid: 1, actual: 1, bonus: 0, roundScore: 20 },
+                        { playerName: 'Bob', bid: 0, actual: 0, bonus: 0, roundScore: 10 }
+                    ],
+                    commentary: 'Test',
+                    krakenPlayed: false
+                    // No trickDiscarded or davyJonesMonsters
+                }],
+                currentRound: 2,
+                scoringMode: 'normal'
+            };
+            
+            (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+                if (key === 'skullKingGameState') return JSON.stringify(oldGameState);
+                return null;
+            });
+            
+            const newGame = new window.SkullKingGame();
+            const gameState = newGame.viewModel.getGameState();
+            
+            // Should load successfully without errors
+            expect(gameState.rounds.length).toBe(1);
+            expect(gameState.rounds[0].trickLost).toBeUndefined();
+            expect(gameState.rounds[0].davyJonesMonsters).toBeUndefined();
+        });
+    });
+});
+
+describe('Expansion Pack Bonus Calculator - Phase 2', () => {
+    let gameInstance: any;
+    
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+    });
+
+    describe('Expansion Bonus Counters', () => {
+        test('should have expansion bonus counters when expansion mode is enabled', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // Check that expansion counters exist
+            expect(gameInstance.expansionBonusCounters).toBeDefined();
+            expect(gameInstance.expansionBonusCounters.sevenCaptured).toBe(0);
+            expect(gameInstance.expansionBonusCounters.eightCaptured).toBe(0);
+            expect(gameInstance.expansionBonusCounters.firstMateCon).toBe(0);
+            expect(gameInstance.expansionBonusCounters.davyJonesMonsters).toBe(0);
+        });
+
+        test('should calculate 7 captured penalty correctly (-5 each)', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            const points = gameInstance.calculateExpansionBonusPoints('sevenCaptured', 2);
+            expect(points).toBe(-10); // 2 × -5 = -10
+        });
+
+        test('should calculate 8 captured bonus correctly (+5 each)', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            const points = gameInstance.calculateExpansionBonusPoints('eightCaptured', 3);
+            expect(points).toBe(15); // 3 × +5 = +15
+        });
+
+        test('should calculate First Mate Con capture bonus (+30)', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            const points = gameInstance.calculateExpansionBonusPoints('firstMateCon', 1);
+            expect(points).toBe(30);
+        });
+
+        test('should calculate Davy Jones sea monster captures (+20 each)', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            const points = gameInstance.calculateExpansionBonusPoints('davyJonesMonsters', 2);
+            expect(points).toBe(40); // 2 × +20 = +40
+        });
+
+        test('should enforce max limits for expansion counters', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // 7s - max 4
+            gameInstance.updateExpansionBonusCounter('sevenCaptured', 5);
+            expect(gameInstance.expansionBonusCounters.sevenCaptured).toBe(4);
+            
+            // 8s - max 4
+            gameInstance.updateExpansionBonusCounter('eightCaptured', 5);
+            expect(gameInstance.expansionBonusCounters.eightCaptured).toBe(4);
+            
+            // First Mate Con - max 1
+            gameInstance.updateExpansionBonusCounter('firstMateCon', 2);
+            expect(gameInstance.expansionBonusCounters.firstMateCon).toBe(1);
+            
+            // Davy Jones - max 3
+            gameInstance.updateExpansionBonusCounter('davyJonesMonsters', 4);
+            expect(gameInstance.expansionBonusCounters.davyJonesMonsters).toBe(3);
+        });
+
+        test('should not allow negative values for expansion counters', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            gameInstance.updateExpansionBonusCounter('sevenCaptured', -1);
+            expect(gameInstance.expansionBonusCounters.sevenCaptured).toBe(0);
+        });
+
+        test('should display correct format for expansion bonus points', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // Create points display elements
+            const points7 = document.createElement('span');
+            points7.id = 'points-sevenCaptured';
+            document.body.appendChild(points7);
+            
+            const points8 = document.createElement('span');
+            points8.id = 'points-eightCaptured';
+            document.body.appendChild(points8);
+            
+            // Update counters
+            gameInstance.updateExpansionBonusCounter('sevenCaptured', 2);
+            gameInstance.updateExpansionBonusCounter('eightCaptured', 3);
+            
+            // 7s should show negative without double sign (e.g., "-10" not "+-10")
+            expect(points7.textContent).toBe('-10');
+            
+            // 8s should show positive with single + (e.g., "+15" not "++15")
+            expect(points8.textContent).toBe('+15');
+            
+            // Clean up
+            document.body.removeChild(points7);
+            document.body.removeChild(points8);
+        });
+    });
+
+    describe('Expansion Bonus Total Calculation', () => {
+        test('should include expansion bonuses in total when expansion mode is enabled', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // Set some expansion bonuses
+            gameInstance.expansionBonusCounters = {
+                sevenCaptured: 2,    // -10
+                eightCaptured: 1,    // +5
+                firstMateCon: 1,     // +30
+                davyJonesMonsters: 1 // +20
+            };
+            
+            const expansionTotal = gameInstance.calculateExpansionBonusTotal();
+            expect(expansionTotal).toBe(45); // -10 + 5 + 30 + 20 = 45
+        });
+
+        test('should return 0 for expansion total when expansion mode is disabled', () => {
+            gameInstance.viewModel.setExpansionMode(false);
+            
+            gameInstance.expansionBonusCounters = {
+                sevenCaptured: 2,
+                eightCaptured: 1,
+                firstMateCon: 1,
+                davyJonesMonsters: 1
+            };
+            
+            const expansionTotal = gameInstance.calculateExpansionBonusTotal();
+            expect(expansionTotal).toBe(0);
+        });
+
+        test('should combine base and expansion bonuses in grand total', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // Set base bonuses
+            gameInstance.bonusCounters = {
+                standard14: 1,     // +10
+                black14: 1,        // +20
+                mermaidPirate: 0,
+                skullPirate: 0,
+                mermaidSkull: 0,
+                loot: 0,
+                other: 0
+            };
+            
+            // Set expansion bonuses
+            gameInstance.expansionBonusCounters = {
+                sevenCaptured: 0,
+                eightCaptured: 2,     // +10
+                firstMateCon: 0,
+                davyJonesMonsters: 1  // +20
+            };
+            
+            const grandTotal = gameInstance.calculateGrandBonusTotal();
+            expect(grandTotal).toBe(60); // 10 + 20 + 10 + 20 = 60
+        });
+    });
+
+    describe('Expansion Bonus UI Visibility', () => {
+        test('should start with expansion tab hidden in HTML', () => {
+            // Verify the HTML default state - expansion tab button should be hidden
+            // This tests that the HTML template has the correct initial state
+            const html = `<button id="bonus-tab-expansion" style="display:none;">Expansion</button>`;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const tab = doc.getElementById('bonus-tab-expansion') as HTMLElement;
+            
+            expect(tab?.style.display).toBe('none');
+        });
+
+        test('should keep expansion tab hidden when game started WITHOUT expansion mode', () => {
+            // Start a fresh game WITHOUT expansion mode
+            const freshGame = new window.SkullKingGame();
+            freshGame.viewModel.startNewGame(false);
+            freshGame.viewModel.setExpansionMode(false); // Explicitly disable
+            freshGame.viewModel.setTempPlayers(['Alice', 'Bob']);
+            freshGame.viewModel.validateAndStartGame();
+            
+            // Verify expansion mode is off
+            expect(freshGame.viewModel.isExpansionMode()).toBe(false);
+            
+            // Create the expansion tab button for testing
+            const expansionTab = document.createElement('button');
+            expansionTab.id = 'bonus-tab-expansion';
+            expansionTab.style.display = 'none';
+            document.body.appendChild(expansionTab);
+            
+            // Create bid/actual inputs (required for openBonusModal)
+            const bidInput = document.createElement('input');
+            bidInput.id = 'bid-player-0';
+            bidInput.value = '1';
+            document.body.appendChild(bidInput);
+            
+            const actualInput = document.createElement('input');
+            actualInput.id = 'actual-player-0';
+            actualInput.value = '1';
+            document.body.appendChild(actualInput);
+            
+            // Open bonus modal - should keep expansion tab hidden
+            freshGame.openBonusModal(0);
+            
+            expect(expansionTab.style.display).toBe('none');
+            
+            // Clean up
+            document.body.removeChild(expansionTab);
+            document.body.removeChild(bidInput);
+            document.body.removeChild(actualInput);
+        });
+
+        test('should respect game state over localStorage for expansion mode', () => {
+            // Set localStorage to true (simulating previous session)
+            localStorage.setItem('skull-king-expansion-mode', 'true');
+            
+            // Start a fresh game and explicitly disable expansion
+            const freshGame = new window.SkullKingGame();
+            freshGame.viewModel.startNewGame(false);
+            freshGame.viewModel.setExpansionMode(false); // Override localStorage
+            freshGame.viewModel.setTempPlayers(['Alice', 'Bob']);
+            freshGame.viewModel.validateAndStartGame();
+            
+            // Verify expansion mode is off (state should override localStorage)
+            expect(freshGame.viewModel.isExpansionMode()).toBe(false);
+            
+            // Create the expansion tab button for testing
+            const expansionTab = document.createElement('button');
+            expansionTab.id = 'bonus-tab-expansion';
+            expansionTab.style.display = 'none';
+            document.body.appendChild(expansionTab);
+            
+            // Create bid/actual inputs
+            const bidInput = document.createElement('input');
+            bidInput.id = 'bid-player-0';
+            bidInput.value = '1';
+            document.body.appendChild(bidInput);
+            
+            const actualInput = document.createElement('input');
+            actualInput.id = 'actual-player-0';
+            actualInput.value = '1';
+            document.body.appendChild(actualInput);
+            
+            // Open bonus modal - should keep expansion tab hidden
+            freshGame.openBonusModal(0);
+            
+            expect(expansionTab.style.display).toBe('none');
+            
+            // Clean up
+            document.body.removeChild(expansionTab);
+            document.body.removeChild(bidInput);
+            document.body.removeChild(actualInput);
+        });
+
+        test('should show expansion tab when game started WITH expansion mode', () => {
+            // Create the expansion tab button for testing
+            const expansionTab = document.createElement('button');
+            expansionTab.id = 'bonus-tab-expansion';
+            expansionTab.style.display = 'none';
+            document.body.appendChild(expansionTab);
+            
+            // Create bid/actual inputs (required for openBonusModal)
+            const bidInput = document.createElement('input');
+            bidInput.id = 'bid-player-0';
+            bidInput.value = '1';
+            document.body.appendChild(bidInput);
+            
+            const actualInput = document.createElement('input');
+            actualInput.id = 'actual-player-0';
+            actualInput.value = '1';
+            document.body.appendChild(actualInput);
+            
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // Open bonus modal for player 0 - this should show the expansion tab
+            gameInstance.openBonusModal(0);
+            
+            expect(expansionTab.style.display).toBe('');
+            
+            // Clean up
+            document.body.removeChild(expansionTab);
+            document.body.removeChild(bidInput);
+            document.body.removeChild(actualInput);
+        });
+
+        test('should keep expansion tab hidden when expansion mode is disabled', () => {
+            // Create the expansion tab button for testing
+            const expansionTab = document.createElement('button');
+            expansionTab.id = 'bonus-tab-expansion';
+            expansionTab.style.display = 'none';
+            document.body.appendChild(expansionTab);
+            
+            // Create bid/actual inputs (required for openBonusModal)
+            const bidInput = document.createElement('input');
+            bidInput.id = 'bid-player-0';
+            bidInput.value = '1';
+            document.body.appendChild(bidInput);
+            
+            const actualInput = document.createElement('input');
+            actualInput.id = 'actual-player-0';
+            actualInput.value = '1';
+            document.body.appendChild(actualInput);
+            
+            gameInstance.viewModel.setExpansionMode(false);
+            
+            // Open bonus modal for player 0
+            gameInstance.openBonusModal(0);
+            
+            expect(expansionTab.style.display).toBe('none');
+            
+            // Clean up
+            document.body.removeChild(expansionTab);
+            document.body.removeChild(bidInput);
+            document.body.removeChild(actualInput);
+        });
+    });
+
+    describe('Expansion Bonus Clear and Apply', () => {
+        test('should clear expansion bonuses when clearing calculator', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            gameInstance.expansionBonusCounters = {
+                sevenCaptured: 2,
+                eightCaptured: 1,
+                firstMateCon: 1,
+                davyJonesMonsters: 1
+            };
+            
+            gameInstance.clearBonusCalculator();
+            
+            expect(gameInstance.expansionBonusCounters.sevenCaptured).toBe(0);
+            expect(gameInstance.expansionBonusCounters.eightCaptured).toBe(0);
+            expect(gameInstance.expansionBonusCounters.firstMateCon).toBe(0);
+            expect(gameInstance.expansionBonusCounters.davyJonesMonsters).toBe(0);
+        });
+
+        test('should include expansion bonuses when applying to player', () => {
+            gameInstance.viewModel.setExpansionMode(true);
+            
+            // Create bonus value display element
+            const bonusValueEl = document.createElement('span');
+            bonusValueEl.id = 'bonus-value-0';
+            document.body.appendChild(bonusValueEl);
+            
+            // Set current bonus player index
+            gameInstance.currentBonusPlayerIndex = 0;
+            
+            // Set base bonuses
+            gameInstance.bonusCounters = {
+                standard14: 1,     // +10
+                black14: 0,
+                mermaidPirate: 0,
+                skullPirate: 0,
+                mermaidSkull: 0,
+                loot: 0,
+                other: 0
+            };
+            
+            // Set expansion bonuses
+            gameInstance.expansionBonusCounters = {
+                sevenCaptured: 0,
+                eightCaptured: 1,  // +5
+                firstMateCon: 0,
+                davyJonesMonsters: 0
+            };
+            
+            // Calculate grand total
+            const grandTotal = gameInstance.calculateGrandBonusTotal();
+            expect(grandTotal).toBe(15); // 10 + 5 = 15
+            
+            // Clean up
+            document.body.removeChild(bonusValueEl);
+        });
+    });
+});
+
+describe('Graybeard State Bug', () => {
+    test('graybeardActive should be false for 3+ player games after loading 2-player game state', () => {
+        // First simulate a 2-player game with graybeardActive true
+        const oldGameState = {
+            players: [{ name: 'Alice', score: 0 }, { name: 'Bob', score: 0 }],
+            rounds: [],
+            currentRound: 1,
+            scoringMode: 'normal',
+            graybeardActive: true
+        };
+        
+        (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+            if (key === 'skullKingGameState') return JSON.stringify(oldGameState);
+            return null;
+        });
+        
+        // Load the game (simulates page refresh after 2-player game)
+        const game = new window.SkullKingGame();
+        
+        // Verify graybeardActive is true for the 2-player game
+        expect(game.viewModel.isGraybeardActive()).toBe(true);
+        
+        // Now start a new 3-player game
+        game.viewModel.startNewGame(false);
+        game.viewModel.setTempPlayers(['Alice', 'Bob', 'Charlie']);
+        game.viewModel.validateAndStartGame();
+        
+        // Graybeard should NOT be active for 3 players
+        expect(game.viewModel.isGraybeardActive()).toBe(false);
+    });
+});
+
+describe('Graybeard UI Bug - Continuing Game', () => {
+    test('graybeardActive should be correctly loaded for 3+ player game', () => {
+        // Simulate a 3-player game state that was saved
+        const threePlayerState = {
+            players: [
+                { name: 'Alice', score: 20 }, 
+                { name: 'Bob', score: 10 },
+                { name: 'Charlie', score: 30 }
+            ],
+            rounds: [{
+                roundNumber: 1,
+                playerData: [
+                    { playerName: 'Alice', bid: 1, actual: 1, bonus: 0, roundScore: 20 },
+                    { playerName: 'Bob', bid: 0, actual: 0, bonus: 0, roundScore: 10 },
+                    { playerName: 'Charlie', bid: 0, actual: 0, bonus: 0, roundScore: 30 }
+                ],
+                commentary: 'Test'
+            }],
+            currentRound: 2,
+            scoringMode: 'normal',
+            graybeardActive: false  // Should be false for 3 players
+        };
+        
+        (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+            if (key === 'skullKingGameState') return JSON.stringify(threePlayerState);
+            return null;
+        });
+        
+        // Load the game (simulates page refresh)
+        const game = new window.SkullKingGame();
+        
+        // Verify graybeardActive is false for the 3-player game
+        expect(game.viewModel.isGraybeardActive()).toBe(false);
+        expect(game.viewModel.getPlayerCount()).toBe(3);
+    });
+    
+    test('graybeardActive should NOT be true if loaded state has undefined graybeardActive and 3 players', () => {
+        // Simulate an older 3-player game state without graybeardActive field
+        const oldThreePlayerState = {
+            players: [
+                { name: 'Alice', score: 20 }, 
+                { name: 'Bob', score: 10 },
+                { name: 'Charlie', score: 30 }
+            ],
+            rounds: [],
+            currentRound: 1,
+            scoringMode: 'normal'
+            // Note: no graybeardActive field - simulates old saved state
+        };
+        
+        (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+            if (key === 'skullKingGameState') return JSON.stringify(oldThreePlayerState);
+            return null;
+        });
+        
+        // Load the game
+        const game = new window.SkullKingGame();
+        
+        // isGraybeardActive checks if graybeardActive === true, so undefined should return false
+        expect(game.viewModel.isGraybeardActive()).toBe(false);
+    });
+});
+
+describe('Graybeard Round History Bug', () => {
+    test('graybeardTricksWon should be undefined for 3+ player games', () => {
+        // Setup a 3-player game
+        const threePlayerState = {
+            players: [
+                { name: 'Alice', score: 0 }, 
+                { name: 'Bob', score: 0 },
+                { name: 'Charlie', score: 0 }
+            ],
+            rounds: [],
+            currentRound: 1,
+            scoringMode: 'normal',
+            graybeardActive: false
+        };
+        
+        (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+            if (key === 'skullKingGameState') return JSON.stringify(threePlayerState);
+            return null;
+        });
+        
+        const game = new window.SkullKingGame();
+        
+        // Simulate round data
+        const roundData = {
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 },
+            'Charlie': { bid: 0, actual: 0, bonus: 0 }
+        };
+        
+        // Add round using the exposed addRound method
+        const result = game.viewModel.addRound(roundData, false, 0);
+
+        expect(result).toEqual({ status: 'ok' }); // No error
+
+        // Get the state and check the round
+        const state = game.viewModel.getGameState();
+        expect(state.rounds.length).toBe(1);
+        expect(state.rounds[0].graybeardTricksWon).toBeUndefined();
+    });
+
+    test('graybeardTricksWon should be set for 2-player games', () => {
+        // Setup a 2-player game
+        const twoPlayerState = {
+            players: [
+                { name: 'Alice', score: 0 },
+                { name: 'Bob', score: 0 }
+            ],
+            rounds: [],
+            currentRound: 1,
+            scoringMode: 'normal',
+            graybeardActive: true
+        };
+
+        (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+            if (key === 'skullKingGameState') return JSON.stringify(twoPlayerState);
+            return null;
+        });
+
+        const game = new window.SkullKingGame();
+
+        // Simulate round data
+        const roundData = {
+            'Alice': { bid: 1, actual: 1, bonus: 0 },
+            'Bob': { bid: 0, actual: 0, bonus: 0 }
+        };
+
+        // Add round with graybeard tricks = 0
+        const result = game.viewModel.addRound(roundData, false, 0);
+
+        expect(result).toEqual({ status: 'ok' }); // No error
+        
+        // Get the state and check the round
+        const state = game.viewModel.getGameState();
+        expect(state.rounds.length).toBe(1);
+        expect(state.rounds[0].graybeardTricksWon).toBe(0);
+    });
+});
+
+describe('Other/House Rules Bonus', () => {
+    let gameInstance: any;
+
+    beforeEach(() => {
+        gameInstance = new window.SkullKingGame();
+        gameInstance.viewModel.startNewGame(false);
+        gameInstance.viewModel.setTempPlayers(['Alice', 'Bob']);
+        gameInstance.viewModel.validateAndStartGame();
+    });
+
+    describe('calculateBonusPoints for "other" type', () => {
+        test('should return 0 for count of 0', () => {
+            expect(gameInstance.calculateBonusPoints('other', 0)).toBe(0);
+        });
+
+        test('should calculate positive bonus correctly (count × 5)', () => {
+            expect(gameInstance.calculateBonusPoints('other', 1)).toBe(5);
+            expect(gameInstance.calculateBonusPoints('other', 2)).toBe(10);
+            expect(gameInstance.calculateBonusPoints('other', 5)).toBe(25);
+            expect(gameInstance.calculateBonusPoints('other', 10)).toBe(50);
+        });
+
+        test('should calculate negative bonus correctly (count × 5)', () => {
+            expect(gameInstance.calculateBonusPoints('other', -1)).toBe(-5);
+            expect(gameInstance.calculateBonusPoints('other', -2)).toBe(-10);
+            expect(gameInstance.calculateBonusPoints('other', -5)).toBe(-25);
+            expect(gameInstance.calculateBonusPoints('other', -10)).toBe(-50);
+        });
+
+        test('should handle maximum positive value (-99 × 5)', () => {
+            expect(gameInstance.calculateBonusPoints('other', 99)).toBe(495);
+        });
+
+        test('should handle maximum negative value (-99 × 5)', () => {
+            expect(gameInstance.calculateBonusPoints('other', -99)).toBe(-495);
+        });
+    });
+
+    describe('updateBonusCounter for "other" type', () => {
+        beforeEach(() => {
+            // Initialize bonus counters with 'other' at 0
+            gameInstance.bonusCounters = {
+                standard14: 0,
+                black14: 0,
+                mermaidPirate: 0,
+                skullPirate: 0,
+                mermaidSkull: 0,
+                loot: 0,
+                other: 0
+            };
+        });
+
+        test('should increment other counter', () => {
+            gameInstance.updateBonusCounter('other', 1);
+            expect(gameInstance.bonusCounters.other).toBe(1);
+
+            gameInstance.updateBonusCounter('other', 1);
+            expect(gameInstance.bonusCounters.other).toBe(2);
+        });
+
+        test('should decrement other counter', () => {
+            gameInstance.bonusCounters.other = 5;
+
+            gameInstance.updateBonusCounter('other', -1);
+            expect(gameInstance.bonusCounters.other).toBe(4);
+
+            gameInstance.updateBonusCounter('other', -1);
+            expect(gameInstance.bonusCounters.other).toBe(3);
+        });
+
+        test('should allow negative values', () => {
+            gameInstance.bonusCounters.other = 0;
+
+            gameInstance.updateBonusCounter('other', -1);
+            expect(gameInstance.bonusCounters.other).toBe(-1);
+
+            gameInstance.updateBonusCounter('other', -1);
+            expect(gameInstance.bonusCounters.other).toBe(-2);
+        });
+
+        test('should enforce maximum limit of 99', () => {
+            gameInstance.bonusCounters.other = 99;
+
+            gameInstance.updateBonusCounter('other', 1);
+            expect(gameInstance.bonusCounters.other).toBe(99); // Should stay at max
+        });
+
+        test('should enforce minimum limit of -99', () => {
+            gameInstance.bonusCounters.other = -99;
+
+            gameInstance.updateBonusCounter('other', -1);
+            expect(gameInstance.bonusCounters.other).toBe(-99); // Should stay at min
+        });
+    });
+
+    describe('calculateGrandBonusTotal includes other bonus', () => {
+        beforeEach(() => {
+            gameInstance.bonusCounters = {
+                standard14: 0,
+                black14: 0,
+                mermaidPirate: 0,
+                skullPirate: 0,
+                mermaidSkull: 0,
+                loot: 0,
+                other: 0
+            };
+        });
+
+        test('should include positive other bonus in total', () => {
+            gameInstance.bonusCounters.standard14 = 1; // +10
+            gameInstance.bonusCounters.other = 2;      // +10
+
+            const total = gameInstance.calculateGrandBonusTotal();
+            expect(total).toBe(20); // 10 + 10 = 20
+        });
+
+        test('should include negative other bonus in total', () => {
+            gameInstance.bonusCounters.standard14 = 2; // +20
+            gameInstance.bonusCounters.other = -1;     // -5
+
+            const total = gameInstance.calculateGrandBonusTotal();
+            expect(total).toBe(15); // 20 - 5 = 15
+        });
+
+        test('should handle negative total from other bonus', () => {
+            gameInstance.bonusCounters.standard14 = 1; // +10
+            gameInstance.bonusCounters.other = -3;     // -15
+
+            const total = gameInstance.calculateGrandBonusTotal();
+            expect(total).toBe(-5); // 10 - 15 = -5
+        });
+
+        test('should return 0 when only other is 0', () => {
+            gameInstance.bonusCounters.other = 0;
+
+            const total = gameInstance.calculateGrandBonusTotal();
+            expect(total).toBe(0);
+        });
+
+        test('should calculate correctly with only other bonus', () => {
+            gameInstance.bonusCounters.other = 5; // +25
+
+            const total = gameInstance.calculateGrandBonusTotal();
+            expect(total).toBe(25);
+        });
+    });
+
+    describe('Validation with negative bonuses', () => {
+        test('should allow negative bonuses in validation', () => {
+            const result = gameInstance.testValidateSinglePlayerInput(1, 1, -15, 'Alice');
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
+        });
+
+        test('should allow adding round with negative bonus', () => {
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: -10 }, // Negative bonus allowed
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
+
+            // Verify the round was added with negative bonus
+            const gameState = gameInstance.viewModel.getGameState();
+            expect(gameState.rounds.length).toBe(1);
+
+            // Verify score reflects negative bonus
+            const aliceScore = gameState.players.find((p: any) => p.name === 'Alice')?.score;
+            expect(aliceScore).toBe(10); // 20 * 1 - 10 = 10
+        });
+
+        test('should allow round with large negative bonus resulting in negative score', () => {
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: -50 }, // Large penalty
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toEqual({ status: 'ok' }); // Should succeed
+
+            const gameState = gameInstance.viewModel.getGameState();
+            const aliceScore = gameState.players.find((p: any) => p.name === 'Alice')?.score;
+            expect(aliceScore).toBe(-30); // 20 * 1 - 50 = -30
+        });
+    });
+
+    describe('Integration with round scoring', () => {
+        test('should apply positive other bonus to round score', () => {
+            const bid = 2;
+            const actual = 2;
+            const bonus = 15; // Positive bonus (e.g., from other counter at 3)
+            const round = 3;
+
+            const score = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 2);
+            expect(score).toBe(55); // 20 * 2 + 15 = 55
+        });
+
+        test('should apply negative other bonus to round score', () => {
+            const bid = 2;
+            const actual = 2;
+            const bonus = -10; // Negative penalty (e.g., from other counter at -2)
+            const round = 3;
+
+            const score = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 2);
+            expect(score).toBe(30); // 20 * 2 - 10 = 30
+        });
+
+        test('should handle negative total score from large penalty', () => {
+            const bid = 1;
+            const actual = 1;
+            const bonus = -50; // Large penalty
+            const round = 2;
+
+            const score = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 2);
+            expect(score).toBe(-30); // 20 * 1 - 50 = -30
+        });
+
+        test('should work with zero bid and negative bonus', () => {
+            const bid = 0;
+            const actual = 0;
+            const bonus = -5; // Negative penalty
+            const round = 5;
+
+            const score = gameInstance.testCalculateRoundScore(bid, actual, bonus, round, 2);
+            // Zero bid success: 10 × 5 = 50, minus 5 = 45
+            expect(score).toBe(45);
+        });
+    });
+
+    describe('Rascal mode with other bonus', () => {
+        beforeEach(() => {
+            gameInstance.viewModel.setScoringMode('rascal');
+        });
+
+        test('should apply positive other bonus in Rascal mode with exact bid', () => {
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: 20 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toEqual({ status: 'ok' });
+
+            const gameState = gameInstance.viewModel.getGameState();
+            const aliceScore = gameState.players.find((p: any) => p.name === 'Alice')?.score;
+            expect(aliceScore).toBe(30); // 10 * 1 (round 1) + 20 bonus = 30
+        });
+
+        test('should apply negative other bonus in Rascal mode', () => {
+            const roundData = {
+                'Alice': { bid: 1, actual: 1, bonus: -10 },
+                'Bob': { bid: 0, actual: 0, bonus: 0 }
+            };
+
+            const result = gameInstance.viewModel.addRound(roundData);
+            expect(result).toEqual({ status: 'ok' });
+
+            const gameState = gameInstance.viewModel.getGameState();
+            const aliceScore = gameState.players.find((p: any) => p.name === 'Alice')?.score;
+            expect(aliceScore).toBe(0); // 10 * 1 (round 1) - 10 bonus = 0
         });
     });
 });

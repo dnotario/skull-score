@@ -246,6 +246,30 @@ input[type="text"]:focus {
     transform: translateY(-2px);
 }
 
+.btn-warning {
+    background: #ff6b35;
+    color: white;
+    box-shadow: 0 3px 0 #cc5429;
+}
+
+.btn-warning:hover {
+    background: #cc5429;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 #a0431f;
+}
+
+.btn-safe {
+    background: #28a745;
+    color: white;
+    box-shadow: 0 3px 0 #1e7e34;
+}
+
+.btn-safe:hover {
+    background: #1e7e34;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 #155724;
+}
+
 /* Player Setup */
 .player-setup {
     text-align: center;
@@ -407,7 +431,7 @@ input[type="text"]:focus {
 }
 
 /* Scoring Mode Selection */
-.scoring-mode-section {
+.option-section {
     margin-top: 2.5rem;
     margin-bottom: 1rem;
     padding: 1rem;
@@ -416,7 +440,7 @@ input[type="text"]:focus {
     border: 2px solid rgba(212, 175, 55, 0.3);
 }
 
-.scoring-mode-section h3 {
+.option-section h3 {
     font-size: 1.3rem;
     color: #2c1810;
     margin-bottom: 1rem;
@@ -424,31 +448,23 @@ input[type="text"]:focus {
     text-shadow: 1px 1px 2px rgba(212, 175, 55, 0.3);
 }
 
-.scoring-mode-options {
+.option-list {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
 }
 
-.scoring-mode-option {
+.option-card {
     display: flex;
     align-items: flex-start;
     padding: 0.75rem;
     background: rgba(244, 228, 193, 0.9);
-    border: 2px solid transparent;
+    border: 2px solid rgba(212, 175, 55, 0.2);
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
 }
 
-.scoring-mode-option:hover {
-    background: rgba(244, 228, 193, 0.95);
-    border-color: #d4af37;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-.scoring-mode-option input[type="radio"] {
+.option-card input[type="radio"] {
     margin-right: 0.75rem;
     margin-top: 0.2rem;
     width: 20px;
@@ -456,32 +472,64 @@ input[type="text"]:focus {
     cursor: pointer;
 }
 
-.scoring-mode-option input[type="radio"]:checked + .scoring-mode-content {
+.option-card input[type="radio"]:checked + .option-content {
     font-weight: bold;
 }
 
-.scoring-mode-option:has(input[type="radio"]:checked) {
+.option-card:has(input[type="radio"]:checked) {
     background: rgba(212, 175, 55, 0.2);
     border-color: #d4af37;
     box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
 }
 
-.scoring-mode-content {
+.option-card input[type="checkbox"] {
+    margin-right: 0.75rem;
+    margin-top: 0.2rem;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #d4af37;
+}
+
+.option-card input[type="checkbox"]:checked + .option-content {
+    font-weight: bold;
+}
+
+.option-card:has(input[type="checkbox"]:checked) {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: #d4af37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+}
+
+.option-content {
     flex: 1;
 }
 
-.scoring-mode-content strong {
+.option-content strong {
     display: block;
     font-size: 1.1rem;
     color: #2c1810;
     margin-bottom: 0.25rem;
 }
 
-.scoring-mode-content p {
+.option-content p {
     font-size: 0.9rem;
     color: #4a4a4a;
     margin: 0;
     line-height: 1.4;
+}
+.expansion-pack-option input[type="checkbox"] {
+    margin-right: 0.75rem;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #d4af37;
+}
+
+.expansion-pack-option span {
+    font-size: 1.05rem;
+    color: #2c1810;
+    font-weight: 500;
 }
 
 /* Global Actions */
@@ -623,8 +671,7 @@ input[type="text"]:focus {
     gap: 0.5rem;
     justify-content: center;
     margin: 1rem 0;
-    flex-wrap: nowrap;
-    white-space: nowrap;
+    flex-wrap: wrap;
 }
 
 .expansion-checkbox {
@@ -635,7 +682,6 @@ input[type="text"]:focus {
     color: #8B4513;
     font-size: 0.75rem;
     font-weight: 600;
-    white-space: nowrap;
 }
 
 .expansion-checkbox input[type="checkbox"] {
@@ -643,10 +689,30 @@ input[type="text"]:focus {
     height: 1.3rem;
     cursor: pointer;
     accent-color: #8B4513;
+    flex-shrink: 0;
 }
 
 .expansion-checkbox span {
     user-select: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+/* Mobile: ensure checkboxes wrap text properly */
+@media (max-width: 480px) {
+    .expansion-indicators {
+        justify-content: flex-start;
+    }
+
+    .expansion-checkbox {
+        max-width: 48%;
+        font-size: 0.7rem;
+    }
+
+    .expansion-checkbox span {
+        line-height: 1.2;
+    }
 }
 
 .round-expansion-icons {
@@ -1431,36 +1497,36 @@ body.game-active .landing-only {
 
 /* Mobile styles for scoring mode */
 @media (max-width: 600px) {
-    .scoring-mode-section {
+    .option-section {
         margin-top: 1.5rem;
         margin-bottom: 1.5rem;
         padding: 0.75rem;
     }
     
-    .scoring-mode-section h3 {
+    .option-section h3 {
         font-size: 1.1rem;
         margin-bottom: 0.75rem;
     }
     
-    .scoring-mode-options {
+    .option-list {
         gap: 0.5rem;
     }
     
-    .scoring-mode-option {
+    .option-card {
         padding: 0.5rem;
     }
     
-    .scoring-mode-option input[type="radio"] {
+    .option-card input[type="radio"] {
         width: 18px;
         height: 18px;
         margin-right: 0.5rem;
     }
     
-    .scoring-mode-content strong {
+    .option-content strong {
         font-size: 1rem;
     }
     
-    .scoring-mode-content p {
+    .option-content p {
         font-size: 0.85rem;
     }
 }
@@ -1494,17 +1560,55 @@ body.game-active .landing-only {
     border-radius: 5px;
     padding: 0;
     max-width: 500px;
-    width: 90%;
+    width: calc(100% - 20px);
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
     position: relative;
     transform: scale(0.95);
     transition: transform 0.3s ease;
+    box-sizing: border-box;
 }
 
 .modal-overlay.active .bonus-modal {
     transform: scale(1);
+}
+
+.bonus-tabs {
+    display: flex;
+    border-bottom: 2px solid #d4af37;
+    background: rgba(139, 69, 19, 0.05);
+}
+
+.bonus-tab {
+    flex: 1;
+    padding: 0.6rem 0.5rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #654321;
+    font-weight: bold;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bonus-tab:hover {
+    background: rgba(139, 69, 19, 0.1);
+}
+
+.bonus-tab.active {
+    border-bottom-color: #8B4513;
+    background: rgba(139, 69, 19, 0.15);
+}
+
+.bonus-tab-panel {
+    display: none;
+    min-height: 280px;
+}
+
+.bonus-tab-panel.active {
+    display: block;
 }
 
 .bonus-modal-header {
@@ -1556,6 +1660,21 @@ body.game-active .landing-only {
     border-radius: 4px;
 }
 
+.bonus-category.expansion-bonuses {
+    background: rgba(0, 100, 150, 0.08);
+    border-color: #2a9d8f;
+}
+
+.expansion-header {
+    color: #2a9d8f;
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 0.75rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(42, 157, 143, 0.3);
+    padding-bottom: 0.5rem;
+}
+
 .bonus-category h4 {
     color: #654321;
     font-size: 1.1rem;
@@ -1591,6 +1710,10 @@ body.game-active .landing-only {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+.bonus-counter-no-display {
+    gap: 0.75rem;
 }
 
 .counter-btn {
@@ -1633,6 +1756,10 @@ body.game-active .landing-only {
     min-width: 60px;
     text-align: right;
     font-size: 0.9rem;
+}
+
+.bonus-points.penalty {
+    color: #dc3545;
 }
 
 .bonus-total {
@@ -1739,7 +1866,9 @@ body.game-active .landing-only {
 @media (max-width: 600px) {
     .bonus-modal {
         padding: 0;
+        width: calc(100% - 16px);
         max-width: 100%;
+        margin: 0 8px;
     }
     
     .bonus-modal-content {
@@ -1747,11 +1876,11 @@ body.game-active .landing-only {
     }
     
     .bonus-modal-header h3 {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
     
     .bonus-modal-header {
-        padding: 0.75rem;
+        padding: 0.5rem 0.75rem;
     }
     
     .bonus-category {
@@ -1766,29 +1895,34 @@ body.game-active .landing-only {
     
     .bonus-item {
         flex-wrap: nowrap;
-        gap: 0.5rem;
-        padding: 0.5rem;
+        gap: 0.4rem;
+        padding: 0.4rem;
         margin-bottom: 0.5rem;
     }
     
     .bonus-item-label {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
+        min-width: 0;
+        flex-shrink: 1;
     }
     
     .counter-btn {
-        width: 20px;
-        height: 20px;
-        font-size: 0.8rem;
+        width: 28px;
+        height: 28px;
+        font-size: 1rem;
+        flex-shrink: 0;
     }
     
     .counter-value {
         font-size: 0.9rem;
-        min-width: 24px;
+        min-width: 20px;
+        flex-shrink: 0;
     }
     
     .bonus-points {
-        font-size: 0.85rem;
-        min-width: 45px;
+        font-size: 0.8rem;
+        min-width: 40px;
+        flex-shrink: 0;
     }
     
     .bonus-total {
@@ -1815,3 +1949,4 @@ body.game-active .landing-only {
         min-width: 70px;
     }
 }
+/* Generic option section styles (semantic class names) */

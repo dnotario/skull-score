@@ -7,7 +7,7 @@
     <!-- SEO Meta Tags -->
     <title id="page-title" data-i18n="page_title">Skull King Score Keeper - Free Digital Scorecard & Score Tracker</title>
     <meta name="description" content="Free Skull King score keeper and digital scorecard. Track scores, calculate points, and enjoy pirate commentary for the Skull King card game. Mobile-friendly score tracker with automatic scoring." data-i18n-content="page_description">
-    <meta name="keywords" content="skull king score keeper, skull king scorecard, skull king calculator, skull king scoring app, digital skull king score sheet, skull king points tracker, skull king game scorer, trick taking game calculator, pirate game score keeper, skull king tournament scoring, skull king bid tracker, skull king scoring rules, skull king score pad alternative, free skull king scorer, mobile skull king scorecard, skull king score sheet pdf alternative, skull king scoring app free, skull king points calculator, digital skull king scorepad, skull king game tracker online, skull king bidding tracker, skull king tournament scorer" data-i18n-content="page_keywords">
+    <meta name="keywords" content="skull king score keeper, skull king scorecard, skull king calculator, skull king scoring app, digital skull king score sheet, skull king points tracker, skull king game scorer, trick taking game calculator, pirate game score keeper, skull king tournament scoring, skull king bid tracker, skull king scoring rules, skull king score pad alternative, free skull king scorer, mobile skull king scorecard, skull king score sheet pdf alternative, skull king scoring app free, skull king points calculator, digital skull king scorepad, skull king game tracker online, skull king bidding tracker, skull king tournament scorer, skull king expansion pack, skull king 9 players, skull king kraken, skull king white whale, skull king graybeard" data-i18n-content="page_keywords">
     <meta name="author" content="Skull King Score Keeper">
     <meta name="robots" content="index, follow">
     
@@ -76,6 +76,11 @@
         "featureList": [
             "Digital scorecard",
             "Automatic score calculation", 
+            "Full expansion pack support",
+            "9-player mode with expansion",
+            "Graybeard ghost player for 2-player games",
+            "Sea monster tracking (Kraken, White Whale, Stingray)",
+            "Expansion bonus calculator",
             "Pirate-themed commentary",
             "Mobile responsive design",
             "Local data storage",
@@ -121,25 +126,20 @@
         <!-- Landing/Setup Section -->
         <section id="landing-section" class="landing-section">
             <div class="parchment">
-                <h2 id="landing-title" data-i18n="landing_title">Free Skull King Score Keeper & Digital Scorecard</h2>
-                <p id="landing-description" data-i18n="landing_description">The ultimate Skull King score tracker with automatic calculations, pirate commentary, and mobile-friendly design. Keep track of your Skull King card game scores like a true pirate captain!</p>
-                
-                <h3 id="landing-subtitle" data-i18n="landing_subtitle">Perfect Skull King Scoring Solution</h3>
+                <h2 id="landing-title" data-i18n="landing_title">Skull King Score Keeper with Full Expansion Pack Support</h2>
+                <p id="landing-description" data-i18n="landing_description">The only score tracker you need: automatic calculations, interactive bonus calculator, pirate commentary, and complete expansion support (9 players, Graybeard, sea monsters). Mobile-friendly, always free.</p>
+
                 <ul class="feature-list">
-                    <li id="feature-mobile" data-i18n="feature_mobile">📱 <strong>Mobile Skull King Scorecard</strong> - Works on phones, tablets, and computers</li>
-                    <li id="feature-calculator" data-i18n="feature_calculator">🧮 <strong>Automatic Score Calculator</strong> - No more manual Skull King scoring errors</li>
-                    <li id="feature-commentary" data-i18n="feature_commentary">🦜 <strong>Pirate Commentary</strong> - Entertaining feedback on your Skull King gameplay</li>
-                    <li id="feature-audio" data-i18n="feature_audio">🔊 <strong>Audio Score Reader</strong> - Hear your Skull King scores announced</li>
-                    <li id="feature-saving" data-i18n="feature_saving">💾 <strong>Game State Saving</strong> - Never lose your Skull King scoring progress</li>
+                    <li id="feature-expansion" data-i18n="feature_expansion">🏴‍☠️ <strong>Complete Expansion Pack</strong> - 9 players, Graybeard, Kraken, Whale, Stingray, all expansion bonuses</li>
+                    <li id="feature-calculator" data-i18n="feature_calculator">🧮 <strong>Interactive Bonus Calculator</strong> - Visual counters for all bonus types, no math errors</li>
+                    <li id="feature-commentary" data-i18n="feature_commentary">🦜 <strong>Intelligent Pirate Commentary</strong> - 100+ unique responses based on your gameplay</li>
+                    <li id="feature-modes">⚖️ <strong>Both Scoring Modes</strong> - Traditional and Rascal scoring with automatic calculations</li>
+                    <li id="feature-audio" data-i18n="feature_audio">🔊 <strong>Audio Score Reader</strong> - Hear scores announced aloud with text-to-speech</li>
+                    <li id="feature-mobile" data-i18n="feature_mobile">📱 <strong>Works Everywhere</strong> - Phone, tablet, desktop. Auto-saves your game. No download needed.</li>
                 </ul>
                 
                 <div class="player-setup">
                     <button id="new-game-btn" class="btn btn-primary" data-i18n="start_button" aria-label="Start tracking Skull King scores">Start Your Skull King Score Tracking</button>
-                </div>
-                
-                <div class="seo-content">
-                    <h4 id="why-choose-title" data-i18n="why_choose_title">Why Choose Our Skull King Score Keeper?</h4>
-                    <p id="why-choose-description" data-i18n="why_choose_description">Whether you're playing Skull King at home, at a game night, or in a tournament, our digital scorecard makes Skull King scoring effortless. Track bids, actual tricks, bonus points, and watch your Skull King scores calculate automatically. Perfect for Skull King enthusiasts who want accurate, fast scoring.</p>
                 </div>
             </div>
         </section>
@@ -158,21 +158,35 @@
                 </div>
                 
                 <!-- Scoring Mode Selection -->
-                <div class="scoring-mode-section">
+                <div class="option-section">
                     <h3 id="scoring-mode-label" data-i18n="scoring_mode_label">Scoring Rules</h3>
-                    <div class="scoring-mode-options">
-                        <label class="scoring-mode-option">
+                    <div class="option-list">
+                        <label class="option-card">
                             <input type="radio" name="scoring-mode" value="normal" id="scoring-normal" checked>
-                            <div class="scoring-mode-content">
+                            <div class="option-content">
                                 <strong id="scoring-mode-normal" data-i18n="scoring_mode_normal">Normal Scoring</strong>
                                 <p id="scoring-mode-normal-desc" data-i18n="scoring_mode_normal_desc">Traditional Skull King: Zero bid = 10×round, correct bid = 20×tricks + bonus</p>
                             </div>
                         </label>
-                        <label class="scoring-mode-option">
+                        <label class="option-card">
                             <input type="radio" name="scoring-mode" value="rascal" id="scoring-rascal">
-                            <div class="scoring-mode-content">
+                            <div class="option-content">
                                 <strong id="scoring-mode-rascal" data-i18n="scoring_mode_rascal">Rascal's Scoring</strong>
                                 <p id="scoring-mode-rascal-desc" data-i18n="scoring_mode_rascal_desc">Even-keeled scoring: 10 pts × cards dealt. Direct hit = full, off by 1 = half, off by 2+ = none</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Other Options Section -->
+                <div class="option-section">
+                    <h3 id="other-options-label" data-i18n="other_options_label">Other Options</h3>
+                    <div class="option-list">
+                        <label class="option-card">
+                            <input type="checkbox" id="expansion-mode-checkbox" onchange="game.handleExpansionModeToggle(this.checked)">
+                            <div class="option-content">
+                                <strong id="expansion-mode-title" data-i18n="expansion_mode_title">Expansion Pack</strong>
+                                <p id="expansion-mode-desc" data-i18n="expansion_mode_desc">Adds 9-player support, Stingray, Davy Jones, and new bonus cards</p>
                             </div>
                         </label>
                     </div>
@@ -217,12 +231,8 @@
                 <div id="round-inputs" class="round-inputs"></div>
                 <div class="expansion-indicators">
                     <label class="expansion-checkbox">
-                        <input type="checkbox" id="kraken-played">
-                        <span data-i18n="kraken_played">🐙 Kraken played</span>
-                    </label>
-                    <label class="expansion-checkbox">
-                        <input type="checkbox" id="whale-played">
-                        <span data-i18n="whale_played">🐋 White Whale played</span>
+                        <input type="checkbox" id="trick-lost">
+                        <span data-i18n="trick_lost">🚫 Trick lost (Kraken or Whale/Stingray with no winner)</span>
                     </label>
                 </div>
                 <div class="record-round-container">
@@ -247,83 +257,11 @@
         </div>
     </main>
 
-    <!-- FAQ Section -->
-    <section class="faq-section landing-only">
-        <div class="container">
-            <div class="parchment">
-                <h2>Frequently Asked Questions about Skull King Scoring</h2>
-            
-            <div class="faq-item">
-                <h3>How does Skull King scoring work?</h3>
-                <p>In traditional Skull King scoring, players bid on the number of tricks they'll take each round. If you bid correctly, you earn 20 points × tricks taken plus any bonus points. If you fail your bid, you lose 10 points × the difference between your bid and actual tricks.</p>
-            </div>
-            
-            <div class="faq-item">
-                <h3>What's the difference between Normal and Rascal scoring?</h3>
-                <p>Normal scoring rewards exact bids with 20× tricks taken. Rascal scoring uses a more forgiving system: 10× cards dealt for exact bids, 5× cards dealt for being off by one, and 0 points for missing by 2 or more.</p>
-            </div>
-            
-            <div class="faq-item">
-                <h3>Can I track Skull King scores on my phone?</h3>
-                <p>Yes! Our Skull King score keeper is fully mobile-responsive and works perfectly on all devices without downloading an app. Just visit the website and start tracking scores immediately.</p>
-            </div>
-            
-            <div class="faq-item">
-                <h3>How many players can use the Skull King scorecard?</h3>
-                <p>The digital scorecard supports 2-8 players, perfect for any Skull King game size. Each player can have a custom pirate name for added fun!</p>
-            </div>
-            
-            <div class="faq-item">
-                <h3>Do I need to download an app to use the Skull King scorer?</h3>
-                <p>No download needed! This is a web-based Skull King score tracker that works directly in your browser. You can optionally install it as a Progressive Web App for offline use.</p>
-            </div>
-            
-            <div class="faq-item">
-                <h3>How do bonus points work in Skull King?</h3>
-                <p>Bonus points are earned by capturing special cards like the Skull King (30 points per pirate captured), Mermaids capturing pirates (20 points each), or Mermaid capturing Skull King (40 points). In Traditional scoring, you can only score bonus points when you meet your exact bid. In Rascal scoring, you get full bonus for exact bids and half bonus when off by one.</p>
-            </div>
-            
-            <div class="faq-item">
-                <h3>Can I save my Skull King game progress?</h3>
-                <p>Yes! The score keeper automatically saves your game to your device's local storage. You can close the browser and return later to continue where you left off.</p>
-            </div>
-            
-            <div class="faq-item">
-                <h3>Is this Skull King score tracker free to use?</h3>
-                <p>Absolutely! This Skull King digital scorecard is completely free with no ads, subscriptions, or hidden costs. Enjoy unlimited games!</p>
-            </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Game Info Section -->
-    <section class="game-info landing-only">
-        <div class="container">
-            <div class="parchment">
-                <h2>About Skull King Score Tracking</h2>
-            <p>Skull King is a popular trick-taking card game where accurate score keeping is essential for fair gameplay. Our digital Skull King scorecard eliminates math errors and speeds up your game night. Whether you're a seasoned pirate or new to the seas, this Skull King score tracker makes the game more enjoyable by handling all the complex calculations automatically.</p>
-            
-            <h3>Skull King Scoring Made Easy</h3>
-            <p>Whether you're using traditional Skull King scoring rules or the Rascal variant, our calculator handles all the math instantly. Track bids, actual tricks won, and bonus points for special cards like the Skull King, pirates, mermaids, and the escape. No more disputes over Skull King scoring - our digital scorecard keeps everyone honest!</p>
-            
-            <h3>Perfect for Skull King Tournaments</h3>
-            <p>Tournament organizers love our Skull King score tracker for its accuracy and speed. Keep multiple games running smoothly, export results for record keeping, and crown your Skull King champion with confidence. The automatic score calculation prevents errors that can ruin competitive play.</p>
-            
-            <h3>How to Use This Skull King Score Keeper</h3>
-            <p>Using our Skull King digital scorecard is simple: Enter player names, choose your scoring mode (Normal or Rascal), then input each player's bid and actual tricks for every round. The score keeper automatically calculates points, tracks running totals, and even provides pirate-themed commentary on your performance!</p>
-            
-            <h3>Skull King Scoring Rules Explained</h3>
-            <p>New to Skull King? Here's a quick scoring guide: In Normal mode, bidding correctly earns 20 points per trick taken. Missing your bid costs 10 points per trick difference. Zero bids earn 10 points × the round number if successful. Rascal scoring is more forgiving, awarding partial points for close bids. In Normal mode, bonus points are only awarded when you meet your exact bid. In Rascal mode, you get full bonus for exact bids and half bonus when off by one!</p>
-            </div>
-        </div>
-    </section>
-
     <!-- Footer Disclaimer -->
     <footer class="disclaimer-footer">
         <div class="container">
             <div class="disclaimer-content">
                 <p><strong id="disclaimer-title" data-i18n="disclaimer_title">Disclaimer:</strong> <span id="disclaimer-text-1" data-i18n="disclaimer_text_1">This website is an independent fan-created score keeper for the Skull King card game. It is not affiliated with, endorsed by, or connected to Grandpa Beck's Games, the official publisher of Skull King. Skull King is a trademark of Grandpa Beck's Games.</span></p>
-                <p id="disclaimer-text-2" data-i18n="disclaimer_text_2">This tool is provided for educational and entertainment purposes to help players track their game scores.</p>
                 <p><span id="feedback-text" data-i18n="feedback_text">For feedback, suggestions, or bug reports, contact: </span><a href="mailto:captain@skullkingscorekeeper.com" class="feedback-link">captain@skullkingscorekeeper.com</a></p>
                 
                 <div class="language-selector-container">
@@ -345,8 +283,15 @@
                 <button class="close-button" onclick="game.closeBonusModal()" aria-label="Close bonus calculator">×</button>
             </div>
             
+            <div class="bonus-tabs">
+                <button class="bonus-tab active" data-tab="tab-14s" onclick="game.switchBonusTab('tab-14s')">14s</button>
+                <button class="bonus-tab" data-tab="tab-captures" onclick="game.switchBonusTab('tab-captures')">Captures</button>
+                <button class="bonus-tab" id="bonus-tab-expansion" data-tab="tab-expansion" onclick="game.switchBonusTab('tab-expansion')" style="display:none;">Expansion</button>
+                <button class="bonus-tab" data-tab="tab-other" onclick="game.switchBonusTab('tab-other')">Other</button>
+            </div>
+            
             <div class="bonus-modal-content">
-                <div class="bonus-category">
+                <div class="bonus-tab-panel active" id="tab-14s">
                     <div class="bonus-item">
                         <span class="bonus-item-label" id="bonus-label-standard-14" data-i18n="bonus_label_standard_14">Yellow/Purple/Green 14s</span>
                         <div class="bonus-counter">
@@ -367,7 +312,7 @@
                     </div>
                 </div>
                 
-                <div class="bonus-category">
+                <div class="bonus-tab-panel" id="tab-captures">
                     <div class="bonus-item">
                         <span class="bonus-item-label" id="bonus-label-mermaid-pirate" data-i18n="bonus_label_mermaid_pirate">Mermaids captured by Pirates</span>
                         <div class="bonus-counter">
@@ -406,6 +351,60 @@
                     </div>
                 </div>
                 
+                <!-- Expansion Pack Bonuses Tab -->
+                <div class="bonus-tab-panel" id="tab-expansion">
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-seven" data-i18n="bonus_label_seven">7s Captured (Penalty)</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('sevenCaptured', -1)">−</button>
+                            <span class="counter-value" id="counter-sevenCaptured">0</span>
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('sevenCaptured', 1)">+</button>
+                        </div>
+                        <span class="bonus-points penalty"><span id="points-sevenCaptured">0</span></span>
+                    </div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-eight" data-i18n="bonus_label_eight">8s Captured (Bonus)</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('eightCaptured', -1)">−</button>
+                            <span class="counter-value" id="counter-eightCaptured">0</span>
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('eightCaptured', 1)">+</button>
+                        </div>
+                        <span class="bonus-points"><span id="points-eightCaptured">+0</span></span>
+                    </div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-firstmate" data-i18n="bonus_label_firstmate">First Mate Con Captured</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('firstMateCon', -1)">−</button>
+                            <span class="counter-value" id="counter-firstMateCon">0</span>
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('firstMateCon', 1)">+</button>
+                        </div>
+                        <span class="bonus-points"><span id="points-firstMateCon">+0</span></span>
+                    </div>
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-davyjones" data-i18n="bonus_label_davyjones">Davy Jones Sea Monsters</span>
+                        <div class="bonus-counter">
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('davyJonesMonsters', -1)">−</button>
+                            <span class="counter-value" id="counter-davyJonesMonsters">0</span>
+                            <button class="counter-btn" onclick="game.updateExpansionBonusCounter('davyJonesMonsters', 1)">+</button>
+                        </div>
+                        <span class="bonus-points"><span id="points-davyJonesMonsters">+0</span></span>
+                    </div>
+                </div>
+
+                <!-- Other / House Rules -->
+                <div class="bonus-tab-panel" id="tab-other">
+                    <div class="bonus-item">
+                        <span class="bonus-item-label" id="bonus-label-other" data-i18n="bonus_label_other">House Rules / Other Bonus</span>
+                        <div class="bonus-counter bonus-counter-no-display">
+                            <button class="counter-btn" onclick="game.updateBonusCounter('other', -1)">−</button>
+                            <span class="counter-value" id="counter-other" style="display: none;">0</span>
+                            <button class="counter-btn" onclick="game.updateBonusCounter('other', 1)">+</button>
+                        </div>
+                        <span class="bonus-points"><span id="points-other">0</span></span>
+                    </div>
+                    <p class="bonus-description" id="bonus-description-other" data-i18n="bonus_description_other">Use for custom house rules or variant bonuses (±5 per click)</p>
+                </div>
+
                 <!-- Total -->
                 <div class="bonus-total">
                     <span class="bonus-total-label" id="bonus-total-label" data-i18n="bonus_total_label">Total Bonus:</span>

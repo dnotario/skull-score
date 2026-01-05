@@ -13,7 +13,7 @@ The application is fully implemented and deployed across multiple environments:
 ✅ **Core Game Functionality**
 - Single-page pirate-themed application with authentic Republic of Pirates aesthetic
 - Local storage for state persistence (no server backend)
-- 2-8 player support with custom names
+- 2-8 player support with custom names (2-9 with expansion pack)
 - Complete 10-round score tracking with bid/actual/bonus input
 - Traditional (Classic) and Rascal scoring modes
 - Real-time score calculation and validation
@@ -26,9 +26,17 @@ The application is fully implemented and deployed across multiple environments:
 - **Zero Bid Scoring**: Special scoring for zero bids in both modes
 - **Bonus Points**: Manual entry with validation (only allowed when bid = actual)
 
+✅ **Expansion Pack Support** (December 2025)
+- **9-Player Support**: Expansion mode allows up to 9 players with extended card deck
+- **Graybeard Mode**: 2-player ghost player for two-player games
+- **Expansion Bonus Calculator**: 7s (-5 penalty), 8s (+5), First Mate Con (+30), Davy Jones (+20 per sea monster)
+- **Sea Monster Tracking**: Kraken, White Whale, and Spotted Stingray destroy tricks
+- **Trick Discarded**: Whale/Stingray can discard tricks with no winner
+- **Dynamic Card Limits**: Adjusts max cards per round based on player count and expansion mode
+
 ✅ **Input Validation**
 - Prevents bids/actual exceeding available tricks per round
-- Ensures total tricks won equals cards dealt
+- Ensures total tricks won equals cards dealt (accounting for Kraken/discarded tricks)
 - Bonus points only allowed for correct predictions
 - Integer-only inputs with reasonable limits
 - Comprehensive error messages in pirate dialect
@@ -43,7 +51,7 @@ The application is fully implemented and deployed across multiple environments:
 
 ✅ **Technical Implementation**
 - TypeScript with proper type safety and interfaces
-- Jest testing framework with comprehensive test coverage
+- Jest testing framework with comprehensive test coverage (125+ tests)
 - Professional deployment pipeline with staging/production branches
 - Pre-commit hooks and automated builds
 - Google Analytics integration
@@ -58,14 +66,23 @@ See **README.md** for complete technical details including:
 - Mobile optimization and browser support
 - Code quality standards and contribution guidelines
 
-## Recent Updates (June 2025)
+## Recent Updates
 
-### Build System Refactoring
+### Expansion Pack Support (December 2025)
+- Full expansion pack support with 9-player mode
+- Graybeard ghost player for 2-player games
+- Expansion bonus calculator (7s, 8s, First Mate Con, Davy Jones sea monsters)
+- Sea monster tracking (Kraken, White Whale, Spotted Stingray)
+- Trick discarded option for Whale/Stingray with no winner
+- Dynamic card limits based on player count and expansion mode
+- 125+ unit tests covering all expansion features
+
+### Build System Refactoring (June 2025)
 - Separated source and built files - TypeScript output now goes to `build/runFiles/`
 - Updated deployment pipeline to use new build directory structure
 - All runtime files (HTML, CSS, JS, images) are copied to `build/runFiles/` during build
 
-### Scoring Bug Fix
+### Scoring Bug Fix (June 2025)
 - Fixed critical bug where Traditional scoring was using cards dealt instead of tricks taken
 - Refactored `calculateRoundScore` to be a pure function with all dependencies as parameters
 - Added comprehensive tests to verify correct scoring behavior
@@ -84,12 +101,11 @@ See **README.md** for complete technical details including:
 
 The app functions as a **score keeper**, not a full game implementation:
 - No card tracking or automatic determination of which bonuses were earned
-- No expansion content (Kraken, White Whale, Loot cards, pirate abilities)
-- Two-player mode is supported but without the Graybeard ghost player mechanics
 - No optional scoring variants (Cannonball/Grapeshot for Rascal mode)
 - No variable round structures (only standard 10-round games)
+- No pirate abilities tracking (special powers from expansion)
 
-Note: While we don't track cards, we do provide an interactive bonus calculator UI where players can easily tally their bonus points using visual counters for each bonus type.
+Note: While we don't track cards, we do provide an interactive bonus calculator UI where players can easily tally their bonus points using visual counters for each bonus type (including expansion bonuses like 7s, 8s, First Mate Con, and Davy Jones sea monsters).
 
 ## Development Guidelines
 
